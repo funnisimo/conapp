@@ -1,5 +1,9 @@
 use super::*;
+use crate::console::DoryenUniforms;
+use crate::Buffer;
+use crate::{console::Program, AppContext, DORYEN_FS, DORYEN_VS};
 use image::{ImageBuffer, Rgba};
+use uni_gl::WebGLRenderingContext;
 
 pub struct Font {
     img_width: u32,
@@ -12,13 +16,18 @@ pub struct Font {
     loaded: bool,
     // path: Option<String>,
     loader: FontLoader,
+
+    pub program: Option<Program>,
 }
 
 impl Font {
-    pub fn new(path: &str) -> Self {
+    pub fn new(path: &str, app: &mut dyn AppContext) -> Self {
         let mut loader = FontLoader::new();
         crate::App::print(format!("Loading font - {}", path));
         loader.load_font(path);
+
+        // TODO - INDEX!!!!
+        let program = Program::new(app.gl(), 0, DORYEN_VS, DORYEN_FS);
 
         Font {
             img_width: 0,
@@ -30,6 +39,8 @@ impl Font {
             path: path.to_owned(),
             loaded: false,
             loader,
+
+            program: Some(program),
         }
     }
 
@@ -58,7 +69,7 @@ impl Font {
         self.loader.img.as_ref().unwrap()
     }
 
-    pub fn load_async(&mut self) -> bool {
+    pub fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
         if self.loaded {
             return true;
         }
@@ -69,6 +80,7 @@ impl Font {
         }
 
         self.load_font_info();
+        self.setup_font(gl);
         self.loaded = true;
         true
     }
@@ -94,5 +106,75 @@ impl Font {
             (self.char_width, self.char_height),
             self.len()
         ));
+    }
+
+    fn setup_font(&mut self, gl: &WebGLRenderingContext) {
+        if let Some(mut program) = self.program.take() {
+            gl.use_program(&program.program);
+
+            // TODO - INDEX!!!
+            gl.active_texture(0);
+            // gl.active_texture(self.index);
+
+            gl.bind_texture(&program.font);
+            {
+                let img = self.take_img();
+                gl.tex_image2d(
+                    uni_gl::TextureBindPoint::Texture2d, // target
+                    0,                                   // level
+                    img.width() as u16,                  // width
+                    img.height() as u16,                 // height
+                    uni_gl::PixelFormat::Rgba,           // format
+                    uni_gl::PixelType::UnsignedByte,     // type
+                    &*img,                               // data
+                );
+            }
+
+            // program.bind(
+            //     gl,
+            //     &self,
+            //     self.img_width(),
+            //     self.img_height(),
+            //     self.char_width(),
+            //     self.char_height(),
+            // );
+
+            if let Some(&Some(ref location)) = program
+                .uniform_locations
+                .get(&DoryenUniforms::FontCharsPerLine)
+            {
+                gl.uniform_1f(
+                    location,
+                    (self.img_width() as f32) / (self.char_width() as f32),
+                );
+            }
+            if let Some(&Some(ref location)) =
+                program.uniform_locations.get(&DoryenUniforms::FontCoef)
+            {
+                gl.uniform_2f(
+                    location,
+                    (
+                        (self.char_width() as f32) / (self.img_width() as f32),
+                        (self.char_height() as f32) / (self.img_height() as f32),
+                    ),
+                );
+            }
+
+            program.set_font_texture(gl);
+            self.program = Some(program);
+        }
+    }
+
+    pub fn render(
+        &mut self,
+        gl: &WebGLRenderingContext,
+        extents: &(f32, f32, f32, f32),
+        buffer: &Buffer,
+    ) {
+        if let Some(mut program) = self.program.take() {
+            program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
+            program.render_primitive(gl, buffer);
+            self.program = Some(program);
+        }
     }
 }

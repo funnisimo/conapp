@@ -1,4 +1,3 @@
-use super::program::*;
 use crate::font::Font;
 use crate::Buffer;
 use crate::{AppContext, Glyph};
@@ -7,8 +6,8 @@ use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
 
 // shaders
-const DORYEN_VS: &str = include_str!("doryen_vs.glsl");
-const DORYEN_FS: &str = include_str!("doryen_fs.glsl");
+pub const DORYEN_VS: &str = include_str!("doryen_vs.glsl");
+pub const DORYEN_FS: &str = include_str!("doryen_fs.glsl");
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Console {
@@ -16,7 +15,7 @@ pub struct Console {
 
     extents: (f32, f32, f32, f32),
 
-    program: Option<Program>,
+    // program: Option<Program>,
     font: Rc<RefCell<Font>>,
     // glyphs: GlyphMap,
 
@@ -37,20 +36,20 @@ impl Console {
     /// width and height are in cells (characters), not pixels.
     pub fn new(width: u32, height: u32, font_path: &str, app: &mut dyn AppContext) -> Self {
         // let font = create_texture(gl);
-        // TODO - INDEX!!!!
-        let program = Program::new(app.gl(), 0, DORYEN_VS, DORYEN_FS);
+        // // TODO - INDEX!!!!
+        // let program = Program::new(app.gl(), 0, DORYEN_VS, DORYEN_FS);
         let font = app.get_font(font_path).expect(&format!(
             "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
             font_path
         ));
 
-        let mut con = Self {
+        Self {
             buffer: Buffer::new(width, height),
             // colors: HashMap::new(),
             // color_stack: Vec::new(),
             extents: (0.0, 0.0, 1.0, 1.0),
 
-            program: Some(program),
+            // program: Some(program),
             font,
             // glyphs: GlyphMap::new(),
 
@@ -64,10 +63,10 @@ impl Console {
             // ready: false,
             // font_loader: FontLoader::new(),
             // font_texture: create_font_texture(app.gl()),
-        };
+        }
 
-        con.setup_font(app);
-        con
+        // con.setup_font(app);
+        // con
     }
 
     pub fn to_glyph(&self, ch: char) -> Glyph {
@@ -78,9 +77,9 @@ impl Console {
         println!("console extents = {},{} - {},{}", left, top, right, bottom);
 
         self.extents = (left, top, right, bottom);
-        if let Some(program) = self.program.as_mut() {
-            program.set_extents(left, top, right, bottom);
-        }
+        // if let Some(program) = self.font.borrow_mut().program.as_mut() {
+        //     program.set_extents(left, top, right, bottom);
+        // }
         self
     }
 
@@ -187,50 +186,50 @@ impl Console {
     //     }
     // }
 
-    fn setup_font(&mut self, app: &mut dyn AppContext) {
-        let font_clone = self.font.clone();
-        let font = font_clone.borrow();
+    // fn setup_font(&mut self, app: &mut dyn AppContext) {
+    //     let font_clone = self.font.clone();
+    //     let mut font = font_clone.borrow_mut();
 
-        if !font.loaded() {
-            panic!("Font not loaded!");
-        }
+    //     if !font.loaded() {
+    //         panic!("Font not loaded!");
+    //     }
 
-        let gl = app.gl();
+    //     let gl = app.gl();
 
-        if let Some(mut program) = self.program.take() {
-            gl.use_program(&program.program);
+    //     if let Some(mut program) = font.program.take() {
+    //         gl.use_program(&program.program);
 
-            // TODO - INDEX!!!
-            gl.active_texture(0);
-            // gl.active_texture(self.index);
+    //         // TODO - INDEX!!!
+    //         gl.active_texture(0);
+    //         // gl.active_texture(self.index);
 
-            gl.bind_texture(&program.font);
-            {
-                let img = font.take_img();
-                gl.tex_image2d(
-                    uni_gl::TextureBindPoint::Texture2d, // target
-                    0,                                   // level
-                    img.width() as u16,                  // width
-                    img.height() as u16,                 // height
-                    uni_gl::PixelFormat::Rgba,           // format
-                    uni_gl::PixelType::UnsignedByte,     // type
-                    &*img,                               // data
-                );
-            }
+    //         gl.bind_texture(&program.font);
+    //         {
+    //             let img = font.take_img();
+    //             gl.tex_image2d(
+    //                 uni_gl::TextureBindPoint::Texture2d, // target
+    //                 0,                                   // level
+    //                 img.width() as u16,                  // width
+    //                 img.height() as u16,                 // height
+    //                 uni_gl::PixelFormat::Rgba,           // format
+    //                 uni_gl::PixelType::UnsignedByte,     // type
+    //                 &*img,                               // data
+    //             );
+    //         }
 
-            program.bind(
-                gl,
-                &self,
-                font.img_width(),
-                font.img_height(),
-                font.char_width(),
-                font.char_height(),
-            );
+    //         program.bind(
+    //             gl,
+    //             &self,
+    //             font.img_width(),
+    //             font.img_height(),
+    //             font.char_width(),
+    //             font.char_height(),
+    //         );
 
-            program.set_font_texture(gl);
-            self.program = Some(program);
-        }
-    }
+    //         program.set_font_texture(gl);
+    //         font.program = Some(program);
+    //     }
+    // }
 
     /// resizes the console
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -238,10 +237,8 @@ impl Console {
     }
 
     pub fn render(&mut self, gl: &WebGLRenderingContext) {
-        if let Some(mut program) = self.program.take() {
-            program.render_primitive(gl, self);
-            self.program = Some(program);
-        }
+        let mut font = self.font.borrow_mut();
+        font.render(gl, &self.extents, &self.buffer);
     }
 
     /// returns the cell that the screen pos converts to for this console [0.0-1.0]

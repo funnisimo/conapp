@@ -1,6 +1,5 @@
-use super::Console;
-use crate::app::App;
 use crate::rgba::RGBA;
+use crate::{app::App, Buffer};
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::slice;
@@ -33,7 +32,7 @@ impl PrimitiveData {
 }
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
-enum DoryenUniforms {
+pub enum DoryenUniforms {
     Font,
     Ascii,
     Foreground,
@@ -47,18 +46,18 @@ enum DoryenUniforms {
 
 pub struct Program {
     index: u32,
-    pub(super) program: WebGLProgram,
-    vao: WebGLVertexArray,
-    vertex_pos_location: Option<u32>,
-    vertex_uv_location: Option<u32>,
-    vertex_pos_buffer: Option<WebGLBuffer>,
-    vertex_uv_buffer: Option<WebGLBuffer>,
-    pub font: WebGLTexture,
-    ascii: WebGLTexture,
-    foreground: WebGLTexture,
-    background: WebGLTexture,
-    uniform_locations: HashMap<DoryenUniforms, Option<WebGLUniformLocation>>,
-    data: PrimitiveData,
+    pub(crate) program: WebGLProgram,
+    pub(crate) vao: WebGLVertexArray,
+    pub(crate) vertex_pos_location: Option<u32>,
+    pub(crate) vertex_uv_location: Option<u32>,
+    pub(crate) vertex_pos_buffer: Option<WebGLBuffer>,
+    pub(crate) vertex_uv_buffer: Option<WebGLBuffer>,
+    pub(crate) font: WebGLTexture,
+    pub(crate) ascii: WebGLTexture,
+    pub(crate) foreground: WebGLTexture,
+    pub(crate) background: WebGLTexture,
+    pub(crate) uniform_locations: HashMap<DoryenUniforms, Option<WebGLUniformLocation>>,
+    pub(crate) data: PrimitiveData,
 }
 
 trait IntoBytes {
@@ -167,32 +166,33 @@ impl Program {
         }
     }
 
-    pub fn set_extents(&mut self, left: f32, top: f32, right: f32, bottom: f32) {
-        println!("set extents - {}", self.index);
-        self.data = create_primitive_at(left, top, right, bottom);
-    }
-
-    pub fn set_font_texture(&mut self, gl: &WebGLRenderingContext) {
-        gl.use_program(&self.program);
-        if let Some(&Some(ref sampler_location)) = self.uniform_locations.get(&DoryenUniforms::Font)
-        {
-            let index = self.index * 4;
-            gl.active_texture(index);
-            gl.bind_texture(&self.font);
-            gl.uniform_1i(sampler_location, index as i32);
-        }
-    }
-
-    pub fn bind(
-        &self,
+    pub fn set_extents(
+        &mut self,
         gl: &WebGLRenderingContext,
-        con: &Console,
-        font_width: u32,
-        font_height: u32,
-        char_width: u32,
-        char_height: u32,
+        left: f32,
+        top: f32,
+        right: f32,
+        bottom: f32,
     ) {
-        gl.use_program(&self.program);
+        let left = (left * 2.0) - 1.0;
+        let top = (top * 2.0) - 1.0;
+        let right = (right * 2.0) - 1.0;
+        let bottom = (bottom * 2.0) - 1.0;
+
+        // println!(
+        //     "set extents {} - {},{} - {},{}",
+        //     self.index, left, top, right, bottom
+        // );
+
+        self.data.pos_data[0] = left;
+        self.data.pos_data[0] = top;
+        self.data.pos_data[0] = left;
+        self.data.pos_data[0] = bottom;
+        self.data.pos_data[0] = right;
+        self.data.pos_data[0] = bottom;
+        self.data.pos_data[0] = right;
+        self.data.pos_data[0] = top;
+
         gl.bind_vertex_array(&self.vao);
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
@@ -216,13 +216,110 @@ impl Program {
                 );
             }
         }
-        let pot_width = con.get_pot_width();
-        let pot_height = con.get_pot_height();
-        let con_width = con.get_width();
-        let con_height = con.get_height();
-        // TODO textures size should only be power of two
-        // let pot_font_width = get_pot_value(font_width);
-        // let pot_font_height = get_pot_value(font_height);
+    }
+
+    pub fn set_font_texture(&mut self, gl: &WebGLRenderingContext) {
+        gl.use_program(&self.program);
+        if let Some(&Some(ref sampler_location)) = self.uniform_locations.get(&DoryenUniforms::Font)
+        {
+            let index = self.index * 4;
+            gl.active_texture(index);
+            gl.bind_texture(&self.font);
+            gl.uniform_1i(sampler_location, index as i32);
+        }
+    }
+
+    // pub fn bind(
+    //     &self,
+    //     gl: &WebGLRenderingContext,
+    //     con: &Console,
+    //     // font_width: u32,
+    //     // font_height: u32,
+    //     // char_width: u32,
+    //     // char_height: u32,
+    // ) {
+    // gl.use_program(&self.program);
+    // gl.bind_vertex_array(&self.vao);
+    // if let Some(ref buf) = self.vertex_pos_buffer {
+    //     if let Some(ref loc) = self.vertex_pos_location {
+    //         set_buffer_data(
+    //             gl,
+    //             buf,
+    //             Some(self.data.pos_data.clone()),
+    //             *loc,
+    //             AttributeSize::Two,
+    //         );
+    //     }
+    // }
+    // if let Some(ref buf) = self.vertex_uv_buffer {
+    //     if let Some(ref loc) = self.vertex_uv_location {
+    //         set_buffer_data(
+    //             gl,
+    //             buf,
+    //             Some(self.data.tex_data.clone()),
+    //             *loc,
+    //             AttributeSize::Two,
+    //         );
+    //     }
+    // }
+    // let pot_width = con.get_pot_width();
+    // let pot_height = con.get_pot_height();
+    // let con_width = con.get_width();
+    // let con_height = con.get_height();
+
+    // // // If using ZPos
+    // // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
+    // //     let zpos: f32 = self.index as f32 / -10.0;
+    // //     println!("zpos = {}", zpos);
+    // //     gl.uniform_1f(location, zpos);
+    // // }
+    // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::TermSize) {
+    //     gl.uniform_2f(location, (con_width as f32, con_height as f32));
+    // }
+    // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::TermCoef) {
+    //     gl.uniform_2f(
+    //         location,
+    //         (1.0 / (pot_width as f32), 1.0 / (pot_height as f32)),
+    //     );
+    // }
+    // if let Some(&Some(ref location)) = self
+    //     .uniform_locations
+    //     .get(&DoryenUniforms::FontCharsPerLine)
+    // {
+    //     gl.uniform_1f(location, (font_width as f32) / (char_width as f32));
+    // }
+    // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::FontCoef) {
+    //     gl.uniform_2f(
+    //         location,
+    //         (
+    //             (char_width as f32) / (font_width as f32),
+    //             (char_height as f32) / (font_height as f32),
+    //         ),
+    //     );
+    // }
+    // }
+
+    pub fn render_primitive(&mut self, gl: &WebGLRenderingContext, buffer: &Buffer) {
+        gl.use_program(&self.program);
+        self.set_uniforms(gl, buffer);
+
+        gl.bind_vertex_array(&self.vao);
+        if let Some(ref buf) = self.vertex_pos_buffer {
+            if let Some(ref loc) = self.vertex_pos_location {
+                set_buffer_data(
+                    gl,
+                    buf,
+                    Some(self.data.pos_data.clone()),
+                    *loc,
+                    AttributeSize::Two,
+                );
+            }
+        }
+
+        let pot_width = buffer.get_pot_width();
+        let pot_height = buffer.get_pot_height();
+        let con_width = buffer.get_width();
+        let con_height = buffer.get_height();
 
         // // If using ZPos
         // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
@@ -238,39 +335,6 @@ impl Program {
                 location,
                 (1.0 / (pot_width as f32), 1.0 / (pot_height as f32)),
             );
-        }
-        if let Some(&Some(ref location)) = self
-            .uniform_locations
-            .get(&DoryenUniforms::FontCharsPerLine)
-        {
-            gl.uniform_1f(location, (font_width as f32) / (char_width as f32));
-        }
-        if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::FontCoef) {
-            gl.uniform_2f(
-                location,
-                (
-                    (char_width as f32) / (font_width as f32),
-                    (char_height as f32) / (font_height as f32),
-                ),
-            );
-        }
-    }
-
-    pub fn render_primitive(&mut self, gl: &WebGLRenderingContext, con: &Console) {
-        gl.use_program(&self.program);
-        self.set_uniforms(gl, con);
-
-        gl.bind_vertex_array(&self.vao);
-        if let Some(ref buf) = self.vertex_pos_buffer {
-            if let Some(ref loc) = self.vertex_pos_location {
-                set_buffer_data(
-                    gl,
-                    buf,
-                    Some(self.data.pos_data.clone()),
-                    *loc,
-                    AttributeSize::Two,
-                );
-            }
         }
 
         gl.draw_arrays(
@@ -307,11 +371,10 @@ impl Program {
         }
     }
 
-    pub fn set_uniforms(&mut self, gl: &WebGLRenderingContext, con: &Console) {
+    pub fn set_uniforms(&mut self, gl: &WebGLRenderingContext, buffer: &Buffer) {
         gl.use_program(&self.program);
-        let buffer = con.buffer();
-        let pot_width = con.get_pot_width();
-        let pot_height = con.get_pot_height();
+        let pot_width = buffer.get_pot_width();
+        let pot_height = buffer.get_pot_height();
         let ascii_tex = WebGLTexture(self.ascii.0);
         self.update_uniform_texture(
             gl,

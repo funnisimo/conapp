@@ -103,7 +103,7 @@ impl AppContext for ContextImpl {
         }
         let mut ready = true;
         for (_, font) in self.fonts.iter_mut() {
-            if !font.borrow_mut().load_async() {
+            if !font.borrow_mut().load_async(&self.gl) {
                 ready = false;
             }
         }
@@ -118,10 +118,8 @@ impl AppContext for ContextImpl {
             return;
         }
 
-        self.fonts.insert(
-            fontpath.to_owned(),
-            Rc::new(RefCell::new(Font::new(fontpath))),
-        );
+        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
+        self.fonts.insert(fontpath.to_owned(), font);
         self.ready = false;
     }
     fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
