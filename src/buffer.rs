@@ -549,10 +549,10 @@ impl Buffer {
                         let dst_char = destination.glyphs()[dest_idx];
                         let dst_back = destination.backgrounds()[dest_idx];
                         if fore_alpha < 1.0 {
-                            if src_char == ' ' as u32 {
+                            if src_char == ' ' as u32 || src_char == 0 {
                                 destination.foregrounds_mut()[dest_idx] =
                                     color_blend(dst_fore, src_back, back_alpha);
-                            } else if dst_char == ' ' as u32 {
+                            } else if dst_char == ' ' as u32 || dst_char == 0 {
                                 destination.glyphs_mut()[dest_idx] = src_char;
                                 destination.foregrounds_mut()[dest_idx] =
                                     color_blend(dst_back, src_fore, fore_alpha);

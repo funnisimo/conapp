@@ -1,8 +1,8 @@
 #![warn(clippy::float_cmp)]
-use super::buffer::*;
-use super::file::FileLoader;
-use super::rgba::{color_blend, color_dist};
+use crate::buffer::*;
+use crate::file::FileLoader;
 use crate::rgba::RGBA;
+use crate::rgba::{color_blend, color_dist};
 
 // sub-pixel resolution kit
 const CHAR_SUBP_NW: u32 = 226;

@@ -160,7 +160,7 @@ pub(super) fn color_add(c1: RGBA, c2: RGBA) -> RGBA {
 }
 */
 
-pub(super) fn color_dist(c1: RGBA, c2: RGBA) -> i32 {
+pub fn color_dist(c1: RGBA, c2: RGBA) -> i32 {
     let dr = i32::from(c1.0) - i32::from(c2.0);
     let dg = i32::from(c1.1) - i32::from(c2.1);
     let db = i32::from(c1.2) - i32::from(c2.2);

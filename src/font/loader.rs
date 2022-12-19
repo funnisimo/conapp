@@ -1,4 +1,4 @@
-use crate::FileLoader;
+use crate::file::FileLoader;
 
 pub struct FontLoader {
     loader: FileLoader,
