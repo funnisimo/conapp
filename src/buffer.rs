@@ -130,96 +130,64 @@ impl Buffer {
         &self.back
     }
     /// for fast writing of the characters values
-    pub fn glyphs_mut(&mut self) -> &mut Vec<u32> {
+    pub(crate) fn glyphs_mut(&mut self) -> &mut Vec<u32> {
         &mut self.glyph
     }
     /// for fast writing of the characters colors
-    pub fn foregrounds_mut(&mut self) -> &mut Vec<RGBA> {
+    pub(crate) fn foregrounds_mut(&mut self) -> &mut Vec<RGBA> {
         &mut self.fore
     }
     /// for fast writing of the background colors
-    pub fn backgrounds_mut(&mut self) -> &mut Vec<RGBA> {
+    pub(crate) fn backgrounds_mut(&mut self) -> &mut Vec<RGBA> {
         &mut self.back
     }
 
     /// get the background color of a cell (if x,y inside the console)
-    pub fn get_back(&self, x: i32, y: i32) -> Option<RGBA> {
-        if self.check_coords(x, y) {
-            return Some(self.unsafe_get_back(x, y));
+    pub fn get_back(&self, x: i32, y: i32) -> Option<&RGBA> {
+        match self.to_idx(x, y) {
+            None => None,
+            Some(idx) => self.back.get(idx),
         }
-        None
     }
     /// get the foreground color of a cell (if x,y inside the console)
-    pub fn get_fore(&self, x: i32, y: i32) -> Option<RGBA> {
-        if self.check_coords(x, y) {
-            return Some(self.unsafe_get_fore(x, y));
+    pub fn get_fore(&self, x: i32, y: i32) -> Option<&RGBA> {
+        match self.to_idx(x, y) {
+            None => None,
+            Some(idx) => self.fore.get(idx),
         }
-        None
     }
     /// get the glyph code of a cell (if x,y inside the console)
-    pub fn get_glyph(&self, x: i32, y: i32) -> Option<u32> {
-        if self.check_coords(x, y) {
-            return Some(self.unsafe_get_glyph(x, y));
+    pub fn get_glyph(&self, x: i32, y: i32) -> Option<&u32> {
+        match self.to_idx(x, y) {
+            None => None,
+            Some(idx) => self.glyph.get(idx),
         }
-        None
     }
-    /// get the background color of a cell (no boundary check)
-    pub fn unsafe_get_back(&self, x: i32, y: i32) -> RGBA {
-        let idx = self.index(x, y);
-        self.backgrounds()[idx]
+
+    fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
+        if x < 0 || x >= self.get_width() as i32 || y < 0 || y >= self.get_height() as i32 {
+            return None;
+        }
+        Some(x as usize + y as usize * self.get_pot_width() as usize)
     }
-    /// get the foreground color of a cell (no boundary check)
-    pub fn unsafe_get_fore(&self, x: i32, y: i32) -> RGBA {
-        let idx = self.index(x, y);
-        self.foregrounds()[idx]
-    }
-    /// get the glyph code of a cell (no boundary check)
-    pub fn unsafe_get_glyph(&self, x: i32, y: i32) -> u32 {
-        let idx = self.index(x, y);
-        self.glyphs()[idx]
-    }
-    pub fn index(&self, x: i32, y: i32) -> usize {
-        x as usize + y as usize * self.get_pot_width() as usize
-    }
-    pub fn check_coords(&self, x: i32, y: i32) -> bool {
-        (x as u32) < self.get_width() && (y as u32) < self.get_height()
-    }
+
     /// set the character at a specific position (doesn't change the color).
-    ///
-    /// More information about this [here](https://github.com/jice-nospam/doryen-rs/issues/7).
-    ///
-    /// You can find some constants that work with most fonts in [this file](https://github.com/tomassedovic/tcod-rs/blob/master/src/chars.rs) provided by Alex Mooney.
-    pub fn glyph(&mut self, x: i32, y: i32, glyph: u32) {
-        if self.check_coords(x, y) {
-            self.unsafe_glyph(x, y, glyph);
+    pub fn glyph(&mut self, x: i32, y: i32, glyph: Glyph) {
+        if let Some(idx) = self.to_idx(x, y) {
+            self.glyph[idx] = glyph;
         }
     }
     /// set the character color at a specific position
     pub fn fore(&mut self, x: i32, y: i32, col: RGBA) {
-        if self.check_coords(x, y) {
-            self.unsafe_fore(x, y, col);
+        if let Some(idx) = self.to_idx(x, y) {
+            self.fore[idx] = col;
         }
     }
     /// set the background color at a specific position
     pub fn back(&mut self, x: i32, y: i32, col: RGBA) {
-        if self.check_coords(x, y) {
-            self.unsafe_back(x, y, col);
+        if let Some(idx) = self.to_idx(x, y) {
+            self.back[idx] = col;
         }
-    }
-    /// set the character at a specific position (no boundary check)
-    pub fn unsafe_glyph(&mut self, x: i32, y: i32, glyph: u32) {
-        let idx = self.index(x, y);
-        self.glyphs_mut()[idx] = u32::from(glyph);
-    }
-    /// set the character color at a specific position (no boundary check)
-    pub fn unsafe_fore(&mut self, x: i32, y: i32, col: RGBA) {
-        let idx = self.index(x, y);
-        self.foregrounds_mut()[idx] = col;
-    }
-    /// set the background color at a specific position (no boundary check)
-    pub fn unsafe_back(&mut self, x: i32, y: i32, col: RGBA) {
-        let idx = self.index(x, y);
-        self.backgrounds_mut()[idx] = col;
     }
 
     pub fn clear(&mut self, fore: bool, back: bool, glyph: bool) {
@@ -450,11 +418,10 @@ impl Buffer {
 
     /// can change all properties of a console cell at once
     pub fn draw(&mut self, x: i32, y: i32, glyph: Glyph, fore: RGBA, back: RGBA) {
-        if self.check_coords(x, y) {
-            let off = self.index(x, y);
-            self.glyphs_mut()[off] = glyph;
-            self.foregrounds_mut()[off] = fore;
-            self.backgrounds_mut()[off] = back;
+        if let Some(idx) = self.to_idx(x, y) {
+            self.glyph[idx] = glyph;
+            self.fore[idx] = fore;
+            self.back[idx] = back;
         }
     }
 
@@ -467,16 +434,15 @@ impl Buffer {
         fore: Option<RGBA>,
         back: Option<RGBA>,
     ) {
-        if self.check_coords(x, y) {
-            let off = self.index(x, y);
+        if let Some(idx) = self.to_idx(x, y) {
             if let Some(code) = glyph {
-                self.glyphs_mut()[off] = code;
+                self.glyph[idx] = code;
             }
             if let Some(fore) = fore {
-                self.foregrounds_mut()[off] = fore;
+                self.fore[idx] = fore;
             }
             if let Some(back) = back {
-                self.backgrounds_mut()[off] = back;
+                self.back[idx] = back;
             }
         }
     }
@@ -525,8 +491,8 @@ impl Buffer {
             let off = (y + ysrc) * self.get_pot_width() as i32;
             let doff = (y + ydst) * destination.get_pot_width() as i32;
             for x in 0..wsrc - xsrc {
-                if self.check_coords(xsrc + x, ysrc + y)
-                    && destination.check_coords(xdst + x, ydst + y)
+                if self.to_idx(xsrc + x, ysrc + y).is_some()
+                    && destination.to_idx(xdst + x, ydst + y).is_some()
                 {
                     let src_idx = (off + x + xsrc) as usize;
                     let dest_idx = (doff + x + xdst) as usize;

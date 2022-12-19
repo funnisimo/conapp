@@ -301,7 +301,7 @@ impl Image {
                 // get the 2x2 super pixel colors from the image
                 let conx = dx + (cx - minx) / 2;
                 let cony = dy + (cy - miny) / 2;
-                let console_back = con.unsafe_get_back(conx, cony);
+                let console_back = con.get_back(conx, cony).unwrap().clone();
                 let pixel = img.get_pixel(cx as u32, cy as u32);
                 grid[0] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
                 if let Some(ref t) = transparent {
@@ -346,18 +346,18 @@ impl Image {
                 compute_pattern(&grid, &mut back, &mut front, &mut ascii);
                 if let Some(front) = front {
                     if ascii >= 0 {
-                        con.unsafe_back(conx, cony, back);
-                        con.unsafe_fore(conx, cony, front);
-                        con.unsafe_glyph(conx, cony, ascii as u32);
+                        con.back(conx, cony, back);
+                        con.fore(conx, cony, front);
+                        con.glyph(conx, cony, ascii as u32);
                     } else {
-                        con.unsafe_back(conx, cony, front);
-                        con.unsafe_fore(conx, cony, back);
-                        con.unsafe_glyph(conx, cony, (-ascii) as u32);
+                        con.back(conx, cony, front);
+                        con.fore(conx, cony, back);
+                        con.glyph(conx, cony, (-ascii) as u32);
                     }
                 } else {
                     // single color
-                    con.unsafe_back(conx, cony, back);
-                    con.unsafe_glyph(conx, cony, ascii as u32);
+                    con.back(conx, cony, back);
+                    con.glyph(conx, cony, ascii as u32);
                 }
                 cy += 2;
             }

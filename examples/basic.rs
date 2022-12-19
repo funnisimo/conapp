@@ -1,4 +1,4 @@
-use conapp::{codepage437::to_glyph, *};
+use conapp::*;
 
 const FONT: &str = "resources/terminal_8x8.png";
 
@@ -37,7 +37,7 @@ impl Screen for MainScreen {
         buffer.draw(
             self.pos.0,
             self.pos.1,
-            to_glyph('@'),
+            '@' as Glyph,
             RGBA::rgb(255, 255, 0),
             RGBA::rgb(0, 0, 0),
         );
