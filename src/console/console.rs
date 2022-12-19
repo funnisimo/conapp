@@ -172,20 +172,20 @@ impl Console {
     //     self.bind(gl);
     // }
 
-    fn bind(&mut self, gl: &uni_gl::WebGLRenderingContext) {
-        if let Some(program) = self.program.take() {
-            let font = self.font.borrow();
-            program.bind(
-                gl,
-                &self,
-                font.img_width(),
-                font.img_height(),
-                font.char_width(),
-                font.char_height(),
-            );
-            self.program = Some(program);
-        }
-    }
+    // fn bind(&mut self, gl: &uni_gl::WebGLRenderingContext) {
+    //     if let Some(program) = self.program.take() {
+    //         let font = self.font.borrow();
+    //         program.bind(
+    //             gl,
+    //             &self,
+    //             font.img_width(),
+    //             font.img_height(),
+    //             font.char_width(),
+    //             font.char_height(),
+    //         );
+    //         self.program = Some(program);
+    //     }
+    // }
 
     fn setup_font(&mut self, app: &mut dyn AppContext) {
         let font_clone = self.font.clone();
