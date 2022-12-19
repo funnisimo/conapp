@@ -1,5 +1,7 @@
 use conapp::{codepage437::to_glyph, *};
 
+const FONT: &str = "resources/terminal_8x8.png";
+
 struct MainScreen {
     con: Console,
     pos: (i32, i32),
@@ -7,7 +9,7 @@ struct MainScreen {
 
 impl ScreenCreator for MainScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let con = Console::new(80, 50, "resources/terminal_8x8.png", app);
+        let con = Console::new(80, 50, FONT, app);
         let pos = (40, 25);
         Box::new(MainScreen { con, pos })
     }
@@ -46,7 +48,7 @@ impl Screen for MainScreen {
 fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Basic Example")
-        .font("resources/terminal_8x8.png")
+        .font(FONT)
         .build();
     app.run::<MainScreen>();
 }
