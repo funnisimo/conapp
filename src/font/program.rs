@@ -10,6 +10,10 @@ use uni_gl::{
     WebGLUniformLocation, WebGLVertexArray, IS_GL_ES,
 };
 
+// shaders
+pub const DORYEN_VS: &str = include_str!("doryen_vs.glsl");
+pub const DORYEN_FS: &str = include_str!("doryen_fs.glsl");
+
 #[derive(Debug)]
 pub struct PrimitiveData {
     pub count: usize,

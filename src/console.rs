@@ -5,10 +5,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
 
-// shaders
-pub const DORYEN_VS: &str = include_str!("doryen_vs.glsl");
-pub const DORYEN_FS: &str = include_str!("doryen_fs.glsl");
-
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Console {
     pub buffer: Buffer,

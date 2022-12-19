@@ -1,7 +1,8 @@
+use super::DoryenUniforms;
 use super::*;
-use crate::console::DoryenUniforms;
+use super::{Program, DORYEN_FS, DORYEN_VS};
+use crate::AppContext;
 use crate::Buffer;
-use crate::{console::Program, AppContext, DORYEN_FS, DORYEN_VS};
 use image::{ImageBuffer, Rgba};
 use uni_gl::WebGLRenderingContext;
 
