@@ -65,7 +65,7 @@ impl Font {
         self.loaded
     }
 
-    pub fn take_img(&self) -> &ImageBuffer<Rgba<u8>, Vec<u8>> {
+    fn take_img(&self) -> &ImageBuffer<Rgba<u8>, Vec<u8>> {
         self.loader.img.as_ref().unwrap()
     }
 
@@ -108,6 +108,7 @@ impl Font {
         ));
     }
 
+    // TODO - Move to Program
     fn setup_font(&mut self, gl: &WebGLRenderingContext) {
         if let Some(mut program) = self.program.take() {
             gl.use_program(&program.program);

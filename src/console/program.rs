@@ -205,6 +205,8 @@ impl Program {
                 );
             }
         }
+
+        // TODO - Can we just do this at create time?
         if let Some(ref buf) = self.vertex_uv_buffer {
             if let Some(ref loc) = self.vertex_uv_location {
                 set_buffer_data(

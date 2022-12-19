@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::Buffer;
-use crate::{AppContext, Glyph};
+use crate::Glyph;
 use std::cell::RefCell;
 use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
@@ -34,14 +34,10 @@ pub struct Console {
 impl Console {
     /// create a new offscreen console that you can blit on another console
     /// width and height are in cells (characters), not pixels.
-    pub fn new(width: u32, height: u32, font_path: &str, app: &mut dyn AppContext) -> Self {
+    pub fn new(width: u32, height: u32, font: Rc<RefCell<Font>>) -> Self {
         // let font = create_texture(gl);
         // // TODO - INDEX!!!!
         // let program = Program::new(app.gl(), 0, DORYEN_VS, DORYEN_FS);
-        let font = app.get_font(font_path).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            font_path
-        ));
 
         Self {
             buffer: Buffer::new(width, height),

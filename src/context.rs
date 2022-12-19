@@ -35,20 +35,20 @@ pub trait AppContext {
     fn gl(&self) -> &WebGLRenderingContext;
 
     fn ready(&mut self) -> bool;
-    fn load_font(&mut self, fontpath: &str);
+    // fn load_font(&mut self, fontpath: &str);
     fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
 }
 
 pub struct ContextImpl {
     // pub(super) cons: Vec<Console>,
-    pub(super) input: AppInput,
-    pub(super) fps: u32,
-    pub(super) average_fps: u32,
-    pub(super) screen_size: (u32, u32),
-    pub(super) frame_time_ms: f32,
-    pub(super) gl: WebGLRenderingContext,
-    pub(super) fonts: HashMap<String, Rc<RefCell<Font>>>,
-    pub(super) ready: bool,
+    pub(crate) input: AppInput,
+    pub(crate) fps: u32,
+    pub(crate) average_fps: u32,
+    pub(crate) screen_size: (u32, u32),
+    pub(crate) frame_time_ms: f32,
+    pub(crate) gl: WebGLRenderingContext,
+    pub(crate) fonts: HashMap<String, Rc<RefCell<Font>>>,
+    pub(crate) ready: bool,
 }
 
 impl AppContext for ContextImpl {
@@ -113,15 +113,6 @@ impl AppContext for ContextImpl {
         ready
     }
 
-    fn load_font(&mut self, fontpath: &str) {
-        if self.fonts.contains_key(fontpath) {
-            return;
-        }
-
-        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
-        self.fonts.insert(fontpath.to_owned(), font);
-        self.ready = false;
-    }
     fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
         match self.fonts.get(fontpath) {
             None => None,
@@ -137,10 +128,20 @@ impl ContextImpl {
     //     // }
     // }
 
-    pub(super) fn resize(&mut self, screen_width: u32, screen_height: u32) {
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
         self.screen_size = (screen_width, screen_height);
         // for con in self.cons.iter_mut() {
         //     con.screen_resize(gl, screen_width, screen_height);
         // }
+    }
+
+    pub fn load_font(&mut self, fontpath: &str) {
+        if self.fonts.contains_key(fontpath) {
+            return;
+        }
+
+        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
+        self.fonts.insert(fontpath.to_owned(), font);
+        self.ready = false;
     }
 }
