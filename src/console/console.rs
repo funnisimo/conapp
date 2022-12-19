@@ -28,7 +28,7 @@ pub struct Console {
 
     // ready: bool,
     // font_path: Option<String>,
-    font_texture: uni_gl::WebGLTexture,
+    // font_texture: uni_gl::WebGLTexture,
     // font_loader: FontLoader,
 }
 
@@ -63,7 +63,7 @@ impl Console {
             // font_path: Some(font_path.to_owned()),
             // ready: false,
             // font_loader: FontLoader::new(),
-            font_texture: create_texture(app.gl()),
+            // font_texture: create_font_texture(app.gl()),
         };
 
         con.setup_font(app);
@@ -197,32 +197,37 @@ impl Console {
 
         let gl = app.gl();
 
-        if let Some(program) = self.program.take() {
-            gl.use_program(&program.program);
-            self.program = Some(program);
-        }
-
-        // TODO - INDEX!!!
-        gl.active_texture(0);
-        // gl.active_texture(self.index);
-
-        gl.bind_texture(&self.font_texture);
-        {
-            let img = font.take_img();
-            gl.tex_image2d(
-                uni_gl::TextureBindPoint::Texture2d, // target
-                0,                                   // level
-                img.width() as u16,                  // width
-                img.height() as u16,                 // height
-                uni_gl::PixelFormat::Rgba,           // format
-                uni_gl::PixelType::UnsignedByte,     // type
-                &*img,                               // data
-            );
-        }
-
-        self.bind(gl);
         if let Some(mut program) = self.program.take() {
-            program.set_font_texture(gl, uni_gl::WebGLTexture(self.font_texture.0));
+            gl.use_program(&program.program);
+
+            // TODO - INDEX!!!
+            gl.active_texture(0);
+            // gl.active_texture(self.index);
+
+            gl.bind_texture(&program.font);
+            {
+                let img = font.take_img();
+                gl.tex_image2d(
+                    uni_gl::TextureBindPoint::Texture2d, // target
+                    0,                                   // level
+                    img.width() as u16,                  // width
+                    img.height() as u16,                 // height
+                    uni_gl::PixelFormat::Rgba,           // format
+                    uni_gl::PixelType::UnsignedByte,     // type
+                    &*img,                               // data
+                );
+            }
+
+            program.bind(
+                gl,
+                &self,
+                font.img_width(),
+                font.img_height(),
+                font.char_width(),
+                font.char_height(),
+            );
+
+            program.set_font_texture(gl);
             self.program = Some(program);
         }
     }

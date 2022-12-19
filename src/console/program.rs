@@ -53,7 +53,7 @@ pub struct Program {
     vertex_uv_location: Option<u32>,
     vertex_pos_buffer: Option<WebGLBuffer>,
     vertex_uv_buffer: Option<WebGLBuffer>,
-    font: Option<WebGLTexture>,
+    pub font: WebGLTexture,
     ascii: WebGLTexture,
     foreground: WebGLTexture,
     background: WebGLTexture,
@@ -158,7 +158,7 @@ impl Program {
             vertex_uv_location,
             vertex_pos_buffer,
             vertex_uv_buffer,
-            font: None,
+            font: create_font_texture(gl, index),
             ascii: gl.create_texture(),
             foreground: gl.create_texture(),
             background: gl.create_texture(),
@@ -172,16 +172,15 @@ impl Program {
         self.data = create_primitive_at(left, top, right, bottom);
     }
 
-    pub fn set_font_texture(&mut self, gl: &WebGLRenderingContext, font: WebGLTexture) {
+    pub fn set_font_texture(&mut self, gl: &WebGLRenderingContext) {
         gl.use_program(&self.program);
         if let Some(&Some(ref sampler_location)) = self.uniform_locations.get(&DoryenUniforms::Font)
         {
             let index = self.index * 4;
             gl.active_texture(index);
-            gl.bind_texture(&font);
+            gl.bind_texture(&self.font);
             gl.uniform_1i(sampler_location, index as i32);
         }
-        self.font = Some(font);
     }
 
     pub fn bind(
@@ -376,9 +375,9 @@ fn color_to_u8(v: &[RGBA]) -> &[u8] {
     unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * size_of::<RGBA>()) }
 }
 
-pub(crate) fn create_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
+pub(crate) fn create_font_texture(gl: &WebGLRenderingContext, index: u32) -> WebGLTexture {
     let tex = gl.create_texture();
-    gl.active_texture(0);
+    gl.active_texture(index);
     gl.bind_texture(&tex);
     set_texture_params(gl, true);
     tex
