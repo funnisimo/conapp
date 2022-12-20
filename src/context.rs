@@ -140,8 +140,7 @@ impl ContextImpl {
             return;
         }
 
-        let index = self.fonts.len() as u32;
-        let font = Rc::new(RefCell::new(Font::new(index, fontpath, self)));
+        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
         self.fonts.insert(fontpath.to_owned(), font);
         self.ready = false;
     }

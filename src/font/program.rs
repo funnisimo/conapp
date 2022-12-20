@@ -15,6 +15,11 @@ use uni_gl::{
 pub const DORYEN_VS: &str = include_str!("doryen_vs.glsl");
 pub const DORYEN_FS: &str = include_str!("doryen_fs.glsl");
 
+const FONT_TEXTURE: u32 = 0;
+const GLYPH_TEXTURE: u32 = 1;
+const FG_TEXTURE: u32 = 2;
+const BG_TEXTURE: u32 = 3;
+
 #[derive(Debug)]
 pub struct PrimitiveData {
     pub count: usize,
@@ -50,7 +55,6 @@ pub enum DoryenUniforms {
 }
 
 pub struct Program {
-    pub(crate) index: u32,
     pub(crate) program: WebGLProgram,
     pub(crate) vao: WebGLVertexArray,
     pub(crate) vertex_pos_location: Option<u32>,
@@ -120,12 +124,7 @@ fn create_program(
 }
 
 impl Program {
-    pub fn new(
-        gl: &WebGLRenderingContext,
-        index: u32,
-        vertex_source: &str,
-        fragment_source: &str,
-    ) -> Program {
+    pub fn new(gl: &WebGLRenderingContext, vertex_source: &str, fragment_source: &str) -> Program {
         println!("Create program");
         let data = create_primitive();
         let shader_program = create_program(gl, vertex_source, fragment_source);
@@ -155,14 +154,13 @@ impl Program {
         }
 
         Program {
-            index,
             program: shader_program,
             vao,
             vertex_pos_location,
             vertex_uv_location,
             vertex_pos_buffer,
             vertex_uv_buffer,
-            font: create_font_texture(gl, index * 4),
+            font: create_font_texture(gl),
             ascii: gl.create_texture(),
             foreground: gl.create_texture(),
             background: gl.create_texture(),
@@ -241,10 +239,7 @@ impl Program {
     ) {
         gl.use_program(&self.program);
 
-        // TODO - INDEX!!!
-        let index = self.index * 4;
-        gl.active_texture(index);
-        // gl.active_texture(self.index);
+        gl.active_texture(FONT_TEXTURE);
 
         gl.bind_texture(&self.font);
         {
@@ -277,10 +272,7 @@ impl Program {
 
         if let Some(&Some(ref sampler_location)) = self.uniform_locations.get(&DoryenUniforms::Font)
         {
-            // let index = self.index * 4;
-            // gl.active_texture(index);
-            // gl.bind_texture(&self.font);
-            gl.uniform_1i(sampler_location, index as i32);
+            gl.uniform_1i(sampler_location, FONT_TEXTURE as i32);
         }
     }
 
@@ -358,6 +350,10 @@ impl Program {
         gl.use_program(&self.program);
         self.set_uniforms(gl, buffer);
 
+        // bind font texture
+        gl.active_texture(FONT_TEXTURE);
+        gl.bind_texture(&self.font);
+
         gl.bind_vertex_array(&self.vao);
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
@@ -410,8 +406,8 @@ impl Program {
         pot_height: u32,
     ) {
         if let Some(&Some(ref location)) = self.uniform_locations.get(&uniform) {
-            let index = self.index * 4 + tex_num;
-            gl.active_texture(index);
+            // let index = self.index * 4 + tex_num;
+            gl.active_texture(tex_num);
             gl.bind_texture(tex);
             gl.tex_image2d(
                 TextureBindPoint::Texture2d, // target
@@ -423,7 +419,7 @@ impl Program {
                 data,                        // data
             );
             set_texture_params(gl, true);
-            gl.uniform_1i(location, index as i32);
+            gl.uniform_1i(location, tex_num as i32);
         }
     }
 
@@ -435,7 +431,7 @@ impl Program {
         self.update_uniform_texture(
             gl,
             DoryenUniforms::Ascii,
-            1,
+            GLYPH_TEXTURE,
             &ascii_tex,
             u32_to_u8(&buffer.glyphs()[..]),
             pot_width,
@@ -445,7 +441,7 @@ impl Program {
         self.update_uniform_texture(
             gl,
             DoryenUniforms::Foreground,
-            2,
+            FG_TEXTURE,
             &fore_tex,
             color_to_u8(&buffer.foregrounds()[..]),
             pot_width,
@@ -455,7 +451,7 @@ impl Program {
         self.update_uniform_texture(
             gl,
             DoryenUniforms::Background,
-            3,
+            BG_TEXTURE,
             &back_tex,
             color_to_u8(&buffer.backgrounds()[..]),
             pot_width,
@@ -494,9 +490,9 @@ fn color_to_u8(v: &[RGBA]) -> &[u8] {
     unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * size_of::<RGBA>()) }
 }
 
-pub(crate) fn create_font_texture(gl: &WebGLRenderingContext, index: u32) -> WebGLTexture {
+pub(crate) fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
     let tex = gl.create_texture();
-    gl.active_texture(index);
+    gl.active_texture(FONT_TEXTURE);
     gl.bind_texture(&tex);
     set_texture_params(gl, true);
     tex

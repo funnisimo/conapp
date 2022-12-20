@@ -22,13 +22,13 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn new(index: u32, path: &str, app: &mut dyn AppContext) -> Self {
+    pub fn new(path: &str, app: &mut dyn AppContext) -> Self {
         let mut loader = FontLoader::new();
         crate::log(&format!("Loading font - {}", path));
         loader.load_font(path);
 
         // TODO - INDEX!!!!
-        let program = Program::new(app.gl(), index, DORYEN_VS, DORYEN_FS);
+        let program = Program::new(app.gl(), DORYEN_VS, DORYEN_FS);
 
         Font {
             // index,
