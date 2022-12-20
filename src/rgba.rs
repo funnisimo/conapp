@@ -136,13 +136,22 @@ impl ops::Add<RGBA> for &RGBA {
     }
 }
 
-pub(super) fn color_blend(c1: RGBA, c2: RGBA, alpha: f32) -> RGBA {
-    let alpha = alpha * c2.3 as f32 / 255.0;
+pub fn color_blend(c1: RGBA, c2: RGBA, pct: f32) -> RGBA {
+    let alpha = pct * c2.3 as f32 / 255.0;
     RGBA::rgba(
         ((1.0 - alpha) * f32::from(c1.0) + alpha * f32::from(c2.0)) as u8,
         ((1.0 - alpha) * f32::from(c1.1) + alpha * f32::from(c2.1)) as u8,
         ((1.0 - alpha) * f32::from(c1.2) + alpha * f32::from(c2.2)) as u8,
         255,
+    )
+}
+
+pub fn color_lerp(c1: RGBA, c2: RGBA, pct: f32) -> RGBA {
+    RGBA::rgba(
+        ((1.0 - pct) * f32::from(c1.0) + pct * f32::from(c2.0)) as u8,
+        ((1.0 - pct) * f32::from(c1.1) + pct * f32::from(c2.1)) as u8,
+        ((1.0 - pct) * f32::from(c1.2) + pct * f32::from(c2.2)) as u8,
+        ((1.0 - pct) * f32::from(c1.3) + pct * f32::from(c2.3)) as u8,
     )
 }
 

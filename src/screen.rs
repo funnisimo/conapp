@@ -49,8 +49,8 @@ pub trait ScreenCreator {
 
 #[allow(unused_variables)]
 pub trait Screen {
-    fn setup(&mut self, ctx: &mut dyn AppContext) {}
-    fn resize(&mut self, ctx: &mut dyn AppContext) {}
+    fn setup(&mut self, app: &mut dyn AppContext) {}
+    fn resize(&mut self, app: &mut dyn AppContext) {}
 
     fn is_full_screen(&self) -> bool {
         true
@@ -62,18 +62,18 @@ pub trait Screen {
         true
     }
 
-    fn pause(&mut self, ctx: &mut dyn AppContext) {}
-    fn resume(&mut self, ctx: &mut dyn AppContext) {}
+    fn pause(&mut self, app: &mut dyn AppContext) {}
+    fn resume(&mut self, app: &mut dyn AppContext) {}
 
-    fn input(&mut self, ctx: &mut dyn AppContext, event: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut dyn AppContext, event: &AppEvent) -> ScreenResult {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, ctx: &mut dyn AppContext, frame_time_ms: f32) -> ScreenResult {
+    fn update(&mut self, app: &mut dyn AppContext, frame_time_ms: f32) -> ScreenResult {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, ctx: &mut dyn AppContext) {}
+    fn render(&mut self, app: &mut dyn AppContext) {}
 
-    fn teardown(&mut self, ctx: &mut dyn AppContext) {}
+    fn teardown(&mut self, app: &mut dyn AppContext) {}
 }

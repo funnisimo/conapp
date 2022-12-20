@@ -190,6 +190,21 @@ impl Buffer {
         }
     }
 
+    pub fn update<F>(&mut self, func: F)
+    where
+        F: Fn(i32, i32, &mut Glyph, &mut RGBA, &mut RGBA) -> (),
+    {
+        for y in 0..self.get_height() as i32 {
+            for x in 0..self.get_width() as i32 {
+                let idx = self.to_idx(x, y).unwrap();
+                let g = self.glyph.get_mut(idx).unwrap();
+                let fg = self.fore.get_mut(idx).unwrap();
+                let bg = self.back.get_mut(idx).unwrap();
+                func(x, y, g, fg, bg);
+            }
+        }
+    }
+
     pub fn clear(&mut self, glyph: bool, fore: bool, back: bool) {
         let fg = match fore {
             true => Some(RGBA::new()),
@@ -212,6 +227,7 @@ impl Buffer {
         let h = self.get_height();
         self.area(0, 0, w, h, fillglyph, fore, back);
     }
+
     // /// write a multi-color string. Foreground color is defined by #[color_name] patterns inside the string.
     // /// color_name must have been registered with [`Console::register_color`] before.
     // /// Default foreground color is white, at the start of the string.
