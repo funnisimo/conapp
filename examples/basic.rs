@@ -57,6 +57,12 @@ impl Screen for MainScreen {
             "Use the #[#F00]arrow keys#[] to move the '#[#FF0]@#[]' symbol around.",
         );
 
+        draw::colored(buffer).fg(RGBA::rgb(255, 255, 255)).print(
+            10,
+            14,
+            "Click the #[#F00]left mouse button#[] to #[#0FF]Quit#[] the app.",
+        );
+
         self.con.render(app.gl());
     }
 }

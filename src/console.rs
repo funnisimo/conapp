@@ -65,6 +65,11 @@ impl Console {
         ch as u32
     }
 
+    pub fn extents(mut self, left: f32, top: f32, right: f32, bottom: f32) -> Self {
+        self.set_extents(left, top, right, bottom);
+        self
+    }
+
     pub fn set_extents(&mut self, left: f32, top: f32, right: f32, bottom: f32) -> &mut Self {
         println!("console extents = {},{} - {},{}", left, top, right, bottom);
 

@@ -1,5 +1,6 @@
 use crate::rgba::RGBA;
 use crate::Buffer;
+use image::{ImageBuffer, Rgba};
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::slice;
@@ -49,7 +50,7 @@ pub enum DoryenUniforms {
 }
 
 pub struct Program {
-    index: u32,
+    pub(crate) index: u32,
     pub(crate) program: WebGLProgram,
     pub(crate) vao: WebGLVertexArray,
     pub(crate) vertex_pos_location: Option<u32>,
@@ -161,7 +162,7 @@ impl Program {
             vertex_uv_location,
             vertex_pos_buffer,
             vertex_uv_buffer,
-            font: create_font_texture(gl, index),
+            font: create_font_texture(gl, index * 4),
             ascii: gl.create_texture(),
             foreground: gl.create_texture(),
             background: gl.create_texture(),
@@ -189,17 +190,22 @@ impl Program {
         // );
 
         self.data.pos_data[0] = left;
-        self.data.pos_data[0] = top;
-        self.data.pos_data[0] = left;
-        self.data.pos_data[0] = bottom;
-        self.data.pos_data[0] = right;
-        self.data.pos_data[0] = bottom;
-        self.data.pos_data[0] = right;
-        self.data.pos_data[0] = top;
+        self.data.pos_data[1] = top;
+        self.data.pos_data[2] = left;
+        self.data.pos_data[3] = bottom;
+        self.data.pos_data[4] = right;
+        self.data.pos_data[5] = bottom;
+        self.data.pos_data[6] = right;
+        self.data.pos_data[7] = top;
 
+        // println!("{:?}", self.data.pos_data);
+
+        gl.use_program(&self.program);
         gl.bind_vertex_array(&self.vao);
+
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
+                // println!("set extents - {:?}", self.data.pos_data);
                 set_buffer_data(
                     gl,
                     buf,
@@ -224,13 +230,56 @@ impl Program {
         }
     }
 
-    pub fn set_font_texture(&mut self, gl: &WebGLRenderingContext) {
+    pub fn set_font_texture(
+        &mut self,
+        gl: &WebGLRenderingContext,
+        img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
+        img_width: u32,
+        img_height: u32,
+        char_width: u32,
+        char_height: u32,
+    ) {
         gl.use_program(&self.program);
+
+        // TODO - INDEX!!!
+        let index = self.index * 4;
+        gl.active_texture(index);
+        // gl.active_texture(self.index);
+
+        gl.bind_texture(&self.font);
+        {
+            gl.tex_image2d(
+                uni_gl::TextureBindPoint::Texture2d, // target
+                0,                                   // level
+                img.width() as u16,                  // width
+                img.height() as u16,                 // height
+                uni_gl::PixelFormat::Rgba,           // format
+                uni_gl::PixelType::UnsignedByte,     // type
+                &*img,                               // data
+            );
+        }
+
+        if let Some(&Some(ref location)) = self
+            .uniform_locations
+            .get(&DoryenUniforms::FontCharsPerLine)
+        {
+            gl.uniform_1f(location, (img_width as f32) / (char_width as f32));
+        }
+        if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::FontCoef) {
+            gl.uniform_2f(
+                location,
+                (
+                    (char_width as f32) / (img_width as f32),
+                    (char_height as f32) / (img_height as f32),
+                ),
+            );
+        }
+
         if let Some(&Some(ref sampler_location)) = self.uniform_locations.get(&DoryenUniforms::Font)
         {
-            let index = self.index * 4;
-            gl.active_texture(index);
-            gl.bind_texture(&self.font);
+            // let index = self.index * 4;
+            // gl.active_texture(index);
+            // gl.bind_texture(&self.font);
             gl.uniform_1i(sampler_location, index as i32);
         }
     }
@@ -312,6 +361,7 @@ impl Program {
         gl.bind_vertex_array(&self.vao);
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
+                // println!("render primitive - {:?}", self.data.pos_data);
                 set_buffer_data(
                     gl,
                     buf,
@@ -485,20 +535,15 @@ fn _get_pot_value(value: u32) -> u32 {
 }
 
 fn create_primitive() -> PrimitiveData {
-    create_primitive_at(0.0, 0.0, 1.0, 1.0)
-}
+    let left = -1.0;
+    let top = -1.0;
+    let right = 1.0;
+    let bottom = 1.0;
 
-/// arguments are percent of screen - [0.0 -> 1.0]
-fn create_primitive_at(left: f32, top: f32, right: f32, bottom: f32) -> PrimitiveData {
-    let left = (left * 2.0) - 1.0;
-    let top = (top * 2.0) - 1.0;
-    let right = (right * 2.0) - 1.0;
-    let bottom = (bottom * 2.0) - 1.0;
-
-    println!(
-        "- create primitive at - {},{} - {},{}",
-        left, top, right, bottom
-    );
+    // println!(
+    //     "- create primitive at - {},{} - {},{}",
+    //     left, top, right, bottom
+    // );
 
     let mut data = PrimitiveData::new();
     data.pos_data.push(left);
