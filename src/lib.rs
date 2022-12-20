@@ -20,7 +20,7 @@ pub use buffer::*;
 pub use builder::*;
 pub use console::*;
 pub use context::*;
-pub use draw::TextAlign;
+pub use draw::{BorderType, TextAlign};
 pub use file::*;
 pub use font::Font;
 pub use img::*;
@@ -29,6 +29,6 @@ pub use rgba::*;
 pub use runner::*;
 pub use screen::*;
 
-pub fn log<T: ToString>(msg: T) {
+pub fn console<T: ToString>(msg: T) {
     app::App::print(msg.to_string());
 }

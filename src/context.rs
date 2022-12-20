@@ -1,9 +1,11 @@
+use crate::RGBA;
+
 use super::input::{AppInput, InputApi};
 use super::Font;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use uni_gl::WebGLRenderingContext;
+use uni_gl::{BufferBit, WebGLRenderingContext};
 
 /// This is the complete doryen-rs API provided to you by [`App`] in [`Engine::update`] and [`Engine::render`] methods.
 pub trait AppContext {
@@ -18,6 +20,7 @@ pub trait AppContext {
 
     // /// gets you access to the additional consoles that you add to the app
     // fn get_console_mut(&mut self, idx: usize) -> Option<&mut Console>;
+    fn clear(&self, color: Option<RGBA>);
 
     /// return the input API to check user mouse and keyboard input
     fn input(&self) -> &dyn InputApi;
@@ -70,6 +73,16 @@ impl AppContext for ContextImpl {
 
     fn gl(&self) -> &WebGLRenderingContext {
         &self.gl
+    }
+
+    fn clear(&self, color: Option<RGBA>) {
+        match color {
+            None => self.gl.clear(BufferBit::Color),
+            Some(c) => {
+                let data = c.as_f32();
+                self.gl.clear_color(data.0, data.1, data.2, data.3);
+            }
+        }
     }
 
     fn input(&self) -> &dyn InputApi {

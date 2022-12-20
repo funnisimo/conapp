@@ -111,11 +111,11 @@ fn create_program(
     vertex_source: &str,
     fragment_source: &str,
 ) -> WebGLProgram {
-    crate::log("compiling VS");
+    crate::console("compiling VS");
     let vert_shader = compile_shader_wasm_native(gl, ShaderKind::Vertex, vertex_source);
-    crate::log("compiling FS");
+    crate::console("compiling FS");
     let frag_shader = compile_shader_wasm_native(gl, ShaderKind::Fragment, fragment_source);
-    crate::log("linking Program");
+    crate::console("linking Program");
     let shader_program = gl.create_program();
     gl.attach_shader(&shader_program, &vert_shader);
     gl.attach_shader(&shader_program, &frag_shader);

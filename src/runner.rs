@@ -58,7 +58,7 @@ impl Runner {
         } else {
             (0, 0)
         };
-        crate::log(&format!(
+        crate::console(&format!(
             "Screen size {} x {} offset {} x {} GL viewport : {} x {}  hidpi factor : {}",
             options.size.0,
             options.size.1,
@@ -118,7 +118,7 @@ impl Runner {
         for font in fonts {
             api.load_font(&font);
         }
-        crate::log("Runner created");
+        crate::console("Runner created");
 
         Self {
             api,
@@ -135,7 +135,7 @@ impl Runner {
     fn push(&mut self, mut screen: Box<dyn Screen>) {
         screen.setup(&mut self.api);
         if screen.is_full_screen() {
-            // ctx.clear_all();
+            self.api.clear(None);
         }
         self.screens.push(screen);
     }
@@ -199,7 +199,7 @@ impl Runner {
                 ScreenResult::Continue => (),
                 ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
-                    // ctx.clear_all();
+                    ctx.clear(None);
                     mode.teardown(ctx);
                     self.screens.pop();
                     match self.screens.last_mut() {
@@ -210,7 +210,7 @@ impl Runner {
                     return Some(RunnerEvent::Next);
                 }
                 ScreenResult::Replace(next) => {
-                    // ctx.clear_all();
+                    ctx.clear(None);
                     mode.teardown(ctx);
                     self.screens.pop();
                     self.push(next);
@@ -266,7 +266,7 @@ impl Runner {
                     self.screens.push(screen);
 
                     self.ready = true;
-                    crate::log("Runner ready");
+                    crate::console("Runner ready");
                 }
             } else {
                 // self.handle_input(&mut screen, app.hidpi_factor(), app.events.clone());
@@ -337,7 +337,7 @@ impl Runner {
                 ScreenResult::Continue => (),
                 ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
-                    // ctx.clear_all();
+                    self.api.clear(None);
                     mode.teardown(&mut self.api);
                     self.screens.pop();
                     match self.screens.last_mut() {
@@ -346,7 +346,7 @@ impl Runner {
                     }
                 }
                 ScreenResult::Replace(next) => {
-                    // ctx.clear_all();
+                    self.api.clear(None);
                     mode.teardown(&mut self.api);
                     self.screens.pop();
                     self.push(next);
@@ -374,8 +374,7 @@ impl Runner {
                 start_idx = idx;
             }
         }
-
-        // TODO - convert to using buffer
+        self.api.clear(None);
         for screen in self.screens.iter_mut().skip(start_idx) {
             screen.render(&mut self.api);
         }
@@ -409,7 +408,7 @@ fn capture_screen(gl: &uni_gl::WebGLRenderingContext, w: u32, h: u32, filepath: 
         )
         .expect("Failed to save buffer to the specified path");
     } else {
-        crate::log("Screen capture not supported on web platform");
+        crate::console("Screen capture not supported on web platform");
     }
 }
 

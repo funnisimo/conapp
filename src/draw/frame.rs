@@ -62,6 +62,11 @@ impl<'a> Frame<'a> {
         }
     }
 
+    pub fn border(mut self, border: BorderType) -> Self {
+        self.border = border;
+        self
+    }
+
     pub fn fg(mut self, fg: RGBA) -> Self {
         self.fg = Some(fg);
         self

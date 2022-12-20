@@ -30,6 +30,15 @@ impl RGBA {
     pub fn a(&self) -> u8 {
         self.3
     }
+
+    pub fn as_f32(&self) -> (f32, f32, f32, f32) {
+        (
+            self.0 as f32 / 255.0,
+            self.1 as f32 / 255.0,
+            self.2 as f32 / 255.0,
+            self.3 as f32 / 255.0,
+        )
+    }
 }
 
 impl From<RGB> for RGBA {
@@ -66,6 +75,12 @@ impl From<(f32, f32, f32, f32)> for RGBA {
 impl Into<(u8, u8, u8, u8)> for RGBA {
     fn into(self) -> (u8, u8, u8, u8) {
         (self.0, self.1, self.2, self.3)
+    }
+}
+
+impl Into<(f32, f32, f32, f32)> for RGBA {
+    fn into(self) -> (f32, f32, f32, f32) {
+        self.as_f32()
     }
 }
 
@@ -273,7 +288,7 @@ pub fn parse_color(name: &str) -> Option<RGBA> {
     if name.starts_with("#") {
         match parse_color_hex(&name) {
             Err(e) => {
-                crate::log(&e);
+                crate::console(&e);
                 return None;
             }
             Ok(rgba) => return Some(rgba),
@@ -281,7 +296,7 @@ pub fn parse_color(name: &str) -> Option<RGBA> {
     } else if name.starts_with("(") || name.starts_with("rgb(") || name.starts_with("rgba(") {
         match parse_color_rgb(&name) {
             Err(e) => {
-                crate::log(&e);
+                crate::console(&e);
                 return None;
             }
             Ok(rgba) => return Some(rgba),

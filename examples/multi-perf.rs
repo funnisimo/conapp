@@ -122,17 +122,17 @@ impl Screen for PerfTest {
     }
 
     fn resize(&mut self, api: &mut dyn AppContext) {
-        let new_width = api.get_screen_size().0 / 8;
-        let new_height = api.get_screen_size().1 / 8;
+        let new_width = api.get_screen_size().0 / 32;
+        let new_height = api.get_screen_size().1 / 16;
 
-        log(format!(
+        console(format!(
             "resize - {:?} => {},{}",
             api.get_screen_size(),
             new_width,
             new_height
         ));
 
-        self.left.resize(new_width / 2, new_height);
+        self.left.resize(new_width, new_height);
         self.right.resize(new_width, new_height);
     }
 }
