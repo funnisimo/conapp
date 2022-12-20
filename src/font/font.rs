@@ -24,7 +24,7 @@ pub struct Font {
 impl Font {
     pub fn new(path: &str, app: &mut dyn AppContext) -> Self {
         let mut loader = FontLoader::new();
-        crate::App::print(format!("Loading font - {}", path));
+        crate::log(&format!("Loading font - {}", path));
         loader.load_font(path);
 
         // TODO - INDEX!!!!
@@ -76,7 +76,7 @@ impl Font {
         }
 
         if !self.loader.load_font_async() {
-            crate::App::print(format!("-loading font: {}", self.path));
+            crate::log(&format!("-loading font: {}", self.path));
             return false;
         }
 
@@ -100,7 +100,7 @@ impl Font {
 
         self.len = (self.img_width / self.char_width) * (self.img_height / self.char_height);
 
-        crate::app::App::print(format!(
+        crate::log(&format!(
             "Font loaded: {} -> font size: {:?} char size: {:?} len: {:?}",
             self.path.as_str(),
             (self.img_width, self.img_height),

@@ -38,7 +38,7 @@ impl Screen for MainScreen {
 
     fn render(&mut self, app: &mut dyn AppContext) {
         let buffer = self.con.buffer_mut();
-        buffer.clear(false, false, true);
+        buffer.clear(true, false, false);
         buffer.draw(
             self.pos.0,
             self.pos.1,
@@ -46,6 +46,17 @@ impl Screen for MainScreen {
             RGBA::rgb(255, 255, 0),
             RGBA::rgb(0, 0, 0),
         );
+
+        draw::plain(buffer)
+            .fg(RGBA::rgb(255, 0, 255))
+            .print(10, 10, "Hello World");
+
+        draw::colored(buffer).fg(RGBA::rgb(255, 255, 255)).print(
+            10,
+            12,
+            "Use the #[#F00]arrow keys#[] to move the '#[#FF0]@#[]' symbol around.",
+        );
+
         self.con.render(app.gl());
     }
 }

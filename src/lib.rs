@@ -4,6 +4,7 @@ mod builder;
 pub mod codepage437;
 mod console;
 mod context;
+pub mod draw;
 mod file;
 mod font;
 mod img;
@@ -19,6 +20,7 @@ pub use buffer::*;
 pub use builder::*;
 pub use console::*;
 pub use context::*;
+pub use draw::TextAlign;
 pub use file::*;
 pub use font::Font;
 pub use img::*;
@@ -26,3 +28,7 @@ pub use input::{InputApi, Keys};
 pub use rgba::*;
 pub use runner::*;
 pub use screen::*;
+
+pub fn log<T: ToString>(msg: T) {
+    app::App::print(msg.to_string());
+}

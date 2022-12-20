@@ -166,3 +166,168 @@ pub fn color_dist(c1: RGBA, c2: RGBA) -> i32 {
     let db = i32::from(c1.2) - i32::from(c2.2);
     dr * dr + dg * dg + db * db
 }
+
+pub fn parse_color_hex(text: &str) -> Result<RGBA, String> {
+    if !text.starts_with("#") {
+        return Err(format!("Hex color does not start with hash(#) - {}", text));
+    }
+
+    let digits: Vec<u32> = text
+        .chars()
+        .skip(1)
+        .map(|ch| ch.to_digit(16).unwrap_or(0))
+        .collect();
+
+    let (r, g, b, a) = match digits.len() {
+        3 => (
+            digits[0] as f32 / 15.0,
+            digits[1] as f32 / 15.0,
+            digits[2] as f32 / 15.0,
+            1.0,
+        ),
+        4 => (
+            digits[0] as f32 / 15.0,
+            digits[1] as f32 / 15.0,
+            digits[2] as f32 / 15.0,
+            digits[3] as f32 / 15.0,
+        ),
+        6 => (
+            (digits[0] as f32 * 16.0 + digits[1] as f32) / 255.0,
+            (digits[2] as f32 * 16.0 + digits[3] as f32) / 255.0,
+            (digits[4] as f32 * 16.0 + digits[5] as f32) / 255.0,
+            1.0,
+        ),
+        8 => (
+            (digits[0] as f32 * 16.0 + digits[1] as f32) / 255.0,
+            (digits[2] as f32 * 16.0 + digits[3] as f32) / 255.0,
+            (digits[4] as f32 * 16.0 + digits[5] as f32) / 255.0,
+            (digits[6] as f32 * 16.0 + digits[7] as f32) / 255.0,
+        ),
+        _ => {
+            return Err(format!(
+                "Hex color must be in one of these formats - #abc, #abcd, #aabbcc, or #aabbccdd : {}",
+                text
+            ));
+        }
+    };
+
+    Ok((r, g, b, a).into())
+}
+
+pub fn parse_color_rgb(text: &str) -> Result<RGBA, String> {
+    let start = match text.chars().position(|ch| ch == '(') {
+        None => {
+            return Err(format!(
+                "Color must start with either 'rgb(' or '(' - found: {}",
+                text
+            ))
+        }
+        Some(idx) => idx + 1,
+    };
+
+    let end = match text.chars().skip(start).position(|ch| ch == ')') {
+        None => return Err(format!("Color must have closing ')' - found: {}", text)),
+        Some(idx) => idx,
+    };
+
+    // println!("color guts = {}", &text[start..end + start]);
+
+    let num_parts = text[start..end + start]
+        .split(",")
+        .map(|p| p.trim())
+        .collect::<Vec<&str>>();
+
+    if num_parts.len() != 3 && num_parts.len() != 4 {
+        return Err(format!("Expected 3 or 4 color values (0-255) - {}", text));
+    }
+
+    let mut nums: Vec<u8> = Vec::new();
+    for part in num_parts {
+        match part.parse::<u8>() {
+            Err(e) => {
+                return Err(format!(
+                    "Failed to convert color component - {} : {} : {}",
+                    part,
+                    text,
+                    e.to_string()
+                ))
+            }
+            Ok(v) => nums.push(v),
+        }
+    }
+
+    match nums.len() {
+        3 => return Ok((nums[0], nums[1], nums[2], 255).into()),
+        4 => return Ok((nums[0], nums[1], nums[2], nums[3]).into()),
+        _ => {
+            return Err(format!(
+                "Did not get expected number of color components (3 or 4) - {}",
+                text
+            ));
+        }
+    }
+}
+
+pub fn parse_color(name: &str) -> Option<RGBA> {
+    let name = name.trim().to_lowercase();
+    if name.starts_with("#") {
+        match parse_color_hex(&name) {
+            Err(e) => {
+                crate::log(&e);
+                return None;
+            }
+            Ok(rgba) => return Some(rgba),
+        }
+    } else if name.starts_with("(") || name.starts_with("rgb(") || name.starts_with("rgba(") {
+        match parse_color_rgb(&name) {
+            Err(e) => {
+                crate::log(&e);
+                return None;
+            }
+            Ok(rgba) => return Some(rgba),
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const WHITE: RGBA = RGBA::rgb(255, 255, 255);
+    const RED: RGBA = RGBA::rgb(255, 0, 0);
+    const GREEN: RGBA = RGBA::rgb(0, 255, 0);
+    const BLUE: RGBA = RGBA::rgb(0, 0, 255);
+    const _BLACK: RGBA = RGBA::rgb(0, 0, 0);
+
+    #[test]
+    fn parse_hex() {
+        assert_eq!(parse_color_hex("#fff").unwrap(), WHITE);
+        assert_eq!(parse_color_hex("#ffff").unwrap(), WHITE);
+        assert_eq!(parse_color_hex("#ffffff").unwrap(), WHITE);
+        assert_eq!(parse_color_hex("#ffffffff").unwrap(), WHITE);
+
+        assert_eq!(parse_color_hex("#f00").unwrap(), RED);
+        assert_eq!(parse_color_hex("#0f0f").unwrap(), GREEN);
+        assert_eq!(parse_color_hex("#0000ff").unwrap(), BLUE);
+        assert_eq!(
+            parse_color_hex("#80808080").unwrap(),
+            RGBA::rgba(128, 128, 128, 128)
+        );
+    }
+
+    #[test]
+    fn parse_rgb() {
+        assert!(parse_color_rgb("0,0,0").is_err());
+
+        assert_eq!(
+            parse_color_rgb("rgb(10,20,30)").unwrap(),
+            RGBA::rgba(10, 20, 30, 255)
+        );
+
+        assert_eq!(
+            parse_color_rgb("(255,150,200,25)").unwrap(),
+            RGBA::rgba(255, 150, 200, 25)
+        );
+    }
+}

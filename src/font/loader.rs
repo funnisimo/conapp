@@ -56,7 +56,7 @@ impl FontLoader {
                 self.load_font_async();
             }
             Err(msg) => {
-                crate::app::App::print(format!("Error while loading file {} : {}", path, msg));
+                crate::log(&format!("Error while loading file {} : {}", path, msg));
             }
         }
     }
@@ -85,7 +85,7 @@ impl FontLoader {
         if alpha == 255 {
             let transparent_color = (pixel[0], pixel[1], pixel[2]);
             let greyscale = transparent_color == (0, 0, 0);
-            crate::app::App::print(format!(
+            crate::log(&format!(
                 "{}transparent color: {:?}",
                 if greyscale { "greyscale " } else { "" },
                 transparent_color

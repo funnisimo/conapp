@@ -9,6 +9,7 @@ pub enum ScreenResult {
     Replace(Box<dyn Screen>),
     Pop,
     Quit,
+    Capture(String), // Take a screenshot to this filename
 }
 
 impl Debug for ScreenResult {
@@ -17,11 +18,12 @@ impl Debug for ScreenResult {
             f,
             "{}",
             match self {
-                ScreenResult::Continue => "Continue",
-                ScreenResult::Push(_) => "Push",
-                ScreenResult::Replace(_) => "Replace",
-                ScreenResult::Pop => "Pop",
-                ScreenResult::Quit => "Quit",
+                ScreenResult::Continue => "Continue".to_owned(),
+                ScreenResult::Push(_) => "Push".to_owned(),
+                ScreenResult::Replace(_) => "Replace".to_owned(),
+                ScreenResult::Pop => "Pop".to_owned(),
+                ScreenResult::Quit => "Quit".to_owned(),
+                ScreenResult::Capture(name) => format!("Capture({})", name),
             }
         )
     }
@@ -35,6 +37,7 @@ impl PartialEq for ScreenResult {
             (ScreenResult::Replace(_), ScreenResult::Replace(_)) => true,
             (ScreenResult::Pop, ScreenResult::Pop) => true,
             (ScreenResult::Quit, ScreenResult::Quit) => true,
+            (ScreenResult::Capture(a), ScreenResult::Capture(b)) => a == b,
             (_, _) => false,
         }
     }

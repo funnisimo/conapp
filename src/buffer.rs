@@ -190,7 +190,7 @@ impl Buffer {
         }
     }
 
-    pub fn clear(&mut self, fore: bool, back: bool, glyph: bool) {
+    pub fn clear(&mut self, glyph: bool, fore: bool, back: bool) {
         let fg = match fore {
             true => Some(RGBA::new()),
             false => None,
@@ -203,14 +203,14 @@ impl Buffer {
             true => Some(0),
             false => None,
         };
-        self.fill(fg, bg, gl);
+        self.fill(gl, fg, bg);
     }
 
     /// fill the whole console with values
-    pub fn fill(&mut self, fore: Option<RGBA>, back: Option<RGBA>, fillglyph: Option<u32>) {
+    pub fn fill(&mut self, fillglyph: Option<Glyph>, fore: Option<RGBA>, back: Option<RGBA>) {
         let w = self.get_width();
         let h = self.get_height();
-        self.area(0, 0, w, h, fore, back, fillglyph);
+        self.area(0, 0, w, h, fillglyph, fore, back);
     }
     // /// write a multi-color string. Foreground color is defined by #[color_name] patterns inside the string.
     // /// color_name must have been registered with [`Console::register_color`] before.
@@ -377,6 +377,7 @@ impl Buffer {
     //         self.area(x + 1, y + 1, w - 2, h - 2, fore, back, fill);
     //     }
     // }
+
     /// fill an area with values
     pub fn area(
         &mut self,
@@ -384,9 +385,9 @@ impl Buffer {
         y: i32,
         w: u32,
         h: u32,
+        fillglyph: Option<Glyph>,
         fore: Option<RGBA>,
         back: Option<RGBA>,
-        fillglyph: Option<Glyph>,
     ) {
         let right = x + (w as i32);
         let down = y + (h as i32);

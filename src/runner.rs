@@ -37,6 +37,7 @@ pub struct Runner {
     api: ContextImpl,
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
+    real_screen_size: (u32, u32),
     ready: bool,
 }
 
@@ -57,7 +58,7 @@ impl Runner {
         } else {
             (0, 0)
         };
-        crate::app::App::print(format!(
+        crate::log(&format!(
             "Screen size {} x {} offset {} x {} GL viewport : {} x {}  hidpi factor : {}",
             options.size.0,
             options.size.1,
@@ -117,7 +118,7 @@ impl Runner {
         for font in fonts {
             api.load_font(&font);
         }
-        crate::App::print("Runner created");
+        crate::log("Runner created");
 
         Self {
             api,
@@ -126,6 +127,7 @@ impl Runner {
             fps: Fps::new(),
             screens: Vec::new(),
             screen_resolution,
+            real_screen_size: (real_screen_width, real_screen_height),
             ready: false,
         }
     }
@@ -158,6 +160,8 @@ impl Runner {
         } else {
             (0, 0)
         };
+        self.real_screen_size = (real_screen_width, real_screen_height);
+
         self.api
             .gl
             .viewport(x_offset, y_offset, real_screen_width, real_screen_height);
@@ -193,6 +197,7 @@ impl Runner {
         if let Some(mode) = self.screens.last_mut() {
             match mode.input(ctx, ev) {
                 ScreenResult::Continue => (),
+                ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
                     // ctx.clear_all();
                     mode.teardown(ctx);
@@ -261,19 +266,23 @@ impl Runner {
                     self.screens.push(screen);
 
                     self.ready = true;
-                    crate::App::print("Runner ready");
+                    crate::log("Runner ready");
                 }
             } else {
                 // self.handle_input(&mut screen, app.hidpi_factor(), app.events.clone());
 
                 if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
                     match event {
-                        RunnerEvent::Capture(filepath) => capture_screen(
-                            &self.api.gl,
-                            self.config.size.0 * app.hidpi_factor() as u32,
-                            self.config.size.1 * app.hidpi_factor() as u32,
-                            &filepath,
-                        ),
+                        RunnerEvent::Capture(filepath) => {
+                            capture_screen(
+                                &self.api.gl,
+                                self.real_screen_size.0,
+                                // self.screen_resolution.0 * app.hidpi_factor() as u32,
+                                self.real_screen_size.1,
+                                // self.screen_resolution.1 * app.hidpi_factor() as u32,
+                                &filepath,
+                            )
+                        }
                         RunnerEvent::Exit => crate::app::App::exit(),
                         RunnerEvent::Next => {}
                     }
@@ -287,8 +296,10 @@ impl Runner {
                         match event {
                             RunnerEvent::Capture(filepath) => capture_screen(
                                 &self.api.gl,
-                                self.config.size.0,
-                                self.config.size.1,
+                                self.real_screen_size.0,
+                                // self.screen_resolution.0 * app.hidpi_factor() as u32,
+                                self.real_screen_size.1,
+                                // self.screen_resolution.1 * app.hidpi_factor() as u32,
                                 &filepath,
                             ),
                             RunnerEvent::Exit => crate::app::App::exit(),
@@ -324,6 +335,7 @@ impl Runner {
         if let Some(mode) = self.screens.last_mut() {
             match mode.update(&mut self.api, frame_time_ms) {
                 ScreenResult::Continue => (),
+                ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
                     // ctx.clear_all();
                     mode.teardown(&mut self.api);
@@ -372,21 +384,21 @@ impl Runner {
 
 /// This captures an in-game screenshot and saves it to the file
 fn capture_screen(gl: &uni_gl::WebGLRenderingContext, w: u32, h: u32, filepath: &str) {
-    let mut img = image::DynamicImage::new_rgba8(w, h);
-    let pixels = img.as_mut_rgba8().unwrap();
-
-    gl.pixel_storei(uni_gl::PixelStorageMode::PackAlignment, 1);
-    gl.read_pixels(
-        0,
-        0,
-        w,
-        h,
-        uni_gl::PixelFormat::Rgba,
-        uni_gl::PixelType::UnsignedByte,
-        pixels,
-    );
-
     if cfg!(not(target_arch = "wasm32")) {
+        let mut img = image::DynamicImage::new_rgba8(w, h);
+        let pixels = img.as_mut_rgba8().unwrap();
+
+        gl.pixel_storei(uni_gl::PixelStorageMode::PackAlignment, 1);
+        gl.read_pixels(
+            0,
+            0,
+            w,
+            h,
+            uni_gl::PixelFormat::Rgba,
+            uni_gl::PixelType::UnsignedByte,
+            pixels,
+        );
+
         // disabled on wasm target
         image::save_buffer(
             filepath,
@@ -396,6 +408,8 @@ fn capture_screen(gl: &uni_gl::WebGLRenderingContext, w: u32, h: u32, filepath: 
             image::ColorType::Rgba8,
         )
         .expect("Failed to save buffer to the specified path");
+    } else {
+        crate::log("Screen capture not supported on web platform");
     }
 }
 
