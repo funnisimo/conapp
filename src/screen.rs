@@ -58,6 +58,9 @@ pub trait Screen {
     fn needs_background_update(&self) -> bool {
         false
     }
+    fn ready(&self) -> bool {
+        true
+    }
 
     fn pause(&mut self, ctx: &mut dyn AppContext) {}
     fn resume(&mut self, ctx: &mut dyn AppContext) {}

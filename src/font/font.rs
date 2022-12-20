@@ -27,7 +27,6 @@ impl Font {
         crate::console(&format!("Loading font - {}", path));
         loader.load_font(path);
 
-        // TODO - INDEX!!!!
         let program = Program::new(app.gl(), DORYEN_VS, DORYEN_FS);
 
         Font {
@@ -63,7 +62,7 @@ impl Font {
         self.len
     }
 
-    pub fn loaded(&self) -> bool {
+    pub fn ready(&self) -> bool {
         self.loaded
     }
 
@@ -71,13 +70,13 @@ impl Font {
         self.loader.img.as_ref().unwrap()
     }
 
-    pub fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
+    pub(crate) fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
         if self.loaded {
             return true;
         }
 
         if !self.loader.load_font_async() {
-            crate::console(&format!("-loading font: {}", self.path));
+            crate::console(&format!("- still loading font: {}", self.path));
             return false;
         }
 
@@ -110,7 +109,6 @@ impl Font {
         ));
     }
 
-    // TODO - Move to Program
     fn setup_font(&mut self, gl: &WebGLRenderingContext) {
         if let Some(mut program) = self.program.take() {
             program.set_font_texture(
@@ -131,6 +129,9 @@ impl Font {
         extents: &(f32, f32, f32, f32),
         buffer: &Buffer,
     ) {
+        if !self.loaded {
+            return;
+        }
         if let Some(mut program) = self.program.take() {
             program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
             program.render_primitive(gl, buffer);

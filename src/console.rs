@@ -1,6 +1,5 @@
 use crate::font::Font;
 use crate::Buffer;
-use crate::Glyph;
 use std::cell::RefCell;
 use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
@@ -61,9 +60,9 @@ impl Console {
         // con
     }
 
-    pub fn to_glyph(&self, ch: char) -> Glyph {
-        ch as u32
-    }
+    // pub fn to_glyph(&self, ch: char) -> Glyph {
+    //     ch as u32
+    // }
 
     pub fn extents(mut self, left: f32, top: f32, right: f32, bottom: f32) -> Self {
         self.set_extents(left, top, right, bottom);
@@ -78,6 +77,10 @@ impl Console {
         //     program.set_extents(left, top, right, bottom);
         // }
         self
+    }
+
+    pub fn ready(&self) -> bool {
+        self.font.borrow().ready()
     }
 
     // pub fn set_glyphs(&mut self, glyphs: &GlyphMap) -> &mut Self {
@@ -108,125 +111,6 @@ impl Console {
     pub fn get_pot_height(&self) -> u32 {
         self.buffer.get_pot_height()
     }
-
-    // pub fn get_font_len(&self) -> u32 {
-    //     self.font.len()
-    // }
-
-    /// replace the current font by a new one.
-    // pub fn set_font(&mut self, font: Font) {
-    //     self.font = font;
-    // }
-
-    // pub fn set_glyph(&mut self, name: &str, glyph: u32) {
-    //     self.glyphs.insert(name.to_owned(), glyph);
-    // }
-
-    // pub fn to_glyph(&self, ch: char) -> u32 {
-    //     let text = format!("{}", ch);
-    //     match self.glyphs.get(&text) {
-    //         None => {
-    //             let val = ch as u32;
-    //             if val < self.font.len() {
-    //                 val
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //         Some(val) => *val,
-    //     }
-    // }
-
-    // pub fn get_glyph(&self, ch: &str) -> u32 {
-    //     match self.glyphs.get(ch) {
-    //         None => {
-    //             if ch.len() == 1 {
-    //                 self.to_glyph(ch.chars().next().unwrap())
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //         Some(val) => *val,
-    //     }
-    // }
-
-    // pub(crate) fn screen_resize(
-    //     &mut self,
-    //     gl: &uni_gl::WebGLRenderingContext,
-    //     _screen_width: u32,
-    //     _screen_height: u32,
-    // ) {
-    //     println!("Console - screen resize");
-    //     if let Some(program) = self.program.as_mut() {
-    //         program.set_extents(
-    //             self.extents.0,
-    //             self.extents.1,
-    //             self.extents.2,
-    //             self.extents.3,
-    //         );
-    //     }
-    //     self.bind(gl);
-    // }
-
-    // fn bind(&mut self, gl: &uni_gl::WebGLRenderingContext) {
-    //     if let Some(program) = self.program.take() {
-    //         let font = self.font.borrow();
-    //         program.bind(
-    //             gl,
-    //             &self,
-    //             font.img_width(),
-    //             font.img_height(),
-    //             font.char_width(),
-    //             font.char_height(),
-    //         );
-    //         self.program = Some(program);
-    //     }
-    // }
-
-    // fn setup_font(&mut self, app: &mut dyn AppContext) {
-    //     let font_clone = self.font.clone();
-    //     let mut font = font_clone.borrow_mut();
-
-    //     if !font.loaded() {
-    //         panic!("Font not loaded!");
-    //     }
-
-    //     let gl = app.gl();
-
-    //     if let Some(mut program) = font.program.take() {
-    //         gl.use_program(&program.program);
-
-    //         // TODO - INDEX!!!
-    //         gl.active_texture(0);
-    //         // gl.active_texture(self.index);
-
-    //         gl.bind_texture(&program.font);
-    //         {
-    //             let img = font.take_img();
-    //             gl.tex_image2d(
-    //                 uni_gl::TextureBindPoint::Texture2d, // target
-    //                 0,                                   // level
-    //                 img.width() as u16,                  // width
-    //                 img.height() as u16,                 // height
-    //                 uni_gl::PixelFormat::Rgba,           // format
-    //                 uni_gl::PixelType::UnsignedByte,     // type
-    //                 &*img,                               // data
-    //             );
-    //         }
-
-    //         program.bind(
-    //             gl,
-    //             &self,
-    //             font.img_width(),
-    //             font.img_height(),
-    //             font.char_width(),
-    //             font.char_height(),
-    //         );
-
-    //         program.set_font_texture(gl);
-    //         font.program = Some(program);
-    //     }
-    // }
 
     /// resizes the console
     pub fn resize(&mut self, width: u32, height: u32) {

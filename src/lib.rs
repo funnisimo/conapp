@@ -29,6 +29,6 @@ pub use rgba::*;
 pub use runner::*;
 pub use screen::*;
 
-pub fn console<T: ToString>(msg: T) {
-    app::App::print(msg.to_string());
+pub fn console<T: AsRef<str>>(msg: T) {
+    app::App::print(msg.as_ref());
 }

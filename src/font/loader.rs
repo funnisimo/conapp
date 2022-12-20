@@ -56,7 +56,7 @@ impl FontLoader {
                 self.load_font_async();
             }
             Err(msg) => {
-                crate::console(&format!("Error while loading file {} : {}", path, msg));
+                panic!("Error while loading file {} : {}", path, msg);
             }
         }
     }

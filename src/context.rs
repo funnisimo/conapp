@@ -37,8 +37,7 @@ pub trait AppContext {
 
     fn gl(&self) -> &WebGLRenderingContext;
 
-    fn ready(&mut self) -> bool;
-    // fn load_font(&mut self, fontpath: &str);
+    fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>>;
     fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
 }
 
@@ -103,14 +102,34 @@ impl AppContext for ContextImpl {
         self.screen_size
     }
 
-    // fn clear_all(&mut self) -> () {
-    //     for cons in self.cons.iter_mut() {
-    //         cons.buffer_mut()
-    //             .clear(Some(RGBA::new()), Some(RGBA::new()), Some(0));
-    //     }
-    // }
+    fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
+        if let Some(font) = self.fonts.get(fontpath) {
+            return font.clone();
+        }
 
-    fn ready(&mut self) -> bool {
+        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
+        self.fonts.insert(fontpath.to_owned(), font.clone());
+        self.ready = false;
+        font
+    }
+
+    fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
+        match self.fonts.get(fontpath) {
+            None => None,
+            Some(font) => Some(font.clone()),
+        }
+    }
+}
+
+impl ContextImpl {
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        self.screen_size = (screen_width, screen_height);
+        // for con in self.cons.iter_mut() {
+        //     con.screen_resize(gl, screen_width, screen_height);
+        // }
+    }
+
+    pub fn load_fonts(&mut self) -> bool {
         if self.ready {
             return true;
         }
@@ -124,37 +143,5 @@ impl AppContext for ContextImpl {
             self.ready = true;
         }
         ready
-    }
-
-    fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
-        match self.fonts.get(fontpath) {
-            None => None,
-            Some(font) => Some(font.clone()),
-        }
-    }
-}
-
-impl ContextImpl {
-    // pub(super) fn render(&mut self, gl: &uni_gl::WebGLRenderingContext) {
-    //     // for con in self.cons.iter_mut() {
-    //     //     con.render(gl);
-    //     // }
-    // }
-
-    pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
-        self.screen_size = (screen_width, screen_height);
-        // for con in self.cons.iter_mut() {
-        //     con.screen_resize(gl, screen_width, screen_height);
-        // }
-    }
-
-    pub fn load_font(&mut self, fontpath: &str) {
-        if self.fonts.contains_key(fontpath) {
-            return;
-        }
-
-        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
-        self.fonts.insert(fontpath.to_owned(), font);
-        self.ready = false;
     }
 }
