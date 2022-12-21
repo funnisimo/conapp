@@ -3,7 +3,7 @@ use crate::codepage437;
 use crate::Buffer;
 use crate::Glyph;
 use crate::{parse_color, RGBA};
-use std::cmp::max;
+use std::cmp::{max, min};
 
 pub fn colored<'a>(buffer: &'a mut Buffer) -> ColoredPrinter {
     ColoredPrinter::new(buffer)
@@ -62,12 +62,20 @@ impl<'a> ColoredPrinter<'a> {
         self
     }
 
-    pub fn print(&mut self, x: i32, y: i32, text: &str) -> i32 {
-        let chars: Vec<(Option<RGBA>, char)> = TextIterator::new(self.to_rgba, text).collect();
-        self.print_line(x, y, chars)
+    fn print_char(&mut self, x: i32, y: i32, ch: Option<char>, fg: Option<RGBA>) {
+        let glyph = match ch {
+            None => Some(0),
+            Some(ch) => Some((self.to_glyph)(ch)),
+        };
+        self.buffer.draw_opt(x, y, glyph, fg.or(self.fg), self.bg);
     }
 
-    fn print_line(&mut self, x: i32, y: i32, chars: Vec<(Option<RGBA>, char)>) -> i32 {
+    pub fn print(&mut self, x: i32, y: i32, text: &str) -> i32 {
+        let chars: Vec<(Option<RGBA>, char)> = TextIterator::new(self.to_rgba, text).collect();
+        self.print_line(x, y, &chars)
+    }
+
+    fn print_line(&mut self, x: i32, y: i32, chars: &[(Option<RGBA>, char)]) -> i32 {
         let mut width = self.width.unwrap_or(chars.len() as i32);
         let mut start = 0;
         let mut ix = match self.align {
@@ -85,12 +93,11 @@ impl<'a> ColoredPrinter<'a> {
         }
         let mut iter = chars.iter().skip(start as usize);
         for _ in 0..width {
-            let (color, glyph) = match iter.next() {
+            let (fg, ch) = match iter.next() {
                 None => (None, None),
-                Some((color, ch)) => (*color, Some((self.to_glyph)(*ch))),
+                Some(x) => (x.0, Some(x.1)),
             };
-            self.buffer
-                .draw_opt(ix, y, glyph, color.or(self.fg), self.bg);
+            self.print_char(ix, y, ch, fg);
             ix += 1;
         }
         width
@@ -113,11 +120,196 @@ impl<'a> ColoredPrinter<'a> {
         let mut width = 0;
         let mut height = 0;
         for line in lines {
-            let w = self.print_line(x, y + height, line);
+            let w = self.print_line(x, y + height, &line);
             width = max(width, w);
             height += 1;
         }
         (width, height)
+    }
+
+    fn print_word(&mut self, x: i32, y: i32, chars: &[(Option<RGBA>, char)]) -> i32 {
+        let width = chars.len() as i32;
+        let mut iter = chars.iter();
+        let mut ix = x;
+        for _ in 0..width {
+            let (fg, ch) = match iter.next() {
+                None => (None, None),
+                Some(x) => (x.0, Some(x.1)),
+            };
+            self.print_char(ix, y, ch, fg);
+            ix += 1;
+        }
+        width
+    }
+
+    pub fn wrap(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
+        let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
+
+        let chars: Vec<(Option<RGBA>, char)> = TextIterator::new(self.to_rgba, text).collect();
+
+        let lines_of_words = make_lines_of_words(chars);
+
+        println!("==========================");
+        println!("WRAP = {}", text);
+
+        let mut widest = 0;
+        let mut cx = x;
+        let mut cy = y;
+        let mut line_left = width;
+        let ex = x + width;
+
+        for (i, line) in lines_of_words.iter().enumerate() {
+            if i > 0 {
+                if self.width.is_some() && self.bg.is_some() {
+                    for fx in cx..ex {
+                        self.print_char(fx, cy, None, None);
+                    }
+                }
+                widest = max(widest, cx - x);
+                cx = x;
+                cy += 1;
+                line_left = width;
+            }
+
+            for (i, word) in line.iter().enumerate() {
+                println!(
+                    "word={:?}, len={}, cx={}, line_left={}",
+                    word,
+                    word.len(),
+                    cx,
+                    line_left
+                );
+                let first_fg = word.first().unwrap_or(&(None, ' ')).0;
+
+                if i > 0 && line_left > word.len() as i32 {
+                    self.print_char(cx, cy, Some(' '), first_fg);
+                    line_left -= 1;
+                    cx += 1;
+                    println!("- add space, cx={}, ll={}", cx, line_left);
+                }
+
+                if word.len() == 0 {
+                    if line_left > 0 {
+                        self.print_char(cx, cy, Some(' '), first_fg);
+                        line_left -= 1;
+                        cx += 1;
+                        println!("- add space, cx={}, ll={}", cx, line_left);
+                    }
+                } else if (word.len() as i32) <= line_left {
+                    let word_len = self.print_word(cx, cy, word);
+                    cx += word_len;
+                    line_left -= word_len;
+                    println!("- add word, cx={}, ll={}", cx, line_left);
+                } else if (word.len() as i32) > width {
+                    // We are longer than a single line
+                    // Do we fit on this line and the next
+                    println!("- long word");
+
+                    if line_left < 4 {
+                        if self.width.is_some() && self.bg.is_some() {
+                            for fx in cx..ex {
+                                self.print_char(fx, cy, None, None);
+                            }
+                        }
+                        widest = max(widest, cx - x);
+                        cx = x;
+                        cy += 1;
+                        line_left = width;
+                        println!("- push to next line");
+                    } else if cx > x {
+                        self.print_char(cx, cy, Some(' '), first_fg);
+                        line_left -= 1;
+                        cx += 1;
+                        println!("- space");
+                    }
+
+                    for (fg, ch) in word {
+                        if line_left == 1 {
+                            self.print_char(cx, cy, Some('-'), *fg);
+                            cx += 1;
+
+                            if self.width.is_some() && self.bg.is_some() {
+                                for fx in cx..ex {
+                                    self.print_char(fx, cy, None, None);
+                                }
+                            }
+
+                            widest = max(widest, cx - x);
+                            cx = x;
+                            line_left = width;
+                            cy += 1;
+                            println!("- hyphen + next line");
+                        }
+
+                        self.print_char(cx, cy, Some(*ch), *fg);
+                        line_left -= 1;
+                        cx += 1;
+                        println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
+                    }
+                } else if word.len() > 6 && line_left - 2 >= word.len() as i32 / 2 {
+                    let pivot = min(line_left - 2, word.len() as i32 / 2);
+
+                    let left = &word[..pivot as usize];
+                    let right = &word[pivot as usize..];
+
+                    if cx > x {
+                        self.print_char(cx, cy, Some(' '), first_fg);
+                        // line_left -= 1;
+                        cx += 1;
+                        println!("- space");
+                    }
+
+                    let len = self.print_word(cx, cy, left);
+                    cx += len;
+                    // line_left -= len;
+                    println!("- add half: word={:?}, cx={}, ll={}", left, cx, line_left);
+                    self.print_char(cx, cy, Some('-'), first_fg);
+                    cx += 1;
+
+                    // go to next line
+                    if self.width.is_some() && self.bg.is_some() {
+                        for fx in cx..ex {
+                            self.print_char(fx, cy, None, None);
+                        }
+                    }
+                    widest = max(widest, cx - x);
+                    cx = x;
+                    cy += 1;
+                    line_left = width;
+                    println!("- next line");
+
+                    let len = self.print_word(cx, cy, right);
+                    cx += len;
+                    line_left -= len;
+                    println!("- add half: word={:?}, cx={}, ll={}", right, cx, line_left);
+                } else {
+                    // go to next line
+                    if self.width.is_some() && self.bg.is_some() {
+                        for fx in cx..ex {
+                            self.print_char(fx, cy, None, None);
+                        }
+                    }
+                    widest = max(widest, cx - x);
+                    cx = x;
+                    cy += 1;
+                    line_left = width;
+                    println!("- next line");
+
+                    let len = self.print_word(cx, cy, word);
+                    cx += len;
+                    line_left -= len;
+                    println!("- add word, cx={}, ll={}", cx, line_left);
+                }
+            }
+        }
+        if self.width.is_some() && self.bg.is_some() {
+            for fx in cx..ex {
+                self.print_char(fx, cy, None, None);
+            }
+        }
+        widest = max(widest, cx - x);
+
+        (widest, cy - y + 1)
     }
 }
 
@@ -209,6 +401,54 @@ impl<'a> Iterator for TextIterator<'a> {
     }
 }
 
+type CharItem = (Option<RGBA>, char);
+type CharVec = Vec<CharItem>;
+type WordVec = Vec<CharVec>;
+type LineVec = Vec<CharVec>;
+type LinesOfWordsVec = Vec<WordVec>;
+
+fn make_words(chars: CharVec) -> WordVec {
+    let mut out: WordVec = Vec::new();
+    out.push(Vec::new());
+
+    for (fg, ch) in chars {
+        if ch == ' ' {
+            out.push(Vec::new());
+        } else {
+            out.last_mut().unwrap().push((fg, ch));
+        }
+    }
+
+    out
+}
+
+fn make_lines(chars: CharVec) -> LineVec {
+    let mut out: LineVec = Vec::new();
+    out.push(Vec::new());
+
+    for (fg, ch) in chars {
+        if ch == '\n' {
+            out.push(Vec::new());
+        } else {
+            out.last_mut().unwrap().push((fg, ch));
+        }
+    }
+    out
+}
+
+fn make_lines_of_words(chars: CharVec) -> LinesOfWordsVec {
+    let lines = make_lines(chars);
+
+    let mut output: LinesOfWordsVec = Vec::new();
+
+    for line in lines {
+        let words = make_words(line);
+        output.push(words);
+    }
+
+    output
+}
+
 #[cfg(test)]
 mod test {
 
@@ -286,5 +526,98 @@ mod test {
         assert_eq!(iter.next().unwrap(), (None, ' '));
         assert_eq!(iter.next().unwrap(), (None, 'c'));
         assert_eq!(iter.next(), None);
+    }
+
+    fn extract_line(buf: &Buffer, x: i32, y: i32, width: i32) -> String {
+        let mut output = "".to_string();
+        for cx in x..x + width {
+            if let Some(g) = buf.get_glyph(cx, y) {
+                output.push(char::from_u32(*g).unwrap());
+            }
+        }
+        output
+    }
+
+    #[test]
+    fn wrap_basic() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = colored(&mut buffer).width(10);
+
+        assert_eq!(printer.wrap(0, 0, "taco casa"), (9, 1));
+        assert_eq!(extract_line(&buffer, 0, 0, 10), "taco casa\0");
+    }
+
+    #[test]
+    fn wrap_multi() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = colored(&mut buffer).width(10);
+
+        let r = printer.wrap(0, 1, "#[red]taco casa#[] is a great fast food place");
+        assert_eq!(extract_line(&buffer, 0, 1, 11), "taco casa\0\0");
+        assert_eq!(extract_line(&buffer, 0, 2, 11), "is a great\0");
+        assert_eq!(extract_line(&buffer, 0, 3, 11), "fast food\0\0");
+        assert_eq!(extract_line(&buffer, 0, 4, 11), "place\0\0\0\0\0\0");
+        assert_eq!(r, (10, 4));
+    }
+
+    #[test]
+    fn wrap_breakword() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = colored(&mut buffer).width(10);
+
+        let r = printer.wrap(0, 1, "supercalafragalisticexpialadocious");
+        assert_eq!(extract_line(&buffer, 0, 1, 11), "supercala-\0");
+        assert_eq!(extract_line(&buffer, 0, 2, 11), "fragalist-\0");
+        assert_eq!(extract_line(&buffer, 0, 3, 11), "icexpiala-\0");
+        assert_eq!(extract_line(&buffer, 0, 4, 11), "docious\0\0\0\0");
+        assert_eq!(r, (10, 4));
+    }
+
+    #[test]
+    fn wrap_multi_hyphen() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = colored(&mut buffer).width(10);
+
+        let r = printer.wrap(
+            0,
+            1,
+            "the conflaguration exponentially #[#f00]deteriorated#[] the stonemasons' monuments",
+        );
+        assert_eq!(extract_line(&buffer, 0, 1, 11), "the confl-\0");
+        assert_eq!(extract_line(&buffer, 0, 2, 11), "aguration\0\0");
+        assert_eq!(extract_line(&buffer, 0, 3, 11), "exponenti-\0");
+        assert_eq!(extract_line(&buffer, 0, 4, 11), "ally dete-\0");
+        assert_eq!(extract_line(&buffer, 0, 5, 11), "riorated\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 6, 11), "the stone-\0");
+        assert_eq!(extract_line(&buffer, 0, 7, 11), "masons'\0\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 8, 11), "monuments\0\0");
+        assert_eq!(r, (10, 8));
+    }
+
+    #[test]
+    fn wrap_lines() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = colored(&mut buffer).width(20);
+
+        let r = printer.wrap(
+            0,
+            1,
+            "the conflaguration\nexponentially\ndeteriorated the\nstonemasons' monuments",
+        );
+        assert_eq!(extract_line(&buffer, 0, 1, 21), "the conflaguration\0\0\0");
+        assert_eq!(
+            extract_line(&buffer, 0, 2, 21),
+            "exponentially\0\0\0\0\0\0\0\0"
+        );
+        assert_eq!(
+            extract_line(&buffer, 0, 3, 21),
+            "deteriorated the\0\0\0\0\0"
+        );
+        assert_eq!(extract_line(&buffer, 0, 4, 21), "stonemasons' monu-\0\0\0");
+        assert_eq!(
+            extract_line(&buffer, 0, 5, 21),
+            "ments\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        );
+        assert_eq!(r, (18, 5));
     }
 }
