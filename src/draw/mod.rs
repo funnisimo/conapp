@@ -9,3 +9,6 @@ pub use frame::*;
 
 mod rect;
 pub use rect::*;
+
+mod progress;
+pub use progress::*;
