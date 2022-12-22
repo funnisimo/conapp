@@ -1,3 +1,4 @@
+use crate::console;
 use std::ops;
 
 pub type RGB = (u8, u8, u8);
@@ -191,14 +192,26 @@ pub fn color_dist(c1: RGBA, c2: RGBA) -> i32 {
     dr * dr + dg * dg + db * db
 }
 
-pub fn parse_color_hex(text: &str) -> Result<RGBA, String> {
-    if !text.starts_with("#") {
-        return Err(format!("Hex color does not start with hash(#) - {}", text));
+#[derive(Debug, Copy, Clone)]
+pub enum ColorParseErr {
+    NonHexDigit,
+    NonAsciiDigit,
+    WrongHexLen,
+    WrongRgbLen,
+}
+
+pub fn parse_color_hex(text: &str) -> Result<RGBA, ColorParseErr> {
+    let base = match text.starts_with("#") {
+        false => text,
+        true => &text[1..],
+    };
+
+    if !base.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        return Err(ColorParseErr::NonHexDigit);
     }
 
-    let digits: Vec<u32> = text
+    let digits: Vec<u32> = base
         .chars()
-        .skip(1)
         .map(|ch| ch.to_digit(16).unwrap_or(0))
         .collect();
 
@@ -228,54 +241,39 @@ pub fn parse_color_hex(text: &str) -> Result<RGBA, String> {
             (digits[6] as f32 * 16.0 + digits[7] as f32) / 255.0,
         ),
         _ => {
-            return Err(format!(
-                "Hex color must be in one of these formats - #abc, #abcd, #aabbcc, or #aabbccdd : {}",
-                text
-            ));
+            return Err(ColorParseErr::WrongHexLen);
         }
     };
 
     Ok((r, g, b, a).into())
 }
 
-pub fn parse_color_rgb(text: &str) -> Result<RGBA, String> {
+pub fn parse_color_rgb(text: &str) -> Result<RGBA, ColorParseErr> {
     let start = match text.chars().position(|ch| ch == '(') {
-        None => {
-            return Err(format!(
-                "Color must start with either 'rgb(' or '(' - found: {}",
-                text
-            ))
-        }
-        Some(idx) => idx + 1,
+        None => text,
+        Some(idx) => &text[idx + 1..],
     };
 
-    let end = match text.chars().skip(start).position(|ch| ch == ')') {
-        None => return Err(format!("Color must have closing ')' - found: {}", text)),
-        Some(idx) => idx,
+    let body = match start.chars().position(|ch| ch == ')') {
+        None => start,
+        Some(idx) => &start[..idx],
     };
 
     // println!("color guts = {}", &text[start..end + start]);
 
-    let num_parts = text[start..end + start]
-        .split(",")
-        .map(|p| p.trim())
-        .collect::<Vec<&str>>();
+    let num_parts = body.split(",").map(|p| p.trim()).collect::<Vec<&str>>();
 
     if num_parts.len() != 3 && num_parts.len() != 4 {
-        return Err(format!("Expected 3 or 4 color values (0-255) - {}", text));
+        return Err(ColorParseErr::WrongRgbLen);
     }
 
     let mut nums: Vec<u8> = Vec::new();
     for part in num_parts {
+        if !part.chars().all(|ch| ch.is_ascii_digit()) {
+            return Err(ColorParseErr::NonAsciiDigit);
+        }
         match part.parse::<u8>() {
-            Err(e) => {
-                return Err(format!(
-                    "Failed to convert color component - {} : {} : {}",
-                    part,
-                    text,
-                    e.to_string()
-                ))
-            }
+            Err(_) => return Err(ColorParseErr::NonAsciiDigit),
             Ok(v) => nums.push(v),
         }
     }
@@ -284,34 +282,33 @@ pub fn parse_color_rgb(text: &str) -> Result<RGBA, String> {
         3 => return Ok((nums[0], nums[1], nums[2], 255).into()),
         4 => return Ok((nums[0], nums[1], nums[2], nums[3]).into()),
         _ => {
-            return Err(format!(
-                "Did not get expected number of color components (3 or 4) - {}",
-                text
-            ));
+            return Err(ColorParseErr::WrongRgbLen);
         }
     }
 }
 
-pub fn parse_color(name: &str) -> Option<RGBA> {
+pub fn parse_color(name: &str) -> Result<RGBA, ColorParseErr> {
     let name = name.trim().to_lowercase();
     if name.starts_with("#") {
-        match parse_color_hex(&name) {
-            Err(e) => {
-                crate::console(&e);
-                return None;
-            }
-            Ok(rgba) => return Some(rgba),
-        }
-    } else if name.starts_with("(") || name.starts_with("rgb(") || name.starts_with("rgba(") {
-        match parse_color_rgb(&name) {
-            Err(e) => {
-                crate::console(&e);
-                return None;
-            }
-            Ok(rgba) => return Some(rgba),
-        }
+        // skip down...
+    } else if name.starts_with("(")
+        || name.starts_with("rgb(")
+        || name.starts_with("rgba(")
+        || name.contains(",")
+    {
+        return parse_color_rgb(&name);
     }
-    None
+    parse_color_hex(&name)
+}
+
+pub fn to_rgba(name: &str) -> Option<RGBA> {
+    match parse_color(name) {
+        Err(e) => {
+            console(format!("{:?}", e));
+            None
+        }
+        Ok(c) => Some(c),
+    }
 }
 
 #[cfg(test)]
@@ -338,11 +335,22 @@ mod test {
             parse_color_hex("#80808080").unwrap(),
             RGBA::rgba(128, 128, 128, 128)
         );
+
+        assert_eq!(parse_color_hex("F00").unwrap(), RED);
+        assert_eq!(parse_color_hex("0F0F").unwrap(), GREEN);
+        assert_eq!(parse_color_hex("0000FF").unwrap(), BLUE);
+        assert_eq!(
+            parse_color_hex("80808080").unwrap(),
+            RGBA::rgba(128, 128, 128, 128)
+        );
+
+        assert!(parse_color_hex("white").is_err());
+        assert!(parse_color_hex("12,34,56").is_err());
     }
 
     #[test]
     fn parse_rgb() {
-        assert!(parse_color_rgb("0,0,0").is_err());
+        assert_eq!(parse_color_rgb("0,0,0").unwrap(), RGBA::rgba(0, 0, 0, 255));
 
         assert_eq!(
             parse_color_rgb("rgb(10,20,30)").unwrap(),
@@ -353,5 +361,52 @@ mod test {
             parse_color_rgb("(255,150,200,25)").unwrap(),
             RGBA::rgba(255, 150, 200, 25)
         );
+
+        assert_eq!(
+            parse_color_rgb("rgba(10,20,30)").unwrap(),
+            RGBA::rgba(10, 20, 30, 255)
+        );
+
+        assert!(parse_color_rgb("FFF").is_err());
+        assert!(parse_color_rgb("white").is_err());
+    }
+
+    #[test]
+    fn parse_test() {
+        assert_eq!(parse_color("0,0,0").unwrap(), RGBA::rgba(0, 0, 0, 255));
+
+        assert_eq!(
+            parse_color("rgb(10,20,30)").unwrap(),
+            RGBA::rgba(10, 20, 30, 255)
+        );
+
+        assert_eq!(
+            parse_color("(255,150,200,25)").unwrap(),
+            RGBA::rgba(255, 150, 200, 25)
+        );
+
+        assert_eq!(
+            parse_color("rgba(10,20,30)").unwrap(),
+            RGBA::rgba(10, 20, 30, 255)
+        );
+
+        assert_eq!(parse_color("#f00").unwrap(), RED);
+        assert_eq!(parse_color("#0f0f").unwrap(), GREEN);
+        assert_eq!(parse_color("#0000ff").unwrap(), BLUE);
+        assert_eq!(
+            parse_color("#80808080").unwrap(),
+            RGBA::rgba(128, 128, 128, 128)
+        );
+
+        assert_eq!(parse_color("F00").unwrap(), RED);
+        assert_eq!(parse_color("0F0F").unwrap(), GREEN);
+        assert_eq!(parse_color("0000FF").unwrap(), BLUE);
+        assert_eq!(
+            parse_color("80808080").unwrap(),
+            RGBA::rgba(128, 128, 128, 128)
+        );
+
+        assert!(parse_color("white").is_err());
+        assert!(parse_color("WHITE").is_err());
     }
 }

@@ -20,7 +20,7 @@ impl ScreenCreator for TextScreen {
 }
 
 impl Screen for TextScreen {
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn setup(&mut self, _app: &mut dyn AppContext) {
         let mut buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
 
@@ -77,7 +77,9 @@ impl Screen for TextScreen {
             "print_lines can\nhandle newlines, but\nwill not word wrap.",
         );
         draw.wrap(30, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
+    }
 
+    fn render(&mut self, app: &mut dyn AppContext) {
         self.con.render(app.gl());
     }
 }

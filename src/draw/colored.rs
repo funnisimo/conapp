@@ -2,7 +2,7 @@ use super::TextAlign;
 use crate::codepage437;
 use crate::Buffer;
 use crate::Glyph;
-use crate::{parse_color, RGBA};
+use crate::{to_rgba, RGBA};
 use std::cmp::{max, min};
 
 pub fn colored<'a>(buffer: &'a mut Buffer) -> ColoredPrinter {
@@ -28,7 +28,7 @@ impl<'a> ColoredPrinter<'a> {
             fg: None,
             bg: None,
             to_glyph: &codepage437::to_glyph,
-            to_rgba: &parse_color,
+            to_rgba: &to_rgba,
         }
     }
 
@@ -149,8 +149,8 @@ impl<'a> ColoredPrinter<'a> {
 
         let lines_of_words = make_lines_of_words(chars);
 
-        println!("==========================");
-        println!("WRAP = {}", text);
+        // println!("==========================");
+        // println!("WRAP = {}", text);
 
         let mut widest = 0;
         let mut cx = x;
@@ -172,20 +172,20 @@ impl<'a> ColoredPrinter<'a> {
             }
 
             for (i, word) in line.iter().enumerate() {
-                println!(
-                    "word={:?}, len={}, cx={}, line_left={}",
-                    word,
-                    word.len(),
-                    cx,
-                    line_left
-                );
+                // println!(
+                //     "word={:?}, len={}, cx={}, line_left={}",
+                //     word,
+                //     word.len(),
+                //     cx,
+                //     line_left
+                // );
                 let first_fg = word.first().unwrap_or(&(None, ' ')).0;
 
                 if i > 0 && line_left > word.len() as i32 {
                     self.print_char(cx, cy, Some(' '), first_fg);
                     line_left -= 1;
                     cx += 1;
-                    println!("- add space, cx={}, ll={}", cx, line_left);
+                    // println!("- add space, cx={}, ll={}", cx, line_left);
                 }
 
                 if word.len() == 0 {
@@ -193,17 +193,17 @@ impl<'a> ColoredPrinter<'a> {
                         self.print_char(cx, cy, Some(' '), first_fg);
                         line_left -= 1;
                         cx += 1;
-                        println!("- add space, cx={}, ll={}", cx, line_left);
+                        // println!("- add space, cx={}, ll={}", cx, line_left);
                     }
                 } else if (word.len() as i32) <= line_left {
                     let word_len = self.print_word(cx, cy, word);
                     cx += word_len;
                     line_left -= word_len;
-                    println!("- add word, cx={}, ll={}", cx, line_left);
+                    // println!("- add word, cx={}, ll={}", cx, line_left);
                 } else if (word.len() as i32) > width {
                     // We are longer than a single line
                     // Do we fit on this line and the next
-                    println!("- long word");
+                    // println!("- long word");
 
                     if line_left < 4 {
                         if self.width.is_some() && self.bg.is_some() {
@@ -215,12 +215,12 @@ impl<'a> ColoredPrinter<'a> {
                         cx = x;
                         cy += 1;
                         line_left = width;
-                        println!("- push to next line");
+                        // println!("- push to next line");
                     } else if cx > x {
                         self.print_char(cx, cy, Some(' '), first_fg);
                         line_left -= 1;
                         cx += 1;
-                        println!("- space");
+                        // println!("- space");
                     }
 
                     for (fg, ch) in word {
@@ -238,13 +238,13 @@ impl<'a> ColoredPrinter<'a> {
                             cx = x;
                             line_left = width;
                             cy += 1;
-                            println!("- hyphen + next line");
+                            // println!("- hyphen + next line");
                         }
 
                         self.print_char(cx, cy, Some(*ch), *fg);
                         line_left -= 1;
                         cx += 1;
-                        println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
+                        // println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
                     }
                 } else if word.len() > 6 && line_left - 2 >= word.len() as i32 / 2 {
                     let pivot = min(line_left - 2, word.len() as i32 / 2);
@@ -256,13 +256,13 @@ impl<'a> ColoredPrinter<'a> {
                         self.print_char(cx, cy, Some(' '), first_fg);
                         // line_left -= 1;
                         cx += 1;
-                        println!("- space");
+                        // println!("- space");
                     }
 
                     let len = self.print_word(cx, cy, left);
                     cx += len;
                     // line_left -= len;
-                    println!("- add half: word={:?}, cx={}, ll={}", left, cx, line_left);
+                    // println!("- add half: word={:?}, cx={}, ll={}", left, cx, line_left);
                     self.print_char(cx, cy, Some('-'), first_fg);
                     cx += 1;
 
@@ -276,12 +276,12 @@ impl<'a> ColoredPrinter<'a> {
                     cx = x;
                     cy += 1;
                     line_left = width;
-                    println!("- next line");
+                    // println!("- next line");
 
                     let len = self.print_word(cx, cy, right);
                     cx += len;
                     line_left -= len;
-                    println!("- add half: word={:?}, cx={}, ll={}", right, cx, line_left);
+                    // println!("- add half: word={:?}, cx={}, ll={}", right, cx, line_left);
                 } else {
                     // go to next line
                     if self.width.is_some() && self.bg.is_some() {
@@ -293,12 +293,12 @@ impl<'a> ColoredPrinter<'a> {
                     cx = x;
                     cy += 1;
                     line_left = width;
-                    println!("- next line");
+                    // println!("- next line");
 
                     let len = self.print_word(cx, cy, word);
                     cx += len;
                     line_left -= len;
-                    println!("- add word, cx={}, ll={}", cx, line_left);
+                    // println!("- add word, cx={}, ll={}", cx, line_left);
                 }
             }
         }

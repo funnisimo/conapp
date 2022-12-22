@@ -27,7 +27,7 @@ fn to_rgba(name: &str) -> Option<RGBA> {
         "blue" => Some(RGBA::rgb(192, 192, 255)),
         "black" => Some(BLACK),
         "gray" => Some(GRAY),
-        _ => parse_color(name),
+        _ => to_rgba(name),
     }
 }
 
