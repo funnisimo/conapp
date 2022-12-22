@@ -41,7 +41,7 @@ pub trait AppContext {
     fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
 }
 
-pub struct ContextImpl {
+pub struct AppContextImpl {
     // pub(super) cons: Vec<Console>,
     pub(crate) input: AppInput,
     pub(crate) fps: u32,
@@ -53,7 +53,7 @@ pub struct ContextImpl {
     pub(crate) ready: bool,
 }
 
-impl AppContext for ContextImpl {
+impl AppContext for AppContextImpl {
     // fn con(&self) -> &Console {
     //     &self.cons[0]
     // }
@@ -121,7 +121,7 @@ impl AppContext for ContextImpl {
     }
 }
 
-impl ContextImpl {
+impl AppContextImpl {
     pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
         self.screen_size = (screen_width, screen_height);
         // for con in self.cons.iter_mut() {

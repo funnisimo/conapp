@@ -184,3 +184,10 @@ pub enum AppEvent {
     /// window close button was pressed and [`AppConfig.intercept_close_request`] is true
     CloseRequested,
 }
+
+// use uni_app::*;
+
+// pub use uni_app::{
+//     now, App, AppConfig, AppEvent, File, FileSystem, KeyDownEvent, KeyUpEvent, MouseButtonEvent,
+//     VirtualKeyCode,
+// };

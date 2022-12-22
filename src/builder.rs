@@ -1,8 +1,9 @@
-use crate::{AppConfig, Runner};
+use crate::{AppConfig, AppContext, Runner};
 
 pub struct AppBuilder {
     config: AppConfig,
     fonts: Vec<String>,
+    fps_goal: u32,
 }
 
 impl AppBuilder {
@@ -11,6 +12,7 @@ impl AppBuilder {
         AppBuilder {
             config: options,
             fonts: Vec::new(),
+            fps_goal: 0,
         }
     }
 
@@ -48,7 +50,16 @@ impl AppBuilder {
         self
     }
 
+    pub fn fps(mut self, fps_goal: u32) -> Self {
+        self.fps_goal = fps_goal;
+        self
+    }
+
     pub fn build(self) -> Runner {
-        Runner::new(self.config, self.fonts)
+        let mut runner = Runner::new(self.config, self.fps_goal);
+        for font in self.fonts {
+            runner.app_ctx.load_font(&font);
+        }
+        runner
     }
 }

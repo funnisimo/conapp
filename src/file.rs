@@ -71,7 +71,7 @@ impl FileLoader {
     }
 }
 
-fn open_file(filename: &str) -> Result<crate::app::fs::File, std::io::Error> {
+fn open_file(filename: &str) -> Result<crate::app::File, std::io::Error> {
     let ffilename = filename.to_owned();
-    crate::app::fs::FileSystem::open(&ffilename)
+    crate::app::FileSystem::open(&ffilename)
 }

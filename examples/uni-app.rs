@@ -15,7 +15,7 @@ fn main() {
     let app = App::new(AppConfig {
         size: (800, 600),
         title: "my game".to_owned(),
-        ..Default::default()
+        ..AppConfig::default()
     });
 
     // start game loop

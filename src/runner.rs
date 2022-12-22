@@ -1,4 +1,4 @@
-use super::context::{AppContext, ContextImpl};
+use super::context::{AppContext, AppContextImpl};
 use super::input::AppInput;
 use crate::{console, AppConfig, AppEvent, Screen, ScreenCreator, ScreenResult};
 use std::cell::RefCell;
@@ -34,7 +34,7 @@ pub struct Runner {
     // gl: uni_gl::WebGLRenderingContext,
     config: AppConfig,
     fps: Fps,
-    api: ContextImpl,
+    pub(crate) app_ctx: AppContextImpl,
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
     real_screen_size: (u32, u32),
@@ -42,7 +42,7 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(mut options: AppConfig, fonts: Vec<String>) -> Self {
+    pub fn new(mut options: AppConfig, fps_goal: u32) -> Self {
         options.headless = false;
         let app = crate::app::App::new(options.clone());
 
@@ -103,7 +103,7 @@ impl Runner {
 
         // con.set_glyphs(&options.glyphs);
 
-        let mut api = ContextImpl {
+        let app_ctx = AppContextImpl {
             input,
             // cons: vec![con],
             fps: 0,
@@ -115,16 +115,13 @@ impl Runner {
             ready: false,
         };
 
-        for font in fonts {
-            api.load_font(&font);
-        }
         crate::console("Runner created");
 
         Self {
-            api,
+            app_ctx,
             app: Some(app),
             config: options,
-            fps: Fps::new(),
+            fps: Fps::new(fps_goal),
             screens: Vec::new(),
             screen_resolution,
             real_screen_size: (real_screen_width, real_screen_height),
@@ -133,9 +130,9 @@ impl Runner {
     }
 
     fn push(&mut self, mut screen: Box<dyn Screen>) {
-        screen.setup(&mut self.api);
+        screen.setup(&mut self.app_ctx);
         if screen.is_full_screen() {
-            self.api.clear(None);
+            self.app_ctx.clear(None);
         }
         self.screens.push(screen);
     }
@@ -167,28 +164,28 @@ impl Runner {
         };
         self.real_screen_size = (real_screen_width, real_screen_height);
 
-        self.api
+        self.app_ctx
             .gl
             .viewport(x_offset, y_offset, real_screen_width, real_screen_height);
-        self.api.resize(
+        self.app_ctx.resize(
             (real_screen_width as f32 / hidpi_factor) as u32,
             (real_screen_height as f32 / hidpi_factor) as u32,
         );
 
         // engine.resize(&mut self.api);
         for screen in self.screens.iter_mut() {
-            screen.resize(&mut self.api);
+            screen.resize(&mut self.app_ctx);
         }
 
         // let con_size = self.api.con().get_size();
         if cfg!(target_arch = "wasm32") {
-            self.api.input.resize(
+            self.app_ctx.input.resize(
                 self.config.size,
                 // con_size,
                 (x_offset as u32, y_offset as u32),
             )
         } else {
-            self.api.input.resize(
+            self.app_ctx.input.resize(
                 (real_screen_width, real_screen_height),
                 // con_size,
                 (x_offset as u32, y_offset as u32),
@@ -197,7 +194,7 @@ impl Runner {
     }
 
     fn handle_event(&mut self, ev: &AppEvent) -> Option<RunnerEvent> {
-        let ctx = &mut self.api;
+        let ctx = &mut self.app_ctx;
         ctx.input.on_event(ev);
         if let Some(mode) = self.screens.last_mut() {
             if mode.ready() {
@@ -259,7 +256,7 @@ impl Runner {
     where
         T: ScreenCreator,
     {
-        let screen = T::create(&mut self.api);
+        let screen = T::create(&mut self.app_ctx);
         self.run_screen(screen);
     }
 
@@ -267,7 +264,7 @@ impl Runner {
     where
         F: FnOnce(&mut dyn AppContext) -> Box<dyn Screen>,
     {
-        let screen = func(&mut self.api);
+        let screen = func(&mut self.app_ctx);
         self.run_screen(screen);
     }
 
@@ -279,7 +276,7 @@ impl Runner {
         let mut next_frame = next_tick;
 
         let mut screen = screen;
-        screen.setup(&mut self.api);
+        screen.setup(&mut self.app_ctx);
         self.screens.push(screen);
 
         self.ready = true;
@@ -298,13 +295,13 @@ impl Runner {
             // } else {
             // self.handle_input(&mut screen, app.hidpi_factor(), app.events.clone());
 
-            self.api.load_fonts(); // Do any font loading necessary
+            self.app_ctx.load_fonts(); // Do any font loading necessary
 
             if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
                 match event {
                     RunnerEvent::Capture(filepath) => {
                         capture_screen(
-                            &self.api.gl,
+                            &self.app_ctx.gl,
                             self.real_screen_size.0,
                             // self.screen_resolution.0 * app.hidpi_factor() as u32,
                             self.real_screen_size.1,
@@ -320,11 +317,11 @@ impl Runner {
             let mut skipped_frames: i32 = -1;
             let time = crate::app::now();
             while time > next_tick && skipped_frames < MAX_FRAMESKIP {
-                self.api.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
+                self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
                 if let Some(event) = self.update() {
                     match event {
                         RunnerEvent::Capture(filepath) => capture_screen(
-                            &self.api.gl,
+                            &self.app_ctx.gl,
                             self.real_screen_size.0,
                             // self.screen_resolution.0 * app.hidpi_factor() as u32,
                             self.real_screen_size.1,
@@ -337,22 +334,22 @@ impl Runner {
                 }
                 next_tick += SKIP_TICKS;
                 skipped_frames += 1;
-                self.api.input.on_frame();
+                self.app_ctx.input.on_frame();
             }
             if skipped_frames == MAX_FRAMESKIP {
                 next_tick = time + SKIP_TICKS;
             }
-            if self.config.fps == 0 || time > next_frame {
+            if self.fps.goal() == 0 || time > next_frame {
                 self.render();
                 self.fps.step();
-                self.api.fps = self.fps.fps();
-                self.api.average_fps = self.fps.average();
+                self.app_ctx.fps = self.fps.current();
+                self.app_ctx.average_fps = self.fps.average();
 
                 // self.gl.clear(uni_gl::BufferBit::Color);
                 // self.gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
                 // self.api.render(&self.gl);
-                if self.config.fps > 0 {
-                    next_frame += 1.0 / self.config.fps as f64;
+                if self.fps.goal() > 0 {
+                    next_frame += 1.0 / self.fps.goal() as f64;
                 }
             }
             // }
@@ -360,29 +357,29 @@ impl Runner {
     }
 
     fn update(&mut self) -> Option<RunnerEvent> {
-        let frame_time_ms = self.api.frame_time_ms();
+        let frame_time_ms = self.app_ctx.frame_time_ms();
         if let Some(mode) = self.screens.last_mut() {
             if mode.ready() {
-                match mode.update(&mut self.api, frame_time_ms) {
+                match mode.update(&mut self.app_ctx, frame_time_ms) {
                     ScreenResult::Continue => (),
                     ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                     ScreenResult::Pop => {
-                        self.api.clear(None);
-                        mode.teardown(&mut self.api);
+                        self.app_ctx.clear(None);
+                        mode.teardown(&mut self.app_ctx);
                         self.screens.pop();
                         match self.screens.last_mut() {
-                            Some(m) => m.resume(&mut self.api),
+                            Some(m) => m.resume(&mut self.app_ctx),
                             _ => {}
                         }
                     }
                     ScreenResult::Replace(next) => {
-                        self.api.clear(None);
-                        mode.teardown(&mut self.api);
+                        self.app_ctx.clear(None);
+                        mode.teardown(&mut self.app_ctx);
                         self.screens.pop();
                         self.push(next);
                     }
                     ScreenResult::Push(next) => {
-                        mode.pause(&mut self.api);
+                        mode.pause(&mut self.app_ctx);
                         self.push(next);
                     }
                     ScreenResult::Quit => {
@@ -405,9 +402,9 @@ impl Runner {
                 start_idx = idx;
             }
         }
-        self.api.clear(None);
+        self.app_ctx.clear(None);
         for screen in self.screens.iter_mut().skip(start_idx) {
-            screen.render(&mut self.api);
+            screen.render(&mut self.app_ctx);
         }
     }
 }
@@ -458,10 +455,11 @@ pub struct Fps {
     total_frames: u64,
     fps: u32,
     average: u32,
+    goal: u32,
 }
 
 impl Fps {
-    pub fn new() -> Fps {
+    pub fn new(goal: u32) -> Fps {
         let now = crate::app::now();
         Fps {
             counter: 0,
@@ -470,9 +468,15 @@ impl Fps {
             last: now,
             fps: 0,
             average: 0,
+            goal,
         }
     }
-    pub fn fps(&self) -> u32 {
+
+    pub fn goal(&self) -> u32 {
+        self.goal
+    }
+
+    pub fn current(&self) -> u32 {
         self.fps
     }
 
