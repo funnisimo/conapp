@@ -25,7 +25,7 @@ impl<'a> ColoredPrinter<'a> {
             buffer,
             width: None,
             align: TextAlign::Left,
-            fg: None,
+            fg: Some(RGBA::rgb(255, 255, 255)),
             bg: None,
             to_glyph: &codepage437::to_glyph,
             to_rgba: &to_rgba,

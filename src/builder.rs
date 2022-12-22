@@ -12,7 +12,7 @@ impl AppBuilder {
         AppBuilder {
             config: options,
             fonts: Vec::new(),
-            fps_goal: 0,
+            fps_goal: 60,
         }
     }
 
