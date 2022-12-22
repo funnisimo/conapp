@@ -12,6 +12,10 @@ pub fn plain<'a>(buffer: &'a mut Buffer) -> PlainPrinter {
     PlainPrinter::new(buffer)
 }
 
+pub fn text<'a>(buffer: &'a mut Buffer) -> PlainPrinter {
+    PlainPrinter::new(buffer)
+}
+
 pub struct PlainPrinter<'a> {
     buffer: &'a mut Buffer,
     width: Option<i32>,

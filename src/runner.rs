@@ -1,6 +1,6 @@
 use super::context::{AppContext, AppContextImpl};
 use super::input::AppInput;
-use crate::{console, AppConfig, AppEvent, Screen, ScreenCreator, ScreenResult};
+use crate::{console, AppConfig, AppEvent, Font, Screen, ScreenCreator, ScreenResult};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -135,6 +135,10 @@ impl Runner {
             self.app_ctx.clear(None);
         }
         self.screens.push(screen);
+    }
+
+    pub fn load_font(&mut self, font_path: &str) -> Rc<RefCell<Font>> {
+        self.app_ctx.load_font(font_path)
     }
 
     // pub fn set_engine(&mut self, engine: Box<dyn Engine>) {

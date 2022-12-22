@@ -21,13 +21,13 @@ impl ScreenCreator for TextScreen {
 
 impl Screen for TextScreen {
     fn setup(&mut self, _app: &mut dyn AppContext) {
-        let mut buffer = self.con.buffer_mut();
+        let buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
 
         // PLAIN (NO BG, NO WIDTH)
         let y = 2;
 
-        let mut draw = draw::plain(&mut buffer).fg(RGBA::rgb(192, 32, 32));
+        let mut draw = draw::plain(buffer).fg(RGBA::rgb(192, 32, 32));
         draw.print(5, y, "No bg, no width");
         draw.print_lines(
             5,
@@ -38,9 +38,9 @@ impl Screen for TextScreen {
 
         let y = 10;
 
-        let mut draw = draw::plain(&mut buffer)
-            .fg(RGBA::rgb(64, 128, 32))
-            .width(15);
+        let mut draw = draw::plain(buffer)
+            .fg(RGBA::rgb(255, 0, 255))
+            .bg(RGBA::rgb(0, 64, 255));
         draw.print(5, y, "width=15, but no bg");
         draw.print_lines(
             5,
@@ -50,11 +50,9 @@ impl Screen for TextScreen {
         draw.wrap(30, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
 
         // width, no bg
-        let y = 23;
+        let y = 18;
 
-        let mut draw = draw::plain(&mut buffer)
-            .fg(RGBA::rgb(255, 0, 255))
-            .bg(RGBA::rgb(0, 64, 255));
+        let mut draw = draw::plain(buffer).fg(RGBA::rgb(64, 128, 32)).width(15);
         draw.print(5, y, "With bg, no width");
         draw.print_lines(
             5,
@@ -64,9 +62,9 @@ impl Screen for TextScreen {
         draw.wrap(30, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
 
         // width, no bg
-        let y = 35;
+        let y = 31;
 
-        let mut draw = draw::plain(&mut buffer)
+        let mut draw = draw::plain(buffer)
             .fg(RGBA::rgb(255, 255, 255))
             .bg(RGBA::rgb(0, 64, 255))
             .width(15);
@@ -77,6 +75,14 @@ impl Screen for TextScreen {
             "print_lines can\nhandle newlines, but\nwill not word wrap.",
         );
         draw.wrap(30, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
+
+        draw::plain(buffer).print(63, 20, "TextAlign::Left");
+        draw::plain(buffer)
+            .align(TextAlign::Center)
+            .print(63, 22, "TextAlign::Center");
+        draw::plain(buffer)
+            .align(TextAlign::Right)
+            .print(63, 24, "TextAlign::Right");
     }
 
     fn render(&mut self, app: &mut dyn AppContext) {
