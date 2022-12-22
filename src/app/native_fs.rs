@@ -18,8 +18,10 @@ impl FileSystem {
     /// When packaging your native project, the file should still be in static/config.json.
     /// When deploying on the web, the file should simply be in the same directory as index.html, as config.json.
     pub fn open(s: &str) -> Result<File, IoError> {
-        let file = std::fs::File::open(s)?;
-        Ok(File(file))
+        match std::fs::File::open(s) {
+            Err(e) => Err(e),
+            Ok(f) => Ok(File(f)),
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::app::File;
+use crate::{app::File, console};
 use std::collections::HashMap;
 
 struct AsyncFile(String, File, Option<Vec<u8>>);
@@ -19,6 +19,7 @@ impl FileLoader {
         crate::console(format!("loading file - {}", path));
         match open_file(path) {
             Ok(mut f) => {
+                console(format!("file open - {}", path));
                 if f.is_ready() {
                     match f.read_binary() {
                         Ok(buf) => {

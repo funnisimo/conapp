@@ -1,4 +1,4 @@
-use crate::{codepage437, Buffer, Glyph, RGBA};
+use crate::{Buffer, Glyph, RGBA};
 use std::cmp::{max, min};
 
 #[derive(Copy, Clone)]
@@ -29,7 +29,7 @@ impl<'a> PlainPrinter<'a> {
             align: TextAlign::Left,
             fg: Some(RGBA::rgb(255, 255, 255)),
             bg: None,
-            to_glyph: &codepage437::to_glyph,
+            to_glyph: &|ch| ch as u32,
         }
     }
 
@@ -80,14 +80,13 @@ impl<'a> PlainPrinter<'a> {
             width = self.buffer.get_width() as i32 - ix;
         }
 
-        let print_text = &text[start as usize..start as usize + width as usize];
-        self.print_width(ix, y, width, print_text)
+        self.print_part(ix, y, start as usize, width as usize, text)
     }
 
-    fn print_width(&mut self, x: i32, y: i32, width: i32, text: &str) -> i32 {
-        let mut chars = text.chars();
+    fn print_part(&mut self, x: i32, y: i32, start: usize, count: usize, text: &str) -> i32 {
+        let mut chars = text.chars().skip(start);
         let mut ix = x;
-        for _ in 0..width {
+        for _ in 0..count {
             let ch = match chars.next() {
                 None => '\0',
                 Some(ch) => ch,
@@ -96,7 +95,7 @@ impl<'a> PlainPrinter<'a> {
             // self.buffer.draw_opt(ix, y, glyph, self.fg, self.bg);
             ix += 1;
         }
-        width
+        count as i32
     }
 
     pub fn print_lines(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
@@ -159,7 +158,7 @@ impl<'a> PlainPrinter<'a> {
                         // println!("- add space, cx={}, ll={}", cx, line_left);
                     }
                 } else if (word.len() as i32) <= line_left && (i == 0 || added_space) {
-                    let word_len = self.print_width(cx, cy, word.len() as i32, word);
+                    let word_len = self.print_part(cx, cy, 0, word.len() as usize, word);
                     cx += word_len;
                     line_left -= word_len;
                     // println!("- add word, cx={}, ll={}", cx, line_left);
@@ -215,7 +214,7 @@ impl<'a> PlainPrinter<'a> {
                         // println!("- space");
                     }
 
-                    let len = self.print_width(cx, cy, left.len() as i32, left);
+                    let len = self.print_part(cx, cy, 0, left.len(), left);
                     cx += len;
                     // line_left -= len;
                     // println!("- add half: word={}, cx={}, ll={}", left, cx, line_left);
@@ -234,7 +233,7 @@ impl<'a> PlainPrinter<'a> {
                     line_left = width;
                     // println!("- next line");
 
-                    let len = self.print_width(cx, cy, right.len() as i32, right);
+                    let len = self.print_part(cx, cy, 0, right.len(), right);
                     cx += len;
                     line_left -= len;
                     // println!("- add half: word={}, cx={}, ll={}", right, cx, line_left);
@@ -251,7 +250,7 @@ impl<'a> PlainPrinter<'a> {
                     line_left = width;
                     // println!("- next line");
 
-                    let len = self.print_width(cx, cy, word.len() as i32, word);
+                    let len = self.print_part(cx, cy, 0, word.len(), word);
                     cx += len;
                     line_left -= len;
                     // println!("- add word, cx={}, ll={}", cx, line_left);

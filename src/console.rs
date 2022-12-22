@@ -66,6 +66,11 @@ impl Console {
         self.buffer.get_pot_height()
     }
 
+    pub fn get_font_char_size(&self) -> (u32, u32) {
+        let font = self.font.borrow();
+        (font.char_width(), font.char_height())
+    }
+
     /// resizes the console
     pub fn resize(&mut self, width: u32, height: u32) {
         self.buffer.resize(width, height);
