@@ -3,6 +3,7 @@ use crate::{AppConfig, AppContext, Runner};
 pub struct AppBuilder {
     config: AppConfig,
     fonts: Vec<String>,
+    images: Vec<String>,
     fps_goal: u32,
 }
 
@@ -12,6 +13,7 @@ impl AppBuilder {
         AppBuilder {
             config: options,
             fonts: Vec::new(),
+            images: Vec::new(),
             fps_goal: 60,
         }
     }
@@ -50,6 +52,11 @@ impl AppBuilder {
         self
     }
 
+    pub fn image(mut self, image_path: &str) -> Self {
+        self.images.push(image_path.to_owned());
+        self
+    }
+
     pub fn fps(mut self, fps_goal: u32) -> Self {
         self.fps_goal = fps_goal;
         self
@@ -59,6 +66,9 @@ impl AppBuilder {
         let mut runner = Runner::new(self.config, self.fps_goal);
         for font in self.fonts {
             runner.app_ctx.load_font(&font);
+        }
+        for image in self.images {
+            runner.app_ctx.load_image(&image);
         }
         runner
     }
