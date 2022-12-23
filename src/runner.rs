@@ -80,7 +80,6 @@ impl Runner {
             uni_gl::BlendMode::OneMinusSrcAlpha,
         );
 
-        // TODO this should be handled in uni-app
         let input = if cfg!(target_arch = "wasm32") {
             AppInput::new(
                 (options.size.0, options.size.1),
@@ -95,25 +94,7 @@ impl Runner {
             )
         };
 
-        // let font = Font::new(&options.font_path);
-
-        // let mut con = Console::new(0, options.console_width, options.console_height, font, &gl);
-        // let extents = options.console_extents;
-        // con.set_extents(extents.0, extents.1, extents.2, extents.3);
-
-        // con.set_glyphs(&options.glyphs);
-
-        let app_ctx = AppContextImpl {
-            input,
-            // cons: vec![con],
-            fps: 0,
-            average_fps: 0,
-            screen_size: options.size.clone(),
-            frame_time_ms: 0.0,
-            fonts: HashMap::new(),
-            gl,
-            ready: false,
-        };
+        let app_ctx = AppContextImpl::new(gl, options.size.clone(), input);
 
         crate::console("Runner created");
 
@@ -299,7 +280,7 @@ impl Runner {
             // } else {
             // self.handle_input(&mut screen, app.hidpi_factor(), app.events.clone());
 
-            self.app_ctx.load_fonts(); // Do any font loading necessary
+            self.app_ctx.load_files(); // Do any font/image loading necessary
 
             if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
                 match event {

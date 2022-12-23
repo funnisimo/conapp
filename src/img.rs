@@ -1,10 +1,28 @@
 #![warn(clippy::float_cmp)]
+use crate::console;
 use crate::file::FileLoader;
 use crate::rgba::RGBA;
-// use crate::rgba::{color_blend, color_dist};
-use crate::{buffer::*, console};
+use crate::Glyph;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 // sub-pixel resolution kit
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum SubCellFlag {
+    NONE = 0,
+    NW,
+    NE,
+    N,
+    SE,
+    DIAG,
+    E,
+    SW,
+}
+
+pub fn to_subcell_glyph(subcell: SubCellFlag) -> Glyph {
+    subcell as Glyph
+}
+
 // const CHAR_SUBP_NW: u32 = 226;
 // const CHAR_SUBP_NE: u32 = 227;
 // const CHAR_SUBP_N: u32 = 228;
@@ -16,22 +34,23 @@ use crate::{buffer::*, console};
 /// An easy way to load PNG images and blit them on the console
 pub struct Image {
     file_loader: FileLoader,
-    img: Option<image::RgbaImage>,
+    pub(crate) img: Option<image::RgbaImage>,
 }
 
 impl Image {
     /// Create an image and load a PNG file.
     /// On the web platform, image loading is asynchronous.
     /// Using blit methods before the image is loaded has no impact on the console.
-    pub fn new(file_path: &str) -> Self {
+    pub(crate) fn new(file_path: &str) -> Rc<RefCell<Self>> {
         let mut file_loader = FileLoader::new();
         file_loader
             .load_file(file_path)
             .expect("Image file load failed.");
-        Self {
+
+        Rc::new(RefCell::new(Self {
             file_loader,
             img: None,
-        }
+        }))
     }
     /// Returns the image's width in pixels or 0 if the image has not yet been loaded
     pub fn width(&self) -> u32 {
@@ -48,11 +67,11 @@ impl Image {
         0
     }
     /// Create an empty image.
-    pub fn new_empty(width: u32, height: u32) -> Self {
-        Self {
+    pub fn new_empty(width: u32, height: u32) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
             file_loader: FileLoader::new(),
             img: Some(image::RgbaImage::new(width, height)),
-        }
+        }))
     }
     /// get the color of a specific pixel inside the image
     pub fn pixel(&self, x: u32, y: u32) -> Option<RGBA> {
@@ -71,7 +90,7 @@ impl Image {
     /// Check if the image has been loaded.
     /// Since there's no background thread doing the work for you, you have to call some method on image for it to actually load.
     /// Use either [`Image::try_load`], [`Image::get_size`], [`Image::blit`] or [`Image::blit_ex`] to run the loading code.
-    pub fn try_load(&mut self) -> bool {
+    pub(crate) fn load_async(&mut self) -> bool {
         if self.img.is_some() {
             return true;
         }
@@ -83,146 +102,23 @@ impl Image {
         }
         false
     }
+
+    pub fn is_loaded(&self) -> bool {
+        self.img.is_some()
+    }
+
     fn intialize_image(&mut self, buf: &[u8]) {
         self.img = Some(image::load_from_memory(buf).unwrap().to_rgba8());
     }
+
     /// If the image has already been loaded, return its size, else return None
-    pub fn try_get_size(&mut self) -> Option<(u32, u32)> {
-        if self.try_load() {
+    pub fn get_size(&self) -> Option<(u32, u32)> {
+        if self.is_loaded() {
             if let Some(ref img) = self.img {
                 return Some((img.width(), img.height()));
             }
         }
         None
-    }
-    /// blit an image on a console
-    ///
-    /// x,y are the coordinate of the top left image pixel in the console
-    ///
-    /// image pixels using the transparent color will be ignored
-    pub fn blit(&mut self, con: &mut Buffer, x: i32, y: i32, transparent: Option<RGBA>) {
-        if !self.try_load() {
-            console("Not loaded");
-            return;
-        }
-        if let Some(ref img) = self.img {
-            let width = img.width() as i32;
-            let height = img.height() as i32;
-            let minx = x.max(0);
-            let miny = y.max(0);
-            let maxx = (x + width).min(con.get_width() as i32);
-            let maxy = (y + height).min(con.get_height() as i32);
-            let offx = if x < 0 { -x } else { 0 };
-            let offy = if y < 0 { -y } else { 0 };
-            let con_width = con.get_pot_width();
-            let back = con.backgrounds_mut();
-            for cx in minx..maxx {
-                for cy in miny..maxy {
-                    let pixel = img.get_pixel((cx - minx + offx) as u32, (cy - miny + offy) as u32);
-                    let color = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                    if let Some(ref t) = transparent {
-                        if color == *t {
-                            continue;
-                        }
-                    }
-                    let offset = (cx as u32 + cy as u32 * con_width) as usize;
-                    back[offset] = color;
-                }
-            }
-        }
-    }
-    /// blit an image on a console
-    ///
-    /// x,y are the coordinate of the image center in the console
-    /// image can be scaled and rotated (angle is in radians)
-    /// image pixels using the transparent color will be ignored
-    pub fn blit_ex(
-        &mut self,
-        con: &mut Buffer,
-        x: f32,
-        y: f32,
-        scalex: f32,
-        scaley: f32,
-        angle: f32,
-        transparent: Option<RGBA>,
-    ) {
-        if !self.try_load() || scalex == 0.0 || scaley == 0.0 {
-            return;
-        }
-        let size = self.try_get_size().unwrap();
-        let rx = x - size.0 as f32 * 0.5;
-        let ry = y - size.1 as f32 * 0.5;
-        if scalex == 1.0 && scaley == 1.0 && angle == 0.0 && rx.floor() == rx && ry.floor() == ry {
-            let ix = rx as i32;
-            let iy = ry as i32;
-            self.blit(con, ix, iy, transparent);
-            return;
-        }
-        let iw = (size.0 / 2) as f32 * scalex;
-        let ih = (size.1 / 2) as f32 * scaley;
-        // get the coordinates of the image corners in the console
-        let newx_x = angle.cos();
-        let newx_y = -angle.sin();
-        let newy_x = newx_y;
-        let newy_y = -newx_x;
-        // image corners coordinates
-        // 0 = P - w/2 x' +h/2 y'
-        let x0 = x - iw * newx_x + ih * newy_x;
-        let y0 = y - iw * newx_y + ih * newy_y;
-        // 1 = P + w/2 x' + h/2 y'
-        let x1 = x + iw * newx_x + ih * newy_x;
-        let y1 = y + iw * newx_y + ih * newy_y;
-        // 2 = P + w/2 x' - h/2 y'
-        let x2 = x + iw * newx_x - ih * newy_x;
-        let y2 = y + iw * newx_y - ih * newy_y;
-        // 3 = P - w/2 x' - h/2 y'
-        let x3 = x - iw * newx_x - ih * newy_x;
-        let y3 = y - iw * newx_y - ih * newy_y;
-        // get the affected rectangular area in the console
-        let rx = x0.min(x1).min(x2).min(x3) as i32;
-        let ry = y0.min(y1).min(y2).min(y3) as i32;
-        let rw = x0.max(x1).max(x2).max(x3) as i32 - rx;
-        let rh = y0.max(y1).max(y2).max(y3) as i32 - ry;
-        // clip it
-        let minx = rx.max(0);
-        let miny = ry.max(0);
-        let maxx = (rx + rw).min(con.get_width() as i32);
-        let maxy = (ry + rh).min(con.get_height() as i32);
-        let invscalex = 1.0 / scalex;
-        let invscaley = 1.0 / scaley;
-        let con_width = con.get_pot_width();
-        let back = con.backgrounds_mut();
-        if let Some(ref img) = self.img {
-            for cx in minx..maxx {
-                for cy in miny..maxy {
-                    // map the console pixel to the image world
-                    let ix =
-                        (iw + (cx as f32 - x) * newx_x + (cy as f32 - y) * (-newy_x)) * invscalex;
-                    let iy =
-                        (ih + (cx as f32 - x) * (newx_y) - (cy as f32 - y) * newy_y) * invscaley;
-                    let color = if ix as i32 >= size.0 as i32
-                        || ix < 0.0
-                        || iy as i32 >= size.1 as i32
-                        || iy < 0.0
-                    {
-                        RGBA::rgba(0, 0, 0, 255)
-                    } else {
-                        let pixel = img.get_pixel(ix as u32, iy as u32);
-                        RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3])
-                    };
-                    if let Some(ref t) = transparent {
-                        if color == *t {
-                            continue;
-                        }
-                    }
-                    let offset = (cx as u32 + cy as u32 * con_width) as usize;
-                    if scalex < 1.0 || scaley < 1.0 {
-                        // todo mipmap
-                    }
-                    back[offset] = color;
-                }
-            }
-        }
     }
 
     // /// blit an image on the console, using the subcell characters to achieve twice the normal resolution.
@@ -256,7 +152,7 @@ impl Image {
     //     }
     // }
     // /// blit an image on a console. See [`Image::blit_2x`]
-    // pub fn blit_2x_image(
+    //  fn blit_2x_image(
     //     img: &image::RgbaImage,
     //     con: &mut Buffer,
     //     dx: i32,
@@ -374,7 +270,7 @@ impl Image {
 //     0,
 //     CHAR_SUBP_NE as i32,
 //     CHAR_SUBP_SW as i32,
-//     -(CHAR_SUBP_DIAG as i32),
+//     CHAR_SUBP_DIAG as i32,
 //     CHAR_SUBP_SE as i32,
 //     CHAR_SUBP_E as i32,
 //     -(CHAR_SUBP_N as i32),

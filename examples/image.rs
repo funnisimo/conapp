@@ -1,4 +1,6 @@
 use conapp::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 const FONT: &str = "resources/terminal_8x8.png";
 
@@ -6,23 +8,19 @@ const _WHITE: RGBA = RGBA::rgba(255, 255, 255, 255);
 
 struct MyRoguelike {
     con: Console,
-    skull: Image,
+    skull: Rc<RefCell<Image>>,
     angle: f32,
     scale_time: f32,
 }
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONT
-        ));
-
+        let font = app.load_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(MyRoguelike {
             con,
-            skull: Image::new("resources/skull.png"),
+            skull: app.load_image("resources/skull.png"),
             angle: 0.0,
             scale_time: 0.0,
         })
@@ -38,17 +36,17 @@ impl Screen for MyRoguelike {
 
     fn render(&mut self, app: &mut dyn AppContext) {
         let buffer = self.con.buffer_mut();
+        let buf_size = buffer.size();
         let scale = self.scale_time.cos();
         buffer.fill(None, None, Some((0, 0, 0, 255).into()));
 
-        self.skull.blit_ex(
-            buffer,
-            (buffer.get_width() / 2) as f32,
-            (buffer.get_height() / 2) as f32,
+        draw::image(buffer).blit_ex(
+            (buf_size.0 / 2) as f32,
+            (buf_size.1 / 2) as f32,
             scale,
             scale,
             self.angle,
-            None,
+            &self.skull,
         );
 
         self.con.render(app.gl())

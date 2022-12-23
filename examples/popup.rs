@@ -13,11 +13,7 @@ struct HelloWorld {
 }
 impl ScreenCreator for HelloWorld {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONT
-        ));
-
+        let font = app.load_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(HelloWorld {
@@ -84,11 +80,7 @@ struct Popup {
 
 impl Popup {
     pub fn new(app: &mut dyn AppContext, is_full: bool, time_left: f32) -> Popup {
-        let font = app.get_font(FONT).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONT
-        ));
-
+        let font = app.load_font(FONT);
         let con = match is_full {
             true => Console::new(80, 50, font),
             false => Console::new(20, 20, font).extents(0.25, 0.25, 0.5, 0.75),

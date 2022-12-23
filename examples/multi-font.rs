@@ -11,16 +11,10 @@ struct MainScreen {
 
 impl ScreenCreator for MainScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font_a = app.get_font(FONTA).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONTA
-        ));
+        let font_a = app.load_font(FONTA);
         let left = Console::new(60, 50, font_a).extents(0.0, 0.0, 0.75, 1.0);
 
-        let font_b = app.get_font(FONTB).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONTB
-        ));
+        let font_b = app.load_font(FONTB);
         let right = Console::new(20, 30, font_b).extents(0.75, 0.0, 1.0, 1.0);
 
         let pos = (30, 25);

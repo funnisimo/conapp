@@ -1,8 +1,9 @@
 use super::*;
 use super::{Program, DORYEN_FS, DORYEN_VS};
-use crate::AppContext;
 use crate::Buffer;
 use image::{ImageBuffer, Rgba};
+use std::cell::RefCell;
+use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
 
 pub struct Font {
@@ -22,14 +23,14 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn new(path: &str, app: &mut dyn AppContext) -> Self {
+    pub(crate) fn new(path: &str, gl: &WebGLRenderingContext) -> Rc<RefCell<Self>> {
         let mut loader = FontLoader::new();
         crate::console(&format!("Loading font - {}", path));
         loader.load_font(path);
 
-        let program = Program::new(app.gl(), DORYEN_VS, DORYEN_FS);
+        let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
 
-        Font {
+        Rc::new(RefCell::new(Font {
             // index,
             img_width: 0,
             img_height: 0,
@@ -42,7 +43,36 @@ impl Font {
             loader,
 
             program: Some(program),
-        }
+        }))
+    }
+
+    pub(crate) fn from_bytes(bytes: &[u8], gl: &WebGLRenderingContext) -> Rc<RefCell<Self>> {
+        let mut loader = FontLoader::new();
+        crate::console("Loading font from bytes");
+        loader.load_bytes(bytes, 4, 4);
+
+        let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
+
+        let font = Rc::new(RefCell::new(Font {
+            // index,
+            img_width: 0,
+            img_height: 0,
+            char_width: 0,
+            char_height: 0,
+            len: 0,
+
+            path: "bytes".to_owned(),
+            loaded: false,
+            loader,
+
+            program: Some(program),
+        }));
+
+        font.borrow_mut().load_font_info();
+        font.borrow_mut().setup_font(gl);
+        font.borrow_mut().loaded = true;
+
+        font
     }
 
     pub fn img_width(&self) -> u32 {

@@ -1,12 +1,12 @@
 use crate::font::Font;
-use crate::Buffer;
+use crate::{AppContext, Buffer};
 use std::cell::RefCell;
 use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Console {
-    pub buffer: Buffer,
+    buffer: Buffer,
     extents: (f32, f32, f32, f32),
     font: Rc<RefCell<Font>>,
 }
@@ -106,4 +106,9 @@ impl Console {
             (cell_pct.1) * self.buffer.get_height() as f32,
         ))
     }
+}
+
+pub fn subcell_console(width: u32, height: u32, app: &mut dyn AppContext) -> Console {
+    let font = app.load_font("SUBCELL");
+    Console::new(width, height, font)
 }

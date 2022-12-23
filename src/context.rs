@@ -1,4 +1,4 @@
-use crate::RGBA;
+use crate::{Image, RGBA};
 
 use super::input::{AppInput, InputApi};
 use super::Font;
@@ -6,6 +6,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
+
+pub(crate) static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
 
 /// This is the complete doryen-rs API provided to you by [`App`] in [`Engine::update`] and [`Engine::render`] methods.
 pub trait AppContext {
@@ -38,7 +40,9 @@ pub trait AppContext {
     fn gl(&self) -> &WebGLRenderingContext;
 
     fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>>;
-    fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
+    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>>;
+
+    // fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
 }
 
 pub struct AppContextImpl {
@@ -50,6 +54,7 @@ pub struct AppContextImpl {
     pub(crate) frame_time_ms: f32,
     pub(crate) gl: WebGLRenderingContext,
     pub(crate) fonts: HashMap<String, Rc<RefCell<Font>>>,
+    pub(crate) images: HashMap<String, Rc<RefCell<Image>>>,
     pub(crate) ready: bool,
 }
 
@@ -107,21 +112,60 @@ impl AppContext for AppContextImpl {
             return font.clone();
         }
 
-        let font = Rc::new(RefCell::new(Font::new(fontpath, self)));
+        let font = Font::new(fontpath, &self.gl);
         self.fonts.insert(fontpath.to_owned(), font.clone());
         self.ready = false;
         font
     }
 
-    fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
-        match self.fonts.get(fontpath) {
-            None => None,
-            Some(font) => Some(font.clone()),
+    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>> {
+        if let Some(image) = self.images.get(imgpath) {
+            return image.clone();
         }
+
+        let image = Image::new(imgpath);
+        self.images.insert(imgpath.to_owned(), image.clone());
+        self.ready = false;
+        image
     }
+
+    // fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
+    //     match self.fonts.get(fontpath) {
+    //         None => None,
+    //         Some(font) => Some(font.clone()),
+    //     }
+    // }
 }
 
 impl AppContextImpl {
+    pub fn new(gl: WebGLRenderingContext, screen_size: (u32, u32), input: AppInput) -> Self {
+        // TODO this should be handled in uni-app
+
+        // let font = Font::new(&options.font_path);
+
+        // let mut con = Console::new(0, options.console_width, options.console_height, font, &gl);
+        // let extents = options.console_extents;
+        // con.set_extents(extents.0, extents.1, extents.2, extents.3);
+
+        // con.set_glyphs(&options.glyphs);
+
+        let sub_cell_font: Rc<RefCell<Font>> = Font::from_bytes(SUBCELL_BYTES, &gl);
+        let mut fonts = HashMap::new();
+        fonts.insert("SUBCELL".to_owned(), sub_cell_font);
+
+        AppContextImpl {
+            input,
+            fps: 0,
+            average_fps: 0,
+            screen_size: screen_size,
+            frame_time_ms: 0.0,
+            gl,
+            fonts,
+            images: HashMap::new(),
+            ready: false,
+        }
+    }
+
     pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
         self.screen_size = (screen_width, screen_height);
         // for con in self.cons.iter_mut() {
@@ -129,13 +173,18 @@ impl AppContextImpl {
         // }
     }
 
-    pub fn load_fonts(&mut self) -> bool {
+    pub fn load_files(&mut self) -> bool {
         if self.ready {
             return true;
         }
         let mut ready = true;
         for (_, font) in self.fonts.iter_mut() {
             if !font.borrow_mut().load_async(&self.gl) {
+                ready = false;
+            }
+        }
+        for (_, image) in self.images.iter_mut() {
+            if !image.borrow_mut().load_async() {
                 ready = false;
             }
         }

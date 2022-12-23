@@ -27,11 +27,7 @@ fn move_con(pos: &mut (i32, i32), spd: &mut (i32, i32), size: (i32, i32)) {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONT
-        ));
-
+        let font = app.load_font(FONT);
         let con = Console::new(80, 50, font);
 
         let mut c1 = Buffer::new(20, 20);

@@ -12,3 +12,9 @@ pub use rect::*;
 
 mod progress;
 pub use progress::*;
+
+mod image;
+pub use self::image::*;
+
+mod subcell;
+pub use subcell::*;

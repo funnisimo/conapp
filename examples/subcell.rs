@@ -1,4 +1,6 @@
 use conapp::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 // doryen-rs/examples/subcell
 
@@ -10,38 +12,39 @@ const FONT: &str = "resources/terminal_8x8.png";
 
 struct MyRoguelike {
     con: Console,
-    skull: Image,
+    subcell: Console,
+    skull: Rc<RefCell<Image>>,
 }
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT).expect(&format!(
-            "Trying to use font that was not loaded.  Add this font to the AppBuilder - {}",
-            FONT
-        ));
-
+        let font = app.load_font(FONT);
         let con = Console::new(60, 80, font);
 
         Box::new(MyRoguelike {
             con,
-            skull: Image::new("resources/skull.png"),
+            subcell: subcell_console(30, 40, app).extents(0.25, 0.25, 0.75, 0.75),
+            skull: app.load_image("resources/skull.png"),
         })
     }
 }
 
 impl Screen for MyRoguelike {
     fn render(&mut self, app: &mut dyn AppContext) {
+        // image
+        self.subcell.buffer_mut().clear(true, true, true);
+        draw::subcell(self.subcell.buffer_mut()).blit(&self.skull, 0, 0, 0, 0, None, None);
+        self.subcell.render(app.gl());
+
+        // text
         let buffer = self.con.buffer_mut();
         buffer.fill(None, Some(RGBA::rgba(255, 0, 255, 255)), None);
-
-        self.skull.blit(buffer, 0, 0, None);
-
         draw::plain(buffer)
             .align(TextAlign::Center)
             .fg(RGBA::rgb(0, 128, 255))
-            .print_lines(30, 10, "This image comes\nfrom a png file.");
+            .print_lines(30, 10, "This is a 60x80 png\non a 30x40 console.");
 
-        self.con.render(app.gl())
+        self.con.render(app.gl());
     }
 }
 

@@ -67,13 +67,17 @@ impl FontLoader {
         }
         if self.loader.check_file_ready(self.id) {
             let buf = self.loader.get_file_content(self.id);
-            self.load_font_bytes(&buf);
+            let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
+            self.process_image(&mut img);
+            self.img = Some(img);
             return true;
         }
         false
     }
 
-    fn load_font_bytes(&mut self, buf: &[u8]) {
+    pub fn load_bytes(&mut self, buf: &[u8], char_width: u32, char_height: u32) {
+        self.char_width = char_width;
+        self.char_height = char_height;
         let mut img = image::load_from_memory(buf).unwrap().to_rgba8();
         self.process_image(&mut img);
         self.img = Some(img);
@@ -109,5 +113,20 @@ impl FontLoader {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::SUBCELL_BYTES;
+
+    #[test]
+    fn subcell_font() {
+        let mut loader = FontLoader::new();
+        loader.load_bytes(SUBCELL_BYTES, 4, 4);
+
+        assert!(loader.img.is_some());
+        assert!(loader.load_font_async());
     }
 }
