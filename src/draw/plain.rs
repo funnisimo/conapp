@@ -117,163 +117,172 @@ impl<'a> PlainPrinter<'a> {
         let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
 
         let mut widest = 0;
-        let mut cx = x;
+
         let mut cy = y;
-        let mut line_left = width;
-        let ex = x + width;
-
-        // println!("==========================");
-        // println!("WRAP = {}", text);
-
-        for (i, line) in text.split('\n').enumerate() {
-            if i > 0 {
-                if self.width.is_some() && self.bg.is_some() {
-                    for fx in cx..ex {
-                        self.print_char(fx, cy, '\0');
-                    }
-                }
-                widest = max(widest, cx - x);
-                cx = x;
-                cy += 1;
-                line_left = width;
-            }
-            for (i, word) in line.split(' ').enumerate() {
-                // println!(
-                //     "word={}, len={}, cx={}, line_left={}",
-                //     word,
-                //     word.len(),
-                //     cx,
-                //     line_left
-                // );
-                let mut added_space = false;
-                if i > 0 && line_left > word.len() as i32 {
-                    self.print_char(cx, cy, ' ');
-                    line_left -= 1;
-                    cx += 1;
-                    // println!("- add space, cx={}, ll={}", cx, line_left);
-                    added_space = true;
-                }
-
-                if word.len() == 0 {
-                    if line_left > 0 {
-                        self.print_char(cx, cy, ' ');
-                        line_left -= 1;
-                        cx += 1;
-                        // println!("- add space, cx={}, ll={}", cx, line_left);
-                    }
-                } else if (word.len() as i32) <= line_left && (i == 0 || added_space) {
-                    let word_len = self.print_part(cx, cy, 0, word.len() as usize, word);
-                    cx += word_len;
-                    line_left -= word_len;
-                    // println!("- add word, cx={}, ll={}", cx, line_left);
-                } else if (word.len() as i32) > width {
-                    // We are longer than a single line
-                    // Do we fit on this line and the next
-                    // println!("- long word");
-
-                    if line_left < 4 {
-                        if self.width.is_some() && self.bg.is_some() {
-                            for fx in cx..ex {
-                                self.print_char(fx, cy, '\0');
-                            }
-                        }
-
-                        widest = max(widest, cx - x);
-                        cx = x;
-                        cy += 1;
-                        line_left = width;
-                        // println!("- push to next line");
-                    } else if cx > x {
-                        self.print_char(cx, cy, ' ');
-                        line_left -= 1;
-                        cx += 1;
-                        // println!("- space");
-                    }
-
-                    for ch in word.chars() {
-                        if line_left == 1 {
-                            self.print_char(cx, cy, '-');
-                            widest = max(widest, cx - x + 1);
-                            cx = x;
-                            line_left = width;
-                            cy += 1;
-                            // println!("- hyphen + next line");
-                        }
-
-                        self.print_char(cx, cy, ch);
-                        line_left -= 1;
-                        cx += 1;
-                        // println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
-                    }
-                } else if word.len() > 6 && line_left - 2 >= word.len() as i32 / 2 {
-                    let pivot = min(line_left - 2, word.len() as i32 / 2);
-
-                    let left = &word[..pivot as usize];
-                    let right = &word[pivot as usize..];
-
-                    if cx > x {
-                        self.print_char(cx, cy, ' ');
-                        // line_left -= 1;
-                        cx += 1;
-                        // println!("- space");
-                    }
-
-                    let len = self.print_part(cx, cy, 0, left.len(), left);
-                    cx += len;
-                    // line_left -= len;
-                    // println!("- add half: word={}, cx={}, ll={}", left, cx, line_left);
-                    self.print_char(cx, cy, '-');
-                    cx += 1;
-
-                    // go to next line
-                    if self.width.is_some() && self.bg.is_some() {
-                        for fx in cx..ex {
-                            self.print_char(fx, cy, '\0');
-                        }
-                    }
-                    widest = max(widest, cx - x);
-                    cx = x;
-                    cy += 1;
-                    line_left = width;
-                    // println!("- next line");
-
-                    let len = self.print_part(cx, cy, 0, right.len(), right);
-                    cx += len;
-                    line_left -= len;
-                    // println!("- add half: word={}, cx={}, ll={}", right, cx, line_left);
-                } else {
-                    // go to next line
-                    if self.width.is_some() && self.bg.is_some() {
-                        for fx in cx..ex {
-                            self.print_char(fx, cy, '\0');
-                        }
-                    }
-                    widest = max(widest, cx - x);
-                    cx = x;
-                    cy += 1;
-                    line_left = width;
-                    // println!("- next line");
-
-                    let len = self.print_part(cx, cy, 0, word.len(), word);
-                    cx += len;
-                    line_left -= len;
-                    // println!("- add word, cx={}, ll={}", cx, line_left);
-                }
-            }
+        for line in wrap(width as usize, text) {
+            let w = line.print(self, x, cy);
+            widest = max(widest, w);
+            cy += 1;
         }
 
-        if self.width.is_some() && self.bg.is_some() {
-            for fx in cx..ex {
-                self.print_char(fx, cy, '\0');
-            }
-        }
-        widest = max(widest, cx - x);
+        (widest, cy - y)
 
-        (widest, cy - y + 1)
+        // let mut cx = x;
+        // let mut cy = y;
+        // let mut line_left = width;
+        // let ex = x + width;
+
+        // // println!("==========================");
+        // // println!("WRAP = {}", text);
+
+        // for (i, line) in text.split('\n').enumerate() {
+        //     if i > 0 {
+        //         if self.width.is_some() && self.bg.is_some() {
+        //             for fx in cx..ex {
+        //                 self.print_char(fx, cy, '\0');
+        //             }
+        //         }
+        //         widest = max(widest, cx - x);
+        //         cx = x;
+        //         cy += 1;
+        //         line_left = width;
+        //     }
+        //     for (i, word) in line.split(' ').enumerate() {
+        //         // println!(
+        //         //     "word={}, len={}, cx={}, line_left={}",
+        //         //     word,
+        //         //     word.len(),
+        //         //     cx,
+        //         //     line_left
+        //         // );
+        //         let mut added_space = false;
+        //         if i > 0 && line_left > word.len() as i32 {
+        //             self.print_char(cx, cy, ' ');
+        //             line_left -= 1;
+        //             cx += 1;
+        //             // println!("- add space, cx={}, ll={}", cx, line_left);
+        //             added_space = true;
+        //         }
+
+        //         if word.len() == 0 {
+        //             if line_left > 0 {
+        //                 self.print_char(cx, cy, ' ');
+        //                 line_left -= 1;
+        //                 cx += 1;
+        //                 // println!("- add space, cx={}, ll={}", cx, line_left);
+        //             }
+        //         } else if (word.len() as i32) <= line_left && (i == 0 || added_space) {
+        //             let word_len = self.print_part(cx, cy, 0, word.len() as usize, word);
+        //             cx += word_len;
+        //             line_left -= word_len;
+        //             // println!("- add word, cx={}, ll={}", cx, line_left);
+        //         } else if (word.len() as i32) > width {
+        //             // We are longer than a single line
+        //             // Do we fit on this line and the next
+        //             // println!("- long word");
+
+        //             if line_left < 4 {
+        //                 if self.width.is_some() && self.bg.is_some() {
+        //                     for fx in cx..ex {
+        //                         self.print_char(fx, cy, '\0');
+        //                     }
+        //                 }
+
+        //                 widest = max(widest, cx - x);
+        //                 cx = x;
+        //                 cy += 1;
+        //                 line_left = width;
+        //                 // println!("- push to next line");
+        //             } else if cx > x {
+        //                 self.print_char(cx, cy, ' ');
+        //                 line_left -= 1;
+        //                 cx += 1;
+        //                 // println!("- space");
+        //             }
+
+        //             for ch in word.chars() {
+        //                 if line_left == 1 {
+        //                     self.print_char(cx, cy, '-');
+        //                     widest = max(widest, cx - x + 1);
+        //                     cx = x;
+        //                     line_left = width;
+        //                     cy += 1;
+        //                     // println!("- hyphen + next line");
+        //                 }
+
+        //                 self.print_char(cx, cy, ch);
+        //                 line_left -= 1;
+        //                 cx += 1;
+        //                 // println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
+        //             }
+        //         } else if word.len() > 6 && line_left - 2 >= word.len() as i32 / 2 {
+        //             let pivot = min(line_left - 2, word.len() as i32 / 2);
+
+        //             let left = &word[..pivot as usize];
+        //             let right = &word[pivot as usize..];
+
+        //             if cx > x {
+        //                 self.print_char(cx, cy, ' ');
+        //                 // line_left -= 1;
+        //                 cx += 1;
+        //                 // println!("- space");
+        //             }
+
+        //             let len = self.print_part(cx, cy, 0, left.len(), left);
+        //             cx += len;
+        //             // line_left -= len;
+        //             // println!("- add half: word={}, cx={}, ll={}", left, cx, line_left);
+        //             self.print_char(cx, cy, '-');
+        //             cx += 1;
+
+        //             // go to next line
+        //             if self.width.is_some() && self.bg.is_some() {
+        //                 for fx in cx..ex {
+        //                     self.print_char(fx, cy, '\0');
+        //                 }
+        //             }
+        //             widest = max(widest, cx - x);
+        //             cx = x;
+        //             cy += 1;
+        //             line_left = width;
+        //             // println!("- next line");
+
+        //             let len = self.print_part(cx, cy, 0, right.len(), right);
+        //             cx += len;
+        //             line_left -= len;
+        //             // println!("- add half: word={}, cx={}, ll={}", right, cx, line_left);
+        //         } else {
+        //             // go to next line
+        //             if self.width.is_some() && self.bg.is_some() {
+        //                 for fx in cx..ex {
+        //                     self.print_char(fx, cy, '\0');
+        //                 }
+        //             }
+        //             widest = max(widest, cx - x);
+        //             cx = x;
+        //             cy += 1;
+        //             line_left = width;
+        //             // println!("- next line");
+
+        //             let len = self.print_part(cx, cy, 0, word.len(), word);
+        //             cx += len;
+        //             line_left -= len;
+        //             // println!("- add word, cx={}, ll={}", cx, line_left);
+        //         }
+        //     }
+        // }
+
+        // if self.width.is_some() && self.bg.is_some() {
+        //     for fx in cx..ex {
+        //         self.print_char(fx, cy, '\0');
+        //     }
+        // }
+        // widest = max(widest, cx - x);
+
+        // (widest, cy - y + 1)
     }
 }
 
-/*
 struct Line<'a>(&'a str, bool);
 
 impl<'a> Line<'a> {
@@ -281,37 +290,51 @@ impl<'a> Line<'a> {
         self.0.chars().count() + if self.1 { 1 } else { 0 }
     }
 
-    pub fn print(&self, align: TextAlign, width: u32) {
-        let self_len = min(width, self.len() as u32);
+    pub fn print(&self, printer: &mut PlainPrinter, x: i32, y: i32) -> i32 {
+        let width = printer.width.unwrap_or(self.len() as i32);
+        let self_len = min(width, self.len() as i32);
         let spaces = width.saturating_sub(self_len);
 
-        let (pre, post) = match align {
-            TextAlign::Left => (0, spaces),
+        let (x, pre, post) = match printer.align {
+            TextAlign::Left => (x, 0, spaces),
             TextAlign::Center => {
                 let half = spaces / 2;
-                (half, spaces - half)
+                (x - half - self_len / 2, half, spaces - half)
             }
-            TextAlign::Right => (spaces, 0),
+            TextAlign::Right => (x - width + 1, spaces, 0),
         };
 
-        let mut output = "[".to_string();
+        let mut cx = x;
+        let fg = printer.fg;
+        let bg = printer.bg;
+
+        // let mut output = "[".to_string();
         for _ in 0..pre {
-            output.push(' ');
+            printer.buffer.draw_opt(cx, y, Some(0), fg, bg);
+            cx += 1;
         }
 
-        output += self.0;
+        // output += self.0;
+        for char in self.0.chars() {
+            let glyph = (printer.to_glyph)(char);
+            printer.buffer.draw_opt(cx, y, Some(glyph), fg, bg);
+            cx += 1;
+        }
 
         if self.1 {
-            output.push('-');
+            printer.buffer.draw_opt(cx, y, Some('-' as u32), fg, bg);
+            cx += 1;
         }
 
         for _ in 0..post {
-            output.push(' ');
+            printer.buffer.draw_opt(cx, y, Some(0), fg, bg);
+            cx += 1;
         }
 
-        output.push(']');
+        // output.push(']');
 
-        println!("{} [{}]", output, output.len() - 2);
+        // println!("{} [{}]", output, output.len() - 2);
+        width
     }
 }
 
@@ -355,14 +378,14 @@ fn wrap<'a>(limit: usize, text: &'a str) -> Vec<Line<'a>> {
                 let mut next = current[break_index..].trim();
 
                 println!(" - first_slice={}, line_left={}", first_slice, line_left);
-                if line_left > 4 {
+                if line_left >= 4 {
                     let next_space = next.find(" ").unwrap_or(next.len() - 1);
                     let next_word = &next[..next_space];
                     let next_word_len = next_word.chars().count();
 
                     println!(" - : next_word={}, len={}", next_word, next_word_len);
 
-                    if next_word_len > 6 {
+                    if next_word_len >= 6 {
                         let keep_len = min(line_left, next_word_len - 2);
                         println!(" - : hyphen! keep={}", keep_len);
                         let line_text = &current[0..break_index + keep_len];
@@ -381,7 +404,6 @@ fn wrap<'a>(limit: usize, text: &'a str) -> Vec<Line<'a>> {
     }
     output
 }
-*/
 
 #[cfg(test)]
 mod test {
@@ -402,7 +424,7 @@ mod test {
         let mut buffer = Buffer::new(50, 50);
         let mut printer = plain(&mut buffer).width(10);
 
-        assert_eq!(printer.wrap(0, 0, "taco casa"), (9, 1));
+        assert_eq!(printer.wrap(0, 0, "taco casa"), (10, 1));
         assert_eq!(extract_line(&buffer, 0, 0, 10), "taco casa\0");
     }
 
@@ -472,12 +494,12 @@ mod test {
             extract_line(&buffer, 0, 3, 21),
             "deteriorated the\0\0\0\0\0"
         );
-        assert_eq!(extract_line(&buffer, 0, 4, 21), "stonemasons' monu-\0\0\0");
+        assert_eq!(extract_line(&buffer, 0, 4, 21), "stonemasons' monum-\0\0");
         assert_eq!(
             extract_line(&buffer, 0, 5, 21),
-            "ments\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+            "ents\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         );
-        assert_eq!(r, (18, 5));
+        assert_eq!(r, (20, 5));
     }
 
     #[test]
