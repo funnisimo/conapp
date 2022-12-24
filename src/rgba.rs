@@ -3,7 +3,7 @@ use std::ops;
 
 pub type RGB = (u8, u8, u8);
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct RGBA(pub u8, pub u8, pub u8, pub u8);
 
 impl RGBA {
@@ -85,11 +85,11 @@ impl Into<(f32, f32, f32, f32)> for RGBA {
     }
 }
 
-impl PartialEq for RGBA {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0 && self.1 == other.1 && self.2 == other.2 && self.3 == other.3
-    }
-}
+// impl PartialEq for RGBA {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.0 == other.0 && self.1 == other.1 && self.2 == other.2 && self.3 == other.3
+//     }
+// }
 
 impl ops::Mul<f32> for RGBA {
     type Output = RGBA;
@@ -156,8 +156,7 @@ pub fn color_lerp(c1: RGBA, c2: RGBA, pct: f32) -> RGBA {
     )
 }
 
-/*
-pub(super) fn color_scale(c: RGBA, coef: f32) -> RGBA {
+pub fn color_scale(c: RGBA, coef: f32) -> RGBA {
     RGBA::rgba(
         (f32::from(c.0) * coef).min(255.0) as u8,
         (f32::from(c.1) * coef).min(255.0) as u8,
@@ -166,7 +165,7 @@ pub(super) fn color_scale(c: RGBA, coef: f32) -> RGBA {
     )
 }
 
-pub(super) fn color_mul(c1: RGBA, c2: RGBA) -> RGBA {
+pub fn color_mul(c1: RGBA, c2: RGBA) -> RGBA {
     RGBA::rgba(
         (f32::from(c1.0) * f32::from(c2.0) / 255.0) as u8,
         (f32::from(c1.1) * f32::from(c2.1) / 255.0) as u8,
@@ -175,7 +174,7 @@ pub(super) fn color_mul(c1: RGBA, c2: RGBA) -> RGBA {
     )
 }
 
-pub(super) fn color_add(c1: RGBA, c2: RGBA) -> RGBA {
+pub fn color_add(c1: RGBA, c2: RGBA) -> RGBA {
     RGBA::rgba(
         (0.5 * f32::from(c1.0) + 0.5 * f32::from(c2.0)) as u8,
         (0.5 * f32::from(c1.1) + 0.5 * f32::from(c2.1)) as u8,
@@ -183,7 +182,6 @@ pub(super) fn color_add(c1: RGBA, c2: RGBA) -> RGBA {
         (0.5 * f32::from(c1.3) + 0.5 * f32::from(c2.3)) as u8,
     )
 }
-*/
 
 pub fn color_dist(c1: RGBA, c2: RGBA) -> i32 {
     let dr = i32::from(c1.0) - i32::from(c2.0);

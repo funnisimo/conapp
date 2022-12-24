@@ -23,7 +23,7 @@ features         = ["png"]
 
 [dev-dependencies]
 unicode-segmentation = "1.10"
-# doryen-fov           = "0.1"
+doryen-fov           = "0.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

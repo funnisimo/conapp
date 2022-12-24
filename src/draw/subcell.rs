@@ -73,6 +73,11 @@ impl<'a> SubCell<'a> {
         self
     }
 
+    pub fn to_glyph(mut self, func: &'a dyn Fn(u8) -> i32) -> Self {
+        self.to_glyph = func;
+        self
+    }
+
     /// blit an image on the console, using the subcell characters to achieve twice the normal resolution.
     /// This uses the CHAR_SUBCELL_* ascii codes (from 226 to 232):
     ///

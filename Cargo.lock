@@ -140,6 +140,7 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 name = "conapp"
 version = "0.1.0"
 dependencies = [
+ "doryen-fov",
  "glutin",
  "image",
  "js-sys",
@@ -293,6 +294,12 @@ checksum = "ac1b7517328c04c2aa68422fc60a41b92208182142ed04a25879c26c8f878794"
 dependencies = [
  "libloading",
 ]
+
+[[package]]
+name = "doryen-fov"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a8e6ef8177b52d581c728655ff05fe03a6634ed496fc2c6642bb17b91d27aa9"
 
 [[package]]
 name = "downcast-rs"
