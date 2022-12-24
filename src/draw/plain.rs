@@ -290,9 +290,9 @@ impl<'a> Line<'a> {
         Line(t, false)
     }
 
-    pub fn len(&self) -> usize {
-        self.0.chars().count() + if self.1 { 1 } else { 0 }
-    }
+    // pub fn len(&self) -> usize {
+    //     self.0.chars().count() + if self.1 { 1 } else { 0 }
+    // }
 
     pub fn with_hyphen(mut self) -> Self {
         self.1 = true;
@@ -303,7 +303,8 @@ impl<'a> Line<'a> {
         self.0.chars().count() + if self.1 { 1 } else { 0 }
     }
 
-    pub fn last_break_before(&self, idx: usize) -> Option<usize> {
+    pub fn last_break_before(&self, char_idx: usize) -> Option<usize> {
+        let idx = self.0.char_indices().nth(char_idx).map(|(i, _)| i).unwrap();
         match self.0[..idx].rmatch_indices(' ').next() {
             None => None,
             Some((idx, _)) => Some(idx),
@@ -335,8 +336,8 @@ impl<'a> Line<'a> {
     }
 
     pub fn print(&self, printer: &mut PlainPrinter, x: i32, y: i32) -> i32 {
-        let width = printer.width.unwrap_or(self.len() as i32);
-        let self_len = min(width, self.len() as i32);
+        let width = printer.width.unwrap_or(self.char_len() as i32);
+        let self_len = min(width, self.char_len() as i32);
         let spaces = width.saturating_sub(self_len);
 
         let (x, pre, post) = match printer.align {

@@ -45,58 +45,76 @@ impl Screen for ColoredScreen {
         let mut draw = draw::colored(&mut buffer)
             .to_rgba(&my_to_rgba)
             .fg(RGBA::rgb(192, 32, 32));
-        draw.print(5, y, "No #[0F0]bg#[], no #[00f]width#[]");
+        draw.print(2, y, "No #[0F0]bg#[], no #[00f]width#[]");
         draw.print_lines(
-            5,
+            2,
             y + 2,
             "print_lines can\nhandle #[32,32,220]newlines#[], but\nwill not #[blue]word wrap#[].",
         );
-        draw.wrap(30, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw.wrap(26, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
 
         let y = 10;
 
         let mut draw = draw::colored(&mut buffer)
             .to_rgba(&my_to_rgba)
-            .fg(RGBA::rgb(64, 128, 32))
-            .width(15);
-        draw.print(5, y, "No #[0F0]bg#[], no #[00f]width#[]");
+            .fg(RGBA::rgb(255, 0, 255))
+            .bg(RGBA::rgb(0, 64, 255));
+        draw.print(2, y, "No #[0F0]bg#[], no #[00f]width#[]");
         draw.print_lines(
-            5,
+            2,
             y + 2,
             "print_lines can\nhandle #[32,32,220]newlines#[], but\nwill not #[blue]word wrap#[].",
         );
-        draw.wrap(30, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw.wrap(26, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+
+        let y = 18;
+
+        draw::plain(buffer).print(26, y, "Align::Left");
+        draw::plain(buffer)
+            .align(TextAlign::Center)
+            .print(52, y, "Align::Center");
+        draw::plain(buffer)
+            .align(TextAlign::Right)
+            .print(78, y, "Align::Right");
 
         // width, no bg
-        let y = 23;
+        let y = 20;
 
         let mut draw = draw::colored(&mut buffer)
             .to_rgba(&my_to_rgba)
-            .fg(RGBA::rgb(255, 0, 255))
-            .bg(RGBA::rgb(0, 64, 255));
-        draw.print(5, y, "No #[0F0]bg#[], no #[00f]width#[]");
+            .fg(RGBA::rgb(64, 128, 32))
+            .width(15);
+        draw.print(2, y, "No #[0F0]bg#[], no #[00f]width#[]");
         draw.print_lines(
-            5,
+            2,
             y + 2,
             "print_lines can\nhandle #[32,32,220]newlines#[], but\nwill not #[blue]word wrap#[].",
         );
-        draw.wrap(30, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw.wrap(26, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw = draw.align(TextAlign::Center);
+        draw.wrap(52, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw = draw.align(TextAlign::Right);
+        draw.wrap(78, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
 
         // width, no bg
-        let y = 35;
+        let y = 33;
 
         let mut draw = draw::colored(&mut buffer)
             .to_rgba(&my_to_rgba)
             .fg(RGBA::rgb(255, 255, 255))
             .bg(RGBA::rgb(0, 64, 255))
             .width(15);
-        draw.print(5, y, "No #[0F0]bg#[], no #[00f]width#[]");
+        draw.print(2, y, "No #[0F0]bg#[], no #[00f]width#[]");
         draw.print_lines(
-            5,
+            2,
             y + 2,
             "print_lines can\nhandle #[32,32,220]newlines#[], but\nwill not #[blue]word wrap#[].",
         );
-        draw.wrap(30, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw.wrap(26, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw = draw.align(TextAlign::Center);
+        draw.wrap(52, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
+        draw = draw.align(TextAlign::Right);
+        draw.wrap(78, y,  "Inside a #[396]call to wrap#[], you can place a #[ee3]long text#[] and it will automatically be #[66f]wrapped#[] at the width you specify.  Or at the #[dd3]end of the buffer#[].");
     }
 
     fn render(&mut self, app: &mut dyn AppContext) {
