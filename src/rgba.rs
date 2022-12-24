@@ -120,7 +120,7 @@ impl ops::Add<RGBA> for RGBA {
         let r = self.0.saturating_add(rhs.0);
         let g = self.1.saturating_add(rhs.1);
         let b = self.2.saturating_add(rhs.2);
-        let a = self.3.saturating_add(rhs.3);
+        let a = self.3.saturating_add(rhs.3); // hmmm?
         RGBA::rgba(r, g, b, a)
     }
 }
@@ -132,7 +132,7 @@ impl ops::Add<RGBA> for &RGBA {
         let r = self.0.saturating_add(rhs.0);
         let g = self.1.saturating_add(rhs.1);
         let b = self.2.saturating_add(rhs.2);
-        let a = self.3.saturating_add(rhs.3);
+        let a = self.3.saturating_add(rhs.3); // hmmm?
         RGBA::rgba(r, g, b, a)
     }
 }
