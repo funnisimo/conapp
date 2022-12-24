@@ -273,6 +273,116 @@ impl<'a> PlainPrinter<'a> {
     }
 }
 
+/*
+struct Line<'a>(&'a str, bool);
+
+impl<'a> Line<'a> {
+    pub fn len(&self) -> usize {
+        self.0.chars().count() + if self.1 { 1 } else { 0 }
+    }
+
+    pub fn print(&self, align: TextAlign, width: u32) {
+        let self_len = min(width, self.len() as u32);
+        let spaces = width.saturating_sub(self_len);
+
+        let (pre, post) = match align {
+            TextAlign::Left => (0, spaces),
+            TextAlign::Center => {
+                let half = spaces / 2;
+                (half, spaces - half)
+            }
+            TextAlign::Right => (spaces, 0),
+        };
+
+        let mut output = "[".to_string();
+        for _ in 0..pre {
+            output.push(' ');
+        }
+
+        output += self.0;
+
+        if self.1 {
+            output.push('-');
+        }
+
+        for _ in 0..post {
+            output.push(' ');
+        }
+
+        output.push(']');
+
+        println!("{} [{}]", output, output.len() - 2);
+    }
+}
+
+fn wrap<'a>(limit: usize, text: &'a str) -> Vec<Line<'a>> {
+    println!("--------------------------------------");
+    println!("WRAP - {}: '{}'", limit, text);
+
+    let mut output: Vec<Line<'a>> = Vec::new();
+
+    for line in text.split('\n') {
+        let mut current = line;
+
+        while current.chars().count() > limit {
+            let break_index = current[0..limit + 1].rfind(" ").unwrap_or(limit + 2);
+
+            // There are no spaces in the first line...
+            if break_index > limit + 1 {
+                let first_word_break = current.find(" ").unwrap_or(current.len());
+                let first_word_len = current[..first_word_break].chars().count();
+
+                println!("too long - {}", &current[..first_word_break]);
+
+                let keep_len = min(limit - 1, first_word_len - 2);
+                let keep_index: usize = current
+                    .char_indices()
+                    .nth(keep_len)
+                    .map(|(i, _)| i)
+                    .unwrap();
+
+                let first_slice = &current[..keep_index];
+                let line = Line(first_slice, true);
+                let next = &current[keep_index..];
+                current = next;
+                output.push(line);
+            } else {
+                let first_slice = &current[0..break_index];
+                let slice_len = first_slice.chars().count();
+                let line_left = limit.saturating_sub(slice_len).saturating_sub(1);
+
+                let mut line = Line(first_slice, false);
+                let mut next = current[break_index..].trim();
+
+                println!(" - first_slice={}, line_left={}", first_slice, line_left);
+                if line_left > 4 {
+                    let next_space = next.find(" ").unwrap_or(next.len() - 1);
+                    let next_word = &next[..next_space];
+                    let next_word_len = next_word.chars().count();
+
+                    println!(" - : next_word={}, len={}", next_word, next_word_len);
+
+                    if next_word_len > 6 {
+                        let keep_len = min(line_left, next_word_len - 2);
+                        println!(" - : hyphen! keep={}", keep_len);
+                        let line_text = &current[0..break_index + keep_len];
+                        line = Line(line_text, true);
+                        next = &current[break_index + keep_len..];
+                    }
+                }
+                current = next;
+                output.push(line);
+            }
+        }
+
+        if current.len() > 0 {
+            output.push(Line(current, false));
+        }
+    }
+    output
+}
+*/
+
 #[cfg(test)]
 mod test {
     use super::*;
