@@ -1,18 +1,25 @@
-use crate::AppEvent;
-
 use super::AppContext;
+use crate::AppEvent;
 use std::fmt::Debug;
 
+/// The result from a call to one of the [`Screen`] event functions
 pub enum ScreenResult {
+    /// Continue to process the frame
     Continue,
+    /// Push a new screen onto the stack
     Push(Box<dyn Screen>),
+    /// Replace the current screen with this new one
     Replace(Box<dyn Screen>),
+    /// Pop the current screen off the stack
     Pop,
+    /// Quit the application
     Quit,
-    Capture(String), // Take a screenshot to this filename
+    /// Save a screen capture to the given filename
+    Capture(String),
 }
 
 impl Debug for ScreenResult {
+    /// Shows the name of the enum value
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -30,6 +37,7 @@ impl Debug for ScreenResult {
 }
 
 impl PartialEq for ScreenResult {
+    /// Compares the enum value, but not any Screen
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (ScreenResult::Continue, ScreenResult::Continue) => true,
@@ -43,37 +51,55 @@ impl PartialEq for ScreenResult {
     }
 }
 
+/// Creates a screen
 pub trait ScreenCreator {
     fn create(ctx: &mut dyn AppContext) -> Box<dyn Screen>;
 }
 
+/// A screen to handle input, update, and render events
 #[allow(unused_variables)]
 pub trait Screen {
+    /// Called once, when the screen is first added to the [`crate::Runner`]
     fn setup(&mut self, app: &mut dyn AppContext) {}
+
+    /// Called when the app is resized
     fn resize(&mut self, app: &mut dyn AppContext) {}
 
+    /// Returns whether or not this screen is full size, if not the [`crate::Runner`] will render the screens below.
     fn is_full_screen(&self) -> bool {
         true
     }
+
+    /// Returns whether or not this screen should get update calls when it is not on top
     fn needs_background_update(&self) -> bool {
         false
     }
+
+    /// Returns whether or not this screen is ready to render
+    /// TODO - Remove
     fn ready(&self) -> bool {
         true
     }
 
+    /// Called when another screen is pushed on top of this one
     fn pause(&mut self, app: &mut dyn AppContext) {}
+
+    /// Called when this screen becomes the topmost screen
     fn resume(&mut self, app: &mut dyn AppContext) {}
 
+    /// Called once for each input event that occurred in this frame
     fn input(&mut self, app: &mut dyn AppContext, event: &AppEvent) -> ScreenResult {
         ScreenResult::Continue
     }
 
+    /// Called at the goal fps, can be called multiple times per frame
     fn update(&mut self, app: &mut dyn AppContext, frame_time_ms: f32) -> ScreenResult {
         ScreenResult::Continue
     }
 
+    /// Called once at the end of the frame
     fn render(&mut self, app: &mut dyn AppContext) {}
 
+    /// Called when this screen is popped from the stack
     fn teardown(&mut self, app: &mut dyn AppContext) {}
 }

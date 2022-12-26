@@ -11,20 +11,9 @@ pub(crate) static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.pn
 
 /// This is the complete API provided to you in [`crate::Screen`] methods.
 pub trait AppContext {
-    /// return the root console that you can use to draw things on the screen
-    // fn con(&self) -> &Console;
-
-    /// return the root console that you can use to draw things on the screen
-    // fn con_mut(&mut self) -> &mut Console;
-
-    // /// gets you access to the additional consoles that you add to the app
-    // fn get_console(&self, idx: usize) -> Option<&Console>;
-
-    // /// gets you access to the additional consoles that you add to the app
-    // fn get_console_mut(&mut self, idx: usize) -> Option<&mut Console>;
+    /// Clears the screen, with an optional color
     fn clear(&self, color: Option<RGBA>);
-
-    /// return the input API to check user mouse and keyboard input
+    /// return the input [`InputApi`] to check user mouse and keyboard input
     fn input(&self) -> &dyn InputApi;
     /// return the current framerate
     fn fps(&self) -> u32;
@@ -35,46 +24,31 @@ pub trait AppContext {
 
     /// return the current screen size
     fn get_screen_size(&self) -> (u32, u32);
-    // fn clear_all(&mut self) -> ();
 
+    /// return the [`WebGLRenderingContext`]
     fn gl(&self) -> &WebGLRenderingContext;
 
+    /// Load a font program for the given font file
     fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>>;
-    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>>;
 
-    // fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>>;
+    /// Load an image file
+    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>>;
 }
 
-pub struct AppContextImpl {
+pub(crate) struct AppContextImpl {
     // pub(super) cons: Vec<Console>,
-    pub(crate) input: AppInput,
-    pub(crate) fps: u32,
-    pub(crate) average_fps: u32,
-    pub(crate) screen_size: (u32, u32),
-    pub(crate) frame_time_ms: f32,
-    pub(crate) gl: WebGLRenderingContext,
-    pub(crate) fonts: HashMap<String, Rc<RefCell<Font>>>,
-    pub(crate) images: HashMap<String, Rc<RefCell<Image>>>,
-    pub(crate) ready: bool,
+    pub input: AppInput,
+    pub fps: u32,
+    pub average_fps: u32,
+    pub screen_size: (u32, u32),
+    pub frame_time_ms: f32,
+    pub gl: WebGLRenderingContext,
+    pub fonts: HashMap<String, Rc<RefCell<Font>>>,
+    pub images: HashMap<String, Rc<RefCell<Image>>>,
+    pub ready: bool,
 }
 
 impl AppContext for AppContextImpl {
-    // fn con(&self) -> &Console {
-    //     &self.cons[0]
-    // }
-
-    // fn con_mut(&mut self) -> &mut Console {
-    //     &mut self.cons[0]
-    // }
-
-    // fn get_console(&self, idx: usize) -> Option<&Console> {
-    //     self.cons.get(idx)
-    // }
-
-    // fn get_console_mut(&mut self, idx: usize) -> Option<&mut Console> {
-    //     self.cons.get_mut(idx)
-    // }
-
     fn gl(&self) -> &WebGLRenderingContext {
         &self.gl
     }
@@ -139,16 +113,6 @@ impl AppContext for AppContextImpl {
 
 impl AppContextImpl {
     pub fn new(gl: WebGLRenderingContext, screen_size: (u32, u32), input: AppInput) -> Self {
-        // TODO this should be handled in uni-app
-
-        // let font = Font::new(&options.font_path);
-
-        // let mut con = Console::new(0, options.console_width, options.console_height, font, &gl);
-        // let extents = options.console_extents;
-        // con.set_extents(extents.0, extents.1, extents.2, extents.3);
-
-        // con.set_glyphs(&options.glyphs);
-
         let sub_cell_font: Rc<RefCell<Font>> = Font::from_bytes(SUBCELL_BYTES, &gl);
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
@@ -168,9 +132,6 @@ impl AppContextImpl {
 
     pub fn resize(&mut self, screen_width: u32, screen_height: u32) {
         self.screen_size = (screen_width, screen_height);
-        // for con in self.cons.iter_mut() {
-        //     con.screen_resize(gl, screen_width, screen_height);
-        // }
     }
 
     pub fn load_files(&mut self) -> bool {
