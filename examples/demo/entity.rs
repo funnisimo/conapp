@@ -1,4 +1,4 @@
-use conapp::{color_mul, color_scale, Buffer, RGBA};
+use conapp::{Buffer, RGBA};
 
 use crate::level::Level;
 use crate::light::{Light, LIGHT_COEF};
@@ -38,9 +38,9 @@ impl Entity {
         } else {
             let light = level.light_at(self.pos);
             let penumbra = Light::is_penumbra(light, 100);
-            let mut color = color_mul(self.color, light);
+            let mut color = RGBA::multiply(self.color, light);
             if penumbra {
-                color = color_scale(color, LIGHT_COEF);
+                color = RGBA::scale(color, LIGHT_COEF);
             }
             (color, penumbra)
         };

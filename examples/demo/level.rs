@@ -1,6 +1,6 @@
 use crate::entity::Entity;
 use crate::light::{Light, LIGHT_COEF};
-use conapp::{color_blend, draw, AppContext, Buffer, Image, RGBA};
+use conapp::{draw, AppContext, Buffer, Image, RGBA};
 use doryen_fov::{FovAlgorithm, FovRestrictive, MapData};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -143,7 +143,7 @@ impl Level {
                         );
                     } else if self.visited_2x[off] {
                         let col = self.ground.borrow().pixel(x as u32, y as u32).unwrap();
-                        let dark_col = color_blend(col, VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
+                        let dark_col = RGBA::blend(col, VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
                         self.render_output
                             .borrow_mut()
                             .put_pixel(x as u32, y as u32, dark_col);

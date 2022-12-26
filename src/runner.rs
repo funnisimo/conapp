@@ -16,8 +16,8 @@ const SKIP_TICKS: f64 = 1.0 / TICKS_PER_SECOND;
 pub const DEFAULT_CONSOLE_WIDTH: u32 = 80;
 pub const DEFAULT_CONSOLE_HEIGHT: u32 = 45;
 
-/// What is returned by the [`Engine::update`] function
-pub enum RunnerEvent {
+/// What is returned by the internal update and input functions
+enum RunnerEvent {
     /// Save a screenshot. parameter = file path.
     /// The file name must have a .png extension.
     /// This is ignored on WASM platform.

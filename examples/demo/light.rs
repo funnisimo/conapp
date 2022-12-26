@@ -1,6 +1,5 @@
 use crate::noise::simplex;
-use crate::BLACK;
-use conapp::{color_add, color_blend, color_scale, Image, RGBA};
+use conapp::{Image, RGBA};
 use doryen_fov::{FovAlgorithm, MapData};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -82,7 +81,7 @@ impl Light {
             radius as usize,
             true,
         );
-        let light_color = color_scale(self.color, intensity);
+        let light_color = RGBA::scale(self.color, intensity);
         let radius2 = radius * radius;
         let radius_coef = 1.0 / (1.0 + radius2 / 20.0);
         for y in miny..=maxy {
@@ -96,11 +95,11 @@ impl Light {
                     let intensity_coef = intensity_coef - radius_coef;
                     let intensity_coef = intensity_coef / (1.0 - radius_coef);
                     if intensity_coef > 0.0 {
-                        let light = color_blend(BLACK, light_color, intensity_coef);
+                        let light = RGBA::darken(light_color, 1.0 - intensity_coef);
                         let cur_light = lightmap.borrow().pixel(x, y).unwrap();
                         lightmap
                             .borrow_mut()
-                            .put_pixel(x, y, color_add(light, cur_light));
+                            .put_pixel(x, y, RGBA::mix(light, cur_light));
                     }
                 }
             }

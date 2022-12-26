@@ -8,7 +8,7 @@ use std::iter::Filter;
 /// Warning, there are some slight variations from one OS to another, for example the `Command`, `F13`, `F14`, `F15` keys
 /// only exist on Mac.
 ///
-/// State functions like [`InputApi::key`], [`InputApi::mouse_button`] and [`InputApi::mouse_pos`] always work.
+/// State functions like [`InputApi::key`], [`InputApi::mouse_button`] and [`InputApi::mouse_pct`] always work.
 /// On another hand, pressed/released event functions should be called only in the update function.
 ///
 pub trait InputApi {

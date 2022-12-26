@@ -1,4 +1,4 @@
-use crate::rgba::{color_blend, RGBA};
+use crate::rgba::RGBA;
 
 pub type Glyph = u32;
 
@@ -490,7 +490,7 @@ impl Buffer {
         );
     }
     /// blit a region of this console onto another one.
-    /// see [`Console::blit`]
+    /// see [`crate::draw::Blitter::blit`]
     pub fn blit_ex(
         &self,
         xsrc: i32,
@@ -523,7 +523,7 @@ impl Buffer {
                             }
                         }
                         destination.backgrounds_mut()[dest_idx] =
-                            color_blend(dst_back, src_back, back_alpha);
+                            RGBA::blend(dst_back, src_back, back_alpha);
                     }
                     if fore_alpha > 0.0 {
                         let src_fore = self.foregrounds()[src_idx];
@@ -534,21 +534,21 @@ impl Buffer {
                         if fore_alpha < 1.0 {
                             if src_char == ' ' as u32 || src_char == 0 {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    color_blend(dst_fore, src_back, back_alpha);
+                                    RGBA::blend(dst_fore, src_back, back_alpha);
                             } else if dst_char == ' ' as u32 || dst_char == 0 {
                                 destination.glyphs_mut()[dest_idx] = src_char;
                                 destination.foregrounds_mut()[dest_idx] =
-                                    color_blend(dst_back, src_fore, fore_alpha);
+                                    RGBA::blend(dst_back, src_fore, fore_alpha);
                             } else if dst_char == src_char {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    color_blend(dst_fore, src_fore, fore_alpha);
+                                    RGBA::blend(dst_fore, src_fore, fore_alpha);
                             } else if fore_alpha < 0.5 {
                                 destination.foregrounds_mut()[dest_idx] =
-                                    color_blend(dst_fore, dst_back, fore_alpha * 2.0);
+                                    RGBA::blend(dst_fore, dst_back, fore_alpha * 2.0);
                             } else {
                                 destination.glyphs_mut()[dest_idx] = src_char;
                                 destination.foregrounds_mut()[dest_idx] =
-                                    color_blend(dst_back, src_fore, (fore_alpha - 0.5) * 2.0);
+                                    RGBA::blend(dst_back, src_fore, (fore_alpha - 0.5) * 2.0);
                             }
                         } else {
                             destination.foregrounds_mut()[dest_idx] = src_fore;

@@ -9,7 +9,7 @@ use uni_gl::{BufferBit, WebGLRenderingContext};
 
 pub(crate) static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
 
-/// This is the complete doryen-rs API provided to you by [`App`] in [`Engine::update`] and [`Engine::render`] methods.
+/// This is the complete API provided to you in [`crate::Screen`] methods.
 pub trait AppContext {
     /// return the root console that you can use to draw things on the screen
     // fn con(&self) -> &Console;
@@ -83,7 +83,7 @@ impl AppContext for AppContextImpl {
         match color {
             None => self.gl.clear(BufferBit::Color),
             Some(c) => {
-                let data = c.as_f32();
+                let data = c.to_f32();
                 self.gl.clear_color(data.0, data.1, data.2, data.3);
             }
         }
