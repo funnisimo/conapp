@@ -1,15 +1,16 @@
 use super::TextAlign;
-use crate::codepage437;
 use crate::Buffer;
 use crate::Glyph;
 use crate::{to_rgba, RGBA};
 use std::cmp::{max, min};
 use std::fmt::Display;
 
+/// Creates a [`ColoredPrinter`]
 pub fn colored<'a>(buffer: &'a mut Buffer) -> ColoredPrinter {
     ColoredPrinter::new(buffer)
 }
 
+/// Prints color encoded text to the buffer
 pub struct ColoredPrinter<'a> {
     buffer: &'a mut Buffer,
     width: Option<i32>,
@@ -21,6 +22,7 @@ pub struct ColoredPrinter<'a> {
 }
 
 impl<'a> ColoredPrinter<'a> {
+    /// Creates a `ColoredPrinter` for the buffer
     pub fn new(buffer: &'a mut Buffer) -> Self {
         ColoredPrinter {
             buffer,
@@ -28,49 +30,53 @@ impl<'a> ColoredPrinter<'a> {
             align: TextAlign::Left,
             fg: Some(RGBA::rgb(255, 255, 255)),
             bg: None,
-            to_glyph: &codepage437::to_glyph,
+            to_glyph: &|ch| ch as u32,
             to_rgba: &to_rgba,
         }
     }
 
+    /// Sets the width of the printing
+    ///
+    /// If the width is > than the text, will print glyph 0 and fill any bg
     pub fn width(mut self, width: i32) -> Self {
         self.width = Some(width);
         self
     }
 
+    /// Sets the alignment for the printing
+    ///
+    /// Center Align means center of text is on the given x for draw calls
+    /// Right Align means the right edge of the text is on the given x
     pub fn align(mut self, align: TextAlign) -> Self {
         self.align = align;
         self
     }
 
+    /// Sets the fg (default=WHITE)
     pub fn fg(mut self, fg: RGBA) -> Self {
         self.fg = Some(fg);
         self
     }
 
+    /// Sets the bg (default=None)
     pub fn bg(mut self, bg: RGBA) -> Self {
         self.bg = Some(bg);
         self
     }
 
+    /// Sets the char->Glyph conversion function, default=(ch as u32)
     pub fn to_glyph(mut self, to_glyph: &'a dyn Fn(char) -> Glyph) -> Self {
         self.to_glyph = to_glyph;
         self
     }
 
+    /// Sets the text->RGBA conversion function, default=[`to_rgba`]
     pub fn to_rgba(mut self, to_rgba: &'a dyn Fn(&str) -> Option<RGBA>) -> Self {
         self.to_rgba = to_rgba;
         self
     }
 
-    // fn print_char(&mut self, x: i32, y: i32, ch: Option<char>, fg: Option<RGBA>) {
-    //     let glyph = match ch {
-    //         None => Some(0),
-    //         Some(ch) => Some((self.to_glyph)(ch)),
-    //     };
-    //     self.buffer.draw_opt(x, y, glyph, fg.or(self.fg), self.bg);
-    // }
-
+    /// Prints the given text at the given location, returns the length printed
     pub fn print(&mut self, x: i32, y: i32, text: &str) -> i32 {
         // let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
         let mut widest = 0;
@@ -85,34 +91,7 @@ impl<'a> ColoredPrinter<'a> {
         widest
     }
 
-    // fn print_line(&mut self, x: i32, y: i32, chars: &[(Option<RGBA>, char)]) -> i32 {
-    //     let mut width = self.width.unwrap_or(chars.len() as i32);
-    //     let mut start = 0;
-    //     let mut ix = match self.align {
-    //         TextAlign::Left => x,
-    //         TextAlign::Right => x - width + 1,
-    //         TextAlign::Center => x - width / 2,
-    //     };
-    //     if ix < 0 {
-    //         width += ix;
-    //         start -= ix;
-    //         ix = 0;
-    //     }
-    //     if ix + width > self.buffer.get_width() as i32 {
-    //         width = self.buffer.get_width() as i32 - ix;
-    //     }
-    //     let mut iter = chars.iter().skip(start as usize);
-    //     for _ in 0..width {
-    //         let (fg, ch) = match iter.next() {
-    //             None => (None, None),
-    //             Some(x) => (x.0, Some(x.1)),
-    //         };
-    //         self.print_char(ix, y, ch, fg);
-    //         ix += 1;
-    //     }
-    //     width
-    // }
-
+    /// Prints all the lines in the given text, truncates at width (if any), returns the (width,height) printed
     pub fn print_lines(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
         // let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
 
@@ -126,45 +105,9 @@ impl<'a> ColoredPrinter<'a> {
         }
 
         (widest, cy - y)
-
-        // let chars: Vec<(Option<RGBA>, char)> = TextIterator::new(self.to_rgba, text).collect();
-
-        // let lines = chars
-        //     .into_iter()
-        //     .fold(vec![Vec::new()], |mut acc, (color, ch)| {
-        //         if ch == '\n' {
-        //             acc.push(Vec::new());
-        //         } else {
-        //             acc.last_mut().unwrap().push((color, ch));
-        //         }
-        //         acc
-        //     });
-
-        // let mut width = 0;
-        // let mut height = 0;
-        // for line in lines {
-        //     let w = self.print_line(x, y + height, &line);
-        //     width = max(width, w);
-        //     height += 1;
-        // }
-        // (width, height)
     }
 
-    // fn print_word(&mut self, x: i32, y: i32, chars: &[(Option<RGBA>, char)]) -> i32 {
-    //     let width = chars.len() as i32;
-    //     let mut iter = chars.iter();
-    //     let mut ix = x;
-    //     for _ in 0..width {
-    //         let (fg, ch) = match iter.next() {
-    //             None => (None, None),
-    //             Some(x) => (x.0, Some(x.1)),
-    //         };
-    //         self.print_char(ix, y, ch, fg);
-    //         ix += 1;
-    //     }
-    //     width
-    // }
-
+    /// Performs word wrapping of the given text at the setup width (or buffer width) and prints the lines
     pub fn wrap(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
         let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
 
@@ -178,177 +121,10 @@ impl<'a> ColoredPrinter<'a> {
         }
 
         (widest, cy - y)
-
-        // let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
-
-        // let chars: Vec<(Option<RGBA>, char)> = TextIterator::new(self.to_rgba, text).collect();
-
-        // let lines_of_words = make_lines_of_words(chars);
-
-        // // println!("==========================");
-        // // println!("WRAP = {}", text);
-
-        // let mut widest = 0;
-        // let mut cx = x;
-        // let mut cy = y;
-        // let mut line_left = width;
-        // let ex = x + width;
-
-        // for (i, line) in lines_of_words.iter().enumerate() {
-        //     if i > 0 {
-        //         if self.width.is_some() && self.bg.is_some() {
-        //             for fx in cx..ex {
-        //                 self.print_char(fx, cy, None, None);
-        //             }
-        //         }
-        //         widest = max(widest, cx - x);
-        //         cx = x;
-        //         cy += 1;
-        //         line_left = width;
-        //     }
-
-        //     for (i, word) in line.iter().enumerate() {
-        //         // println!(
-        //         //     "word={:?}, len={}, cx={}, line_left={}",
-        //         //     word,
-        //         //     word.len(),
-        //         //     cx,
-        //         //     line_left
-        //         // );
-        //         let first_fg = word.first().unwrap_or(&(None, ' ')).0;
-
-        //         if i > 0 && line_left > word.len() as i32 {
-        //             self.print_char(cx, cy, Some(' '), first_fg);
-        //             line_left -= 1;
-        //             cx += 1;
-        //             // println!("- add space, cx={}, ll={}", cx, line_left);
-        //         }
-
-        //         if word.len() == 0 {
-        //             if line_left > 0 {
-        //                 self.print_char(cx, cy, Some(' '), first_fg);
-        //                 line_left -= 1;
-        //                 cx += 1;
-        //                 // println!("- add space, cx={}, ll={}", cx, line_left);
-        //             }
-        //         } else if (word.len() as i32) <= line_left {
-        //             let word_len = self.print_word(cx, cy, word);
-        //             cx += word_len;
-        //             line_left -= word_len;
-        //             // println!("- add word, cx={}, ll={}", cx, line_left);
-        //         } else if (word.len() as i32) > width {
-        //             // We are longer than a single line
-        //             // Do we fit on this line and the next
-        //             // println!("- long word");
-
-        //             if line_left < 4 {
-        //                 if self.width.is_some() && self.bg.is_some() {
-        //                     for fx in cx..ex {
-        //                         self.print_char(fx, cy, None, None);
-        //                     }
-        //                 }
-        //                 widest = max(widest, cx - x);
-        //                 cx = x;
-        //                 cy += 1;
-        //                 line_left = width;
-        //                 // println!("- push to next line");
-        //             } else if cx > x {
-        //                 self.print_char(cx, cy, Some(' '), first_fg);
-        //                 line_left -= 1;
-        //                 cx += 1;
-        //                 // println!("- space");
-        //             }
-
-        //             for (fg, ch) in word {
-        //                 if line_left == 1 {
-        //                     self.print_char(cx, cy, Some('-'), *fg);
-        //                     cx += 1;
-
-        //                     if self.width.is_some() && self.bg.is_some() {
-        //                         for fx in cx..ex {
-        //                             self.print_char(fx, cy, None, None);
-        //                         }
-        //                     }
-
-        //                     widest = max(widest, cx - x);
-        //                     cx = x;
-        //                     line_left = width;
-        //                     cy += 1;
-        //                     // println!("- hyphen + next line");
-        //                 }
-
-        //                 self.print_char(cx, cy, Some(*ch), *fg);
-        //                 line_left -= 1;
-        //                 cx += 1;
-        //                 // println!("- add letter, ch={}, cx={}, ll={}", ch, cx, line_left);
-        //             }
-        //         } else if word.len() > 6 && line_left - 2 >= word.len() as i32 / 2 {
-        //             let pivot = min(line_left - 2, word.len() as i32 / 2);
-
-        //             let left = &word[..pivot as usize];
-        //             let right = &word[pivot as usize..];
-
-        //             if cx > x {
-        //                 self.print_char(cx, cy, Some(' '), first_fg);
-        //                 // line_left -= 1;
-        //                 cx += 1;
-        //                 // println!("- space");
-        //             }
-
-        //             let len = self.print_word(cx, cy, left);
-        //             cx += len;
-        //             // line_left -= len;
-        //             // println!("- add half: word={:?}, cx={}, ll={}", left, cx, line_left);
-        //             self.print_char(cx, cy, Some('-'), first_fg);
-        //             cx += 1;
-
-        //             // go to next line
-        //             if self.width.is_some() && self.bg.is_some() {
-        //                 for fx in cx..ex {
-        //                     self.print_char(fx, cy, None, None);
-        //                 }
-        //             }
-        //             widest = max(widest, cx - x);
-        //             cx = x;
-        //             cy += 1;
-        //             line_left = width;
-        //             // println!("- next line");
-
-        //             let len = self.print_word(cx, cy, right);
-        //             cx += len;
-        //             line_left -= len;
-        //             // println!("- add half: word={:?}, cx={}, ll={}", right, cx, line_left);
-        //         } else {
-        //             // go to next line
-        //             if self.width.is_some() && self.bg.is_some() {
-        //                 for fx in cx..ex {
-        //                     self.print_char(fx, cy, None, None);
-        //                 }
-        //             }
-        //             widest = max(widest, cx - x);
-        //             cx = x;
-        //             cy += 1;
-        //             line_left = width;
-        //             // println!("- next line");
-
-        //             let len = self.print_word(cx, cy, word);
-        //             cx += len;
-        //             line_left -= len;
-        //             // println!("- add word, cx={}, ll={}", cx, line_left);
-        //         }
-        //     }
-        // }
-        // if self.width.is_some() && self.bg.is_some() {
-        //     for fx in cx..ex {
-        //         self.print_char(fx, cy, None, None);
-        //     }
-        // }
-        // widest = max(widest, cx - x);
-
-        // (widest, cy - y + 1)
     }
 }
 
+/// A span of the input text that is in a single color
 #[derive(Debug, Clone)]
 struct ColoredSpan<'a> {
     color: Option<&'a str>,
@@ -356,18 +132,17 @@ struct ColoredSpan<'a> {
 }
 
 impl<'a> ColoredSpan<'a> {
+    /// Constructs a new span
     fn new(color: Option<&'a str>, txt: &'a str) -> Self {
         ColoredSpan { color, txt }
     }
 
-    // pub fn start_trimmed(&self) -> Self {
-    //     ColoredSpan::new(self.color, self.txt.trim_start())
-    // }
-
+    /// Length of the span in chars
     pub fn char_len(&self) -> usize {
         self.txt.chars().count()
     }
 
+    /// The position of the last space before the given index
     pub fn last_break_before(&self, char_idx: usize) -> Option<usize> {
         if char_idx == 0 {
             return None;
@@ -385,14 +160,8 @@ impl<'a> ColoredSpan<'a> {
         }
     }
 
-    // pub fn first_word(&self) -> Self {
-    //     match self.txt.find(" ") {
-    //         None => self.clone(),
-    //         Some(idx) => ColoredSpan::new(self.color, &self.txt[..idx]),
-    //     }
-    // }
-
-    pub fn split_at_char(&self, char_idx: usize) -> (Self, Self) {
+    /// Splits the span into 2 with the index being the first char on the right side
+    pub fn split_at_idx(&self, char_idx: usize) -> (Self, Self) {
         let idx = self
             .txt
             .char_indices()
@@ -405,7 +174,8 @@ impl<'a> ColoredSpan<'a> {
         )
     }
 
-    pub fn split_at_space(&self, omit_idx: usize) -> (Self, Self) {
+    /// Splits the span into 2 with the index being omitted
+    pub fn split_omitting(&self, omit_idx: usize) -> (Self, Self) {
         let idx = self
             .txt
             .char_indices()
@@ -438,6 +208,7 @@ impl<'a> ColoredSpan<'a> {
     }
 }
 
+/// Show the color and text information
 impl<'a> Display for ColoredSpan<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.color {
@@ -447,49 +218,31 @@ impl<'a> Display for ColoredSpan<'a> {
     }
 }
 
+/// A Line of colored text, which can be made up of multiple spans
 #[derive(Debug, Clone)]
 struct ColoredLine<'a> {
     spans: Vec<ColoredSpan<'a>>,
-    // hyphen: bool,
 }
 
 impl<'a> ColoredLine<'a> {
+    /// Constructs a new, empty line
     fn new() -> Self {
-        ColoredLine {
-            spans: Vec::new(),
-            // hyphen: false,
-        }
+        ColoredLine { spans: Vec::new() }
     }
 
+    /// Adds a span to the line
     fn push(&mut self, span: ColoredSpan<'a>) {
         self.spans.push(span);
     }
 
-    // pub fn new(txt: &'a str) -> Self {
-    //     Line(txt,false)
-    // }
-
-    // pub fn trimmed(&self) -> Self {
-    //     Line(self.0.trim(), self.1)
-    // }
-
-    // pub fn with_hyphen(mut self) -> Self {
-    //     self.hyphen = true;
-    //     self
-    // }
-
+    /// Length of the line in chars
     pub fn char_len(&self) -> usize {
         self.spans.iter().fold(0, |cnt, spn| cnt + spn.char_len())
     }
 
+    /// Finds the last space in the line before the given index
     pub fn last_break_before(&self, char_idx: usize) -> Option<usize> {
-        //     match self.0[..idx].rmatch_indices(' ').next() {
-        //         None => None,
-        //         Some((idx,_)) => Some(idx)
-        //     }
-
-        println!("lbb - {}, {}", self, char_idx);
-
+        // println!("lbb - {}, {}", self, char_idx);
         let mut len_left = char_idx;
         let mut len_so_far = 0;
         let mut best: Option<usize> = None;
@@ -501,11 +254,11 @@ impl<'a> ColoredLine<'a> {
             let char_len = span.char_len();
             let my_max = min(char_len + 1, len_left);
 
-            println!(" - span.lbb {}, {}", span, my_max);
+            // println!(" - span.lbb {}, {}", span, my_max);
             match span.last_break_before(my_max) {
                 None => {}
                 Some(idx) => {
-                    println!(" - new best={}", len_so_far + idx);
+                    // println!(" - new best={}", len_so_far + idx);
                     best = Some(len_so_far + idx);
                 }
             }
@@ -513,15 +266,12 @@ impl<'a> ColoredLine<'a> {
             len_so_far += char_len;
         }
 
-        println!(" : result={:?}", best);
+        // println!(" : result={:?}", best);
         best
     }
 
+    /// Returns a line with the spans that make up the first word in the line
     pub fn first_word(&self) -> Self {
-        // match self.0.find(" ") {
-        //     None => Line::new(self.0),
-        //     Some(idx) => Line::new(&self.0[..idx]),
-        // }
         let mut out = ColoredLine::new();
         for span in self.spans.iter() {
             match span.txt.find(" ") {
@@ -535,10 +285,8 @@ impl<'a> ColoredLine<'a> {
         out
     }
 
+    /// Returns 2 lines where a hyphen is added to the first and the second starts at the given index
     pub fn hyphenate_at_char(&self, split_idx: usize) -> (Self, Self) {
-        // let idx = self.0.char_indices().nth(char_idx).map(|(i,_)| i).unwrap();
-        // (Line::new(&self.0[..idx]).with_hyphen(), Line::new(&self.0[idx..]))
-
         let mut left = ColoredLine::new();
         let mut right = ColoredLine::new();
         let mut len_so_far = 0;
@@ -552,7 +300,7 @@ impl<'a> ColoredLine<'a> {
                     left.spans.push(span.clone());
                 } else if len_so_far + char_len > split_idx {
                     let idx = split_idx - len_so_far;
-                    let (a, b) = span.split_at_char(idx);
+                    let (a, b) = span.split_at_idx(idx);
                     println!("hac - sac - {} = {:?} + {:?}", idx, a, b);
                     left.push(a);
                     left.push(ColoredSpan::new(span.color, "-"));
@@ -567,7 +315,8 @@ impl<'a> ColoredLine<'a> {
         (left, right)
     }
 
-    pub fn split_at_space(&self, omit_idx: usize) -> (Self, Self) {
+    /// Returns 2 lines where the omitted index is in neither
+    pub fn split_omitting(&self, omit_idx: usize) -> (Self, Self) {
         //     let idx = self.0.char_indices().nth(char_idx).map(|(i,_)| i).unwrap();
         //     (Line::new(&self.0[..idx]), Line::new(&self.0[idx+1..]))
         let mut left = ColoredLine::new();
@@ -580,7 +329,7 @@ impl<'a> ColoredLine<'a> {
             } else {
                 let char_len = span.char_len() as i32;
                 if to_omit < char_len {
-                    let (a, b) = span.split_at_space(to_omit as usize);
+                    let (a, b) = span.split_omitting(to_omit as usize);
                     left.push(a);
                     right.push(b);
                 } else {
@@ -593,6 +342,7 @@ impl<'a> ColoredLine<'a> {
         (left, right)
     }
 
+    /// Prints the line, handles width, bg, and align
     pub fn print(&self, printer: &mut ColoredPrinter, x: i32, y: i32) -> i32 {
         let width = printer.width.unwrap_or(self.char_len() as i32);
         let self_len = min(width, self.char_len() as i32);
@@ -635,6 +385,7 @@ impl<'a> ColoredLine<'a> {
     }
 }
 
+/// Converts to a string that has color and text information
 impl<'a> Display for ColoredLine<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for span in self.spans.iter() {
@@ -647,6 +398,7 @@ impl<'a> Display for ColoredLine<'a> {
     }
 }
 
+/// Converts text into colored lines
 fn parse_colored_lines<'a>(txt: &'a str) -> Vec<ColoredLine<'a>> {
     let mut colors: Vec<Option<&str>> = Vec::new();
     let mut out: Vec<ColoredLine<'a>> = Vec::new();
@@ -661,6 +413,7 @@ fn parse_colored_lines<'a>(txt: &'a str) -> Vec<ColoredLine<'a>> {
     out
 }
 
+/// Parses a single line
 fn parse_colored_line<'a>(line: &'a str, colors: &mut Vec<Option<&'a str>>) -> ColoredLine<'a> {
     let mut colored_line = ColoredLine::new();
     let default_color: Option<&str> = None;
@@ -694,9 +447,10 @@ fn parse_colored_line<'a>(line: &'a str, colors: &mut Vec<Option<&'a str>>) -> C
     colored_line
 }
 
+/// Parses the text and wraps it into lines with a max of the given width
 fn wrap<'a>(limit: usize, text: &'a str) -> Vec<ColoredLine<'a>> {
-    println!("--------------------------------------");
-    println!("WRAP - {}: '{}'", limit, text);
+    // println!("--------------------------------------");
+    // println!("WRAP - {}: '{}'", limit, text);
 
     let mut output: Vec<ColoredLine<'a>> = Vec::new();
 
@@ -717,31 +471,30 @@ fn wrap<'a>(limit: usize, text: &'a str) -> Vec<ColoredLine<'a>> {
                     let keep_len = min(limit - 1, first_word_len - 2);
                     let (left, right) = current.hyphenate_at_char(keep_len);
 
-                    println!("too long - {} => {} + {}", first_word, left, right);
-
-                    println!(": {}", left);
+                    // println!("too long - {} => {} + {}", first_word, left, right);
+                    // println!(": {}", left);
                     output.push(left);
                     current = right;
                 }
                 Some(break_index) => {
-                    let (mut left, mut right) = current.split_at_space(break_index);
+                    let (mut left, mut right) = current.split_omitting(break_index);
                     let left_len = left.char_len();
                     let line_left = limit.saturating_sub(left_len).saturating_sub(1);
 
-                    println!(" - left={}, line_left={}, right={}", left, line_left, right);
+                    // println!(" - left={}, line_left={}, right={}", left, line_left, right);
                     if line_left >= 4 {
                         let next_word = right.first_word();
                         let next_word_len = next_word.char_len();
 
-                        println!(" - : next_word={}, len={}", next_word, next_word_len);
+                        // println!(" - : next_word={}, len={}", next_word, next_word_len);
 
                         if next_word_len >= 6 {
                             let keep_len = min(line_left, next_word_len - 2);
-                            println!(" - : hyphen! keep={}", keep_len);
+                            // println!(" - : hyphen! keep={}", keep_len);
                             (left, right) = current.hyphenate_at_char(break_index + keep_len);
                         }
                     }
-                    println!(": {}", left);
+                    // println!(": {}", left);
                     output.push(left);
                     current = right;
                 }
@@ -874,19 +627,19 @@ mod test {
         let text = "This is a span of text";
         let span = ColoredSpan::new(Some("color"), text);
 
-        let (left, right) = span.split_at_space(9);
+        let (left, right) = span.split_omitting(9);
         assert_eq!(left.txt, "This is a");
         assert_eq!(right.txt, "span of text");
         assert_eq!(left.color, Some("color"));
         assert_eq!(right.color, Some("color"));
 
-        let (left, right) = span.split_at_space(0);
+        let (left, right) = span.split_omitting(0);
         assert_eq!(left.txt, "");
         assert_eq!(right.txt, "his is a span of text");
         assert_eq!(left.color, Some("color"));
         assert_eq!(right.color, Some("color"));
 
-        let (left, right) = span.split_at_space(span.char_len() - 1);
+        let (left, right) = span.split_omitting(span.char_len() - 1);
         assert_eq!(left.txt, "This is a span of tex");
         assert_eq!(right.txt, "");
         assert_eq!(left.color, Some("color"));
@@ -900,7 +653,7 @@ mod test {
         let line = parse_colored_line(text, &mut colors);
         let mut buffer = Buffer::new(50, 50);
 
-        let (left, right) = line.split_at_space(9);
+        let (left, right) = line.split_omitting(9);
         {
             let mut printer = colored(&mut buffer);
             left.print(&mut printer, 0, 0);
@@ -910,7 +663,7 @@ mod test {
         assert_eq!(extract_line(&buffer, 0, 1, 13), "span of text\0");
 
         buffer.clear(true, true, true);
-        let (left, right) = line.split_at_space(0);
+        let (left, right) = line.split_omitting(0);
         {
             println!("left={:?}, right={:?}", left, right);
             let mut printer = colored(&mut buffer);
@@ -921,7 +674,7 @@ mod test {
         assert_eq!(extract_line(&buffer, 0, 1, 22), "his is a span of text\0");
 
         buffer.clear(true, true, true);
-        let (left, right) = line.split_at_space(line.char_len() - 1);
+        let (left, right) = line.split_omitting(line.char_len() - 1);
         {
             println!("left={:?}, right={:?}", left, right);
             let mut printer = colored(&mut buffer);
@@ -937,19 +690,19 @@ mod test {
         let text = "This is a span of text";
         let span = ColoredSpan::new(Some("color"), text);
 
-        let (left, right) = span.split_at_char(9);
+        let (left, right) = span.split_at_idx(9);
         assert_eq!(left.txt, "This is a");
         assert_eq!(right.txt, " span of text");
         assert_eq!(left.color, Some("color"));
         assert_eq!(right.color, Some("color"));
 
-        let (left, right) = span.split_at_char(0);
+        let (left, right) = span.split_at_idx(0);
         assert_eq!(left.txt, "");
         assert_eq!(right.txt, "This is a span of text");
         assert_eq!(left.color, Some("color"));
         assert_eq!(right.color, Some("color"));
 
-        let (left, right) = span.split_at_char(span.char_len() - 1);
+        let (left, right) = span.split_at_idx(span.char_len() - 1);
         assert_eq!(left.txt, "This is a span of tex");
         assert_eq!(right.txt, "t");
         assert_eq!(left.color, Some("color"));

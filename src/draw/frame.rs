@@ -1,15 +1,19 @@
+use super::plain;
 use crate::{codepage437, Buffer, Glyph, TextAlign, RGBA};
 
-use super::plain;
-
+/// The border type - single, double, or colored
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum BorderType {
+    /// Just fill the bg of the border
     Color,
+    /// Use the single line chars
     Single,
+    /// Use the double line chars
     Double,
 }
 
 impl BorderType {
+    /// Returns the glyphs needed to draw the frame for this border type
     pub fn glyphs(&self, to_glyph: &dyn Fn(char) -> Glyph) -> [Glyph; 8] {
         match self {
             BorderType::Color => [0; 8],
@@ -19,10 +23,12 @@ impl BorderType {
     }
 }
 
+/// Constructs a new frame for this buffer
 pub fn frame<'a>(buffer: &'a mut Buffer) -> Frame {
     Frame::new(buffer)
 }
 
+/// A frame drawing object
 pub struct Frame<'a> {
     buffer: &'a mut Buffer,
     border: BorderType,
@@ -42,6 +48,7 @@ pub struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
+    /// Construct a new Frame for this buffer
     pub fn new(buffer: &'a mut Buffer) -> Self {
         Frame {
             buffer,
@@ -62,21 +69,25 @@ impl<'a> Frame<'a> {
         }
     }
 
+    /// Set the border type, default=[`BorderType::Single`]
     pub fn border(mut self, border: BorderType) -> Self {
         self.border = border;
         self
     }
 
+    /// Sets the fg color of the frame glyphs, default=None
     pub fn fg(mut self, fg: RGBA) -> Self {
         self.fg = Some(fg);
         self
     }
 
+    /// Sets the bg color of the frame glyphs, default=None
     pub fn bg(mut self, bg: RGBA) -> Self {
         self.bg = Some(bg);
         self
     }
 
+    /// Sets the glyph, fg, bg of the fill to use inside the frame, default=None,None,None
     pub fn fill(mut self, glyph: Option<Glyph>, fg: Option<RGBA>, bg: Option<RGBA>) -> Self {
         self.fill_glyph = glyph;
         self.fill_fg = fg;
@@ -84,21 +95,25 @@ impl<'a> Frame<'a> {
         self
     }
 
+    /// Sets the title of the frame (drawn in the top)
     pub fn title(mut self, title: &str) -> Self {
         self.title = title.to_owned();
         self
     }
 
+    /// Sets the fg color of the frame title, default=same as frame
     pub fn title_fg(mut self, fg: RGBA) -> Self {
         self.title_fg = Some(fg);
         self
     }
 
+    /// Sets the alignment of the title in the top of the frame, default=Center
     pub fn title_align(mut self, align: TextAlign) -> Self {
         self.title_align = align;
         self
     }
 
+    /// Draws the frame, title, and any fill
     pub fn draw(&mut self, x: i32, y: i32, width: u32, height: u32) {
         if self.fill_bg.is_some() || self.fill_fg.is_some() || self.fill_glyph.is_some() {
             self.buffer.area(

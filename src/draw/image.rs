@@ -5,16 +5,19 @@ use crate::RGBA;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+/// Constructs a new [`Blitter`] for this buffer
 pub fn image(buffer: &mut Buffer) -> Blitter {
     Blitter::new(buffer)
 }
 
+/// An object that can draw images into a buffer
 pub struct Blitter<'a> {
     buffer: &'a mut Buffer,
     transparent: Option<RGBA>,
 }
 
 impl<'a> Blitter<'a> {
+    /// Constructs a new Blitter for this buffer
     pub fn new(buffer: &'a mut Buffer) -> Self {
         Blitter {
             buffer,
@@ -22,6 +25,7 @@ impl<'a> Blitter<'a> {
         }
     }
 
+    /// Sets the color of the image that should be transparent when blitted, default=None
     pub fn transparent(mut self, color: RGBA) -> Self {
         self.transparent = Some(color);
         self
