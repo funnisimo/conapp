@@ -75,12 +75,6 @@ pub trait Screen {
         false
     }
 
-    /// Returns whether or not this screen is ready to render
-    /// TODO - Remove
-    fn ready(&self) -> bool {
-        true
-    }
-
     /// Called when another screen is pushed on top of this one
     fn pause(&mut self, app: &mut dyn AppContext) {}
 

@@ -182,38 +182,36 @@ impl Runner {
         let ctx = &mut self.app_ctx;
         ctx.input.on_event(ev);
         if let Some(mode) = self.screens.last_mut() {
-            if mode.ready() {
-                match mode.input(ctx, ev) {
-                    ScreenResult::Continue => (),
-                    ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
-                    ScreenResult::Pop => {
-                        ctx.clear(None);
-                        mode.teardown(ctx);
-                        self.screens.pop();
-                        match self.screens.last_mut() {
-                            Some(m) => m.resume(ctx),
-                            _ => {}
-                        }
-                        // self.render(ctx);
-                        return Some(RunnerEvent::Next);
+            match mode.input(ctx, ev) {
+                ScreenResult::Continue => (),
+                ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
+                ScreenResult::Pop => {
+                    ctx.clear(None);
+                    mode.teardown(ctx);
+                    self.screens.pop();
+                    match self.screens.last_mut() {
+                        Some(m) => m.resume(ctx),
+                        _ => {}
                     }
-                    ScreenResult::Replace(next) => {
-                        ctx.clear(None);
-                        mode.teardown(ctx);
-                        self.screens.pop();
-                        self.push(next);
-                        // self.render(ctx);
-                        return Some(RunnerEvent::Next);
-                    }
-                    ScreenResult::Push(next) => {
-                        mode.pause(ctx);
-                        self.push(next);
-                        // self.render(ctx);
-                        return Some(RunnerEvent::Next);
-                    }
-                    ScreenResult::Quit => {
-                        return Some(RunnerEvent::Exit);
-                    }
+                    // self.render(ctx);
+                    return Some(RunnerEvent::Next);
+                }
+                ScreenResult::Replace(next) => {
+                    ctx.clear(None);
+                    mode.teardown(ctx);
+                    self.screens.pop();
+                    self.push(next);
+                    // self.render(ctx);
+                    return Some(RunnerEvent::Next);
+                }
+                ScreenResult::Push(next) => {
+                    mode.pause(ctx);
+                    self.push(next);
+                    // self.render(ctx);
+                    return Some(RunnerEvent::Next);
+                }
+                ScreenResult::Quit => {
+                    return Some(RunnerEvent::Exit);
                 }
             }
         }
@@ -344,32 +342,30 @@ impl Runner {
     fn update(&mut self) -> Option<RunnerEvent> {
         let frame_time_ms = self.app_ctx.frame_time_ms();
         if let Some(mode) = self.screens.last_mut() {
-            if mode.ready() {
-                match mode.update(&mut self.app_ctx, frame_time_ms) {
-                    ScreenResult::Continue => (),
-                    ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
-                    ScreenResult::Pop => {
-                        self.app_ctx.clear(None);
-                        mode.teardown(&mut self.app_ctx);
-                        self.screens.pop();
-                        match self.screens.last_mut() {
-                            Some(m) => m.resume(&mut self.app_ctx),
-                            _ => {}
-                        }
+            match mode.update(&mut self.app_ctx, frame_time_ms) {
+                ScreenResult::Continue => (),
+                ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
+                ScreenResult::Pop => {
+                    self.app_ctx.clear(None);
+                    mode.teardown(&mut self.app_ctx);
+                    self.screens.pop();
+                    match self.screens.last_mut() {
+                        Some(m) => m.resume(&mut self.app_ctx),
+                        _ => {}
                     }
-                    ScreenResult::Replace(next) => {
-                        self.app_ctx.clear(None);
-                        mode.teardown(&mut self.app_ctx);
-                        self.screens.pop();
-                        self.push(next);
-                    }
-                    ScreenResult::Push(next) => {
-                        mode.pause(&mut self.app_ctx);
-                        self.push(next);
-                    }
-                    ScreenResult::Quit => {
-                        return Some(RunnerEvent::Exit);
-                    }
+                }
+                ScreenResult::Replace(next) => {
+                    self.app_ctx.clear(None);
+                    mode.teardown(&mut self.app_ctx);
+                    self.screens.pop();
+                    self.push(next);
+                }
+                ScreenResult::Push(next) => {
+                    mode.pause(&mut self.app_ctx);
+                    self.push(next);
+                }
+                ScreenResult::Quit => {
+                    return Some(RunnerEvent::Exit);
                 }
             }
         }
