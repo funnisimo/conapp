@@ -12,8 +12,7 @@ pub(crate) static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.pn
 pub struct AppContext {
     // pub(super) cons: Vec<Console>,
     pub(crate) input: AppInput,
-    pub(crate) fps: u32,
-    pub(crate) average_fps: u32,
+    pub(crate) fps: Fps,
     pub(crate) screen_size: (u32, u32),
     pub(crate) frame_time_ms: f64,
     pub(crate) gl: WebGLRenderingContext,
@@ -23,15 +22,19 @@ pub struct AppContext {
 }
 
 impl AppContext {
-    pub(crate) fn new(gl: WebGLRenderingContext, screen_size: (u32, u32), input: AppInput) -> Self {
+    pub(crate) fn new(
+        gl: WebGLRenderingContext,
+        screen_size: (u32, u32),
+        input: AppInput,
+        fps_goal: u32,
+    ) -> Self {
         let sub_cell_font: Rc<RefCell<Font>> = Font::from_bytes(SUBCELL_BYTES, &gl);
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
 
         AppContext {
             input,
-            fps: 0,
-            average_fps: 0,
+            fps: Fps::new(fps_goal),
             screen_size: screen_size,
             frame_time_ms: 0.0,
             gl,
@@ -85,11 +88,11 @@ impl AppContext {
     }
 
     pub fn fps(&self) -> u32 {
-        self.fps
+        self.fps.current()
     }
 
     pub fn average_fps(&self) -> u32 {
-        self.average_fps
+        self.fps.average()
     }
 
     pub fn frame_time_ms(&self) -> f64 {
@@ -120,5 +123,53 @@ impl AppContext {
         self.images.insert(imgpath.to_owned(), image.clone());
         self.ready = false;
         image
+    }
+}
+
+pub struct Fps {
+    counter: u32,
+    start: f64,
+    last: f64,
+    total_frames: u64,
+    fps: u32,
+    average: u32,
+    goal: u32,
+}
+
+impl Fps {
+    pub fn new(goal: u32) -> Fps {
+        let now = crate::app::now();
+        Fps {
+            counter: 0,
+            total_frames: 0,
+            start: now,
+            last: now,
+            fps: 0,
+            average: 0,
+            goal,
+        }
+    }
+
+    pub fn goal(&self) -> u32 {
+        self.goal
+    }
+
+    pub fn current(&self) -> u32 {
+        self.fps
+    }
+
+    pub fn step(&mut self) {
+        self.counter += 1;
+        self.total_frames += 1;
+        let curr = crate::app::now();
+        if curr - self.last > 1.0 {
+            self.last = curr;
+            self.fps = self.counter;
+            self.counter = 0;
+            self.average = (self.total_frames as f64 / (self.last - self.start)) as u32;
+        }
+    }
+    pub fn average(&self) -> u32 {
+        self.average
     }
 }

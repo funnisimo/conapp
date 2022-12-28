@@ -22,8 +22,6 @@ pub struct Runner {
     app: Option<crate::app::App>,
     /// All of the configuration settings
     config: AppConfig,
-    /// Fps tracking
-    fps: Fps,
     /// Maximum number of update calls to do in one frame
     max_frameskip: i32,
 
@@ -87,14 +85,13 @@ impl Runner {
             )
         };
 
-        let app_ctx = AppContext::new(gl, options.size.clone(), input);
+        let app_ctx = AppContext::new(gl, options.size.clone(), input, fps_goal);
         crate::console("Runner created");
 
         Self {
             app_ctx,
             app: Some(app),
             config: options,
-            fps: Fps::new(fps_goal),
             max_frameskip: 5,
             screens: Vec::new(),
             screen_resolution,
@@ -296,7 +293,7 @@ impl Runner {
 
             let mut skipped_frames: i32 = -1;
             let time = crate::app::now();
-            let skip_ticks = (1.0 / self.fps.goal as f64) * 1000.0;
+            let skip_ticks = (1.0 / self.app_ctx.fps.goal() as f64) * 1000.0;
             while time > next_tick && skipped_frames < self.max_frameskip {
                 // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
                 self.app_ctx.frame_time_ms = skip_ticks; // TODO - Use real elapsed time?
@@ -323,17 +320,15 @@ impl Runner {
                 // next_tick = time + SKIP_TICKS;
                 next_tick = time + skip_ticks;
             }
-            if self.fps.goal() == 0 || time >= next_frame {
+            if self.app_ctx.fps.goal() == 0 || time >= next_frame {
                 self.render();
-                self.fps.step();
-                self.app_ctx.fps = self.fps.current();
-                self.app_ctx.average_fps = self.fps.average();
+                self.app_ctx.fps.step();
 
                 // self.gl.clear(uni_gl::BufferBit::Color);
                 // self.gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
                 // self.api.render(&self.gl);
-                if self.fps.goal() > 0 {
-                    next_frame += 1.0 / self.fps.goal() as f64;
+                if self.app_ctx.fps.goal() > 0 {
+                    next_frame += 1.0 / self.app_ctx.fps.goal() as f64;
                 }
             }
             // }
@@ -419,61 +414,5 @@ fn capture_screen(gl: &uni_gl::WebGLRenderingContext, w: u32, h: u32, filepath: 
         .expect("Failed to save buffer to the specified path");
     } else {
         crate::console("Screen capture not supported on web platform");
-    }
-}
-
-// pub(crate) fn create_texture(gl: &uni_gl::WebGLRenderingContext) -> uni_gl::WebGLTexture {
-//     let tex = gl.create_texture();
-//     gl.active_texture(0);
-//     gl.bind_texture(&tex);
-//     set_texture_params(gl, true);
-//     tex
-// }
-
-pub struct Fps {
-    counter: u32,
-    start: f64,
-    last: f64,
-    total_frames: u64,
-    fps: u32,
-    average: u32,
-    goal: u32,
-}
-
-impl Fps {
-    pub fn new(goal: u32) -> Fps {
-        let now = crate::app::now();
-        Fps {
-            counter: 0,
-            total_frames: 0,
-            start: now,
-            last: now,
-            fps: 0,
-            average: 0,
-            goal,
-        }
-    }
-
-    pub fn goal(&self) -> u32 {
-        self.goal
-    }
-
-    pub fn current(&self) -> u32 {
-        self.fps
-    }
-
-    pub fn step(&mut self) {
-        self.counter += 1;
-        self.total_frames += 1;
-        let curr = crate::app::now();
-        if curr - self.last > 1.0 {
-            self.last = curr;
-            self.fps = self.counter;
-            self.counter = 0;
-            self.average = (self.total_frames as f64 / (self.last - self.start)) as u32;
-        }
-    }
-    pub fn average(&self) -> u32 {
-        self.average
     }
 }
