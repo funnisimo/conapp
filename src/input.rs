@@ -1,31 +1,27 @@
 use crate::app::{AppEvent, KeyDownEvent, KeyUpEvent, VirtualKeyCode};
 use std::collections::HashMap;
-use std::iter::Filter;
+// use std::iter::Filter;
 
 /// Provides information about user input.
-/// Possible values for the `key` scancode parameter can be found in unrust/uni-app's `translate_scan_code`
-/// [function](https://github.com/unrust/uni-app/blob/41246b070567e3267f128fff41ededf708149d60/src/native_keycode.rs#L160).
+///
 /// Warning, there are some slight variations from one OS to another, for example the `Command`, `F13`, `F14`, `F15` keys
 /// only exist on Mac.
 ///
 /// State functions like [`InputApi::key`], [`InputApi::mouse_button`] and [`InputApi::mouse_pct`] always work.
-/// On another hand, pressed/released event functions should be called only in the update function.
+/// The pressed/released event functions should be called only in the update function.
 ///
 pub trait InputApi {
-    /// all events that are recorded since the last frame
-    fn events(&self) -> &Vec<AppEvent>;
-
     // keyboard state
     /// return the current status of a key (true if pressed)
     fn key(&self, key: VirtualKeyCode) -> bool;
     /// return true if a key was pressed since last update.
     fn key_pressed(&self, key: VirtualKeyCode) -> bool;
-    /// return an iterator over all the keys that were pressed since last update.
-    fn keys_pressed(&self) -> Keys;
     /// return true if a key was released since last update.
     fn key_released(&self, key: VirtualKeyCode) -> bool;
+    /// return an iterator over all the keys that were pressed since last update.
+    // fn keys_pressed(&self) -> Keys;
     /// return an iterator over all the keys that were released since last update.
-    fn keys_released(&self) -> Keys;
+    // fn keys_released(&self) -> Keys;
 
     // mouse
     /// return the current status of a mouse button (true if pressed)
@@ -38,39 +34,51 @@ pub trait InputApi {
     /// give this to the console cell_pos method to get the cell the mouse is in
     fn mouse_pct(&self) -> (f32, f32);
 
-    fn mouse_event(&self) -> bool;
-    fn key_event(&self) -> bool;
-
-    fn left_clicked(&self) -> bool;
+    /// a mouse event occurred this frame
+    fn had_mouse_event(&self) -> bool;
+    /// a key event occurred this frame
+    fn had_key_event(&self) -> bool;
 
     /// Whether the window close button was clicked
     fn close_requested(&self) -> bool;
 }
 
-pub struct AppInput {
+/// Tracks all input events
+pub(crate) struct AppInput {
+    /// keys currently down
     kdown: HashMap<VirtualKeyCode, bool>,
+    /// keys that were pressed this frame
     kpressed: HashMap<VirtualKeyCode, bool>,
+    /// keys that were released this frame
     kreleased: HashMap<VirtualKeyCode, bool>,
+    /// mouse buttons currently down
     mdown: HashMap<usize, bool>,
+    /// mouse buttons pressed this frame
     mpressed: HashMap<usize, bool>,
+    /// mouse buttons released this frame
     mreleased: HashMap<usize, bool>,
-    // text: Vec<String>,
+    /// user requested close of aplication
     close_request: bool,
+    /// mouse position on screen in percent (0.0-1.0)
     mpos: (f32, f32),
+    /// screen size in pixels
     screen_size: (f32, f32),
-    // con_size: (f32, f32),
+    /// the mouse offset from the screen pos
     mouse_offset: (f32, f32),
-    // last_pressed: Option<KeyDownEvent>,
+
+    /// all events that occurred this frame
     events: Vec<AppEvent>,
 
+    /// a mouse event occurred this frame
     mouse_event: bool,
+    /// a keyboard event occurred this frame
     key_event: bool,
 }
 
 impl AppInput {
+    /// Construct a new AppInput tracker with the given screen size and offset
     pub fn new(
         (screen_width, screen_height): (u32, u32),
-        // (con_width, con_height): (u32, u32),
         (x_offset, y_offset): (u32, u32),
     ) -> Self {
         Self {
@@ -92,29 +100,39 @@ impl AppInput {
             key_event: false,
         }
     }
+
+    /// handle a key down event
     fn on_key_down(&mut self, key: &KeyDownEvent) {
         if !self.key(key.key_code) {
             self.kpressed.insert(key.key_code, true);
             self.kdown.insert(key.key_code, true);
         }
     }
+
+    /// handle a key up event
     fn on_key_up(&mut self, key: &KeyUpEvent) {
         self.kpressed.insert(key.key_code, false);
         self.kdown.insert(key.key_code, false);
         self.kreleased.insert(key.key_code, true);
     }
+
+    /// handle a mouse down event
     fn on_mouse_down(&mut self, button: usize) {
         if !self.mouse_button(button) {
             self.mpressed.insert(button, true);
             self.mdown.insert(button, true);
         }
     }
+
+    /// handle a mouse up event
     fn on_mouse_up(&mut self, button: usize) {
         self.mpressed.insert(button, false);
         self.mdown.insert(button, false);
         self.mreleased.insert(button, true);
     }
-    pub fn on_frame(&mut self) {
+
+    /// a frame has ended
+    pub fn on_frame_end(&mut self) {
         self.mpressed.clear();
         self.mreleased.clear();
         self.kreleased.clear();
@@ -124,6 +142,8 @@ impl AppInput {
         self.mouse_event = false;
         self.key_event = false;
     }
+
+    /// an event occurred
     pub fn on_event(&mut self, event: &AppEvent) {
         self.events.push(event.clone());
 
@@ -150,8 +170,6 @@ impl AppInput {
             }
             AppEvent::MousePos(ref pos) => {
                 self.mpos = (
-                    // (pos.0 as f32 - self.mouse_offset.0) / self.screen_size.0 * self.con_size.0,
-                    // (pos.1 as f32 - self.mouse_offset.1) / self.screen_size.1 * self.con_size.1,
                     (pos.0 as f32 - self.mouse_offset.0) / self.screen_size.0,
                     (pos.1 as f32 - self.mouse_offset.1) / self.screen_size.1,
                 );
@@ -171,10 +189,11 @@ impl AppInput {
             _ => (),
         }
     }
-    pub(crate) fn resize(
+
+    /// change the size of the screen
+    pub fn resize(
         &mut self,
         (screen_width, screen_height): (u32, u32),
-        // (con_width, con_height): (u32, u32),
         (x_offset, y_offset): (u32, u32),
     ) {
         self.screen_size = (screen_width as f32, screen_height as f32);
@@ -184,192 +203,69 @@ impl AppInput {
 }
 
 impl InputApi for AppInput {
-    fn events(&self) -> &Vec<AppEvent> {
-        &self.events
-    }
-
+    /// is this key currently down?
     fn key(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kdown.get(&key_code), Some(&true))
     }
+    /// was this key pressed this frame?
     fn key_pressed(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kpressed.get(&key_code), Some(&true))
     }
-    fn keys_pressed(&self) -> Keys {
-        Keys {
-            inner: self.kpressed.iter().filter(|&(_, &v)| v),
-        }
-    }
+    /// was this key released this frame?
     fn key_released(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kreleased.get(&key_code), Some(&true))
     }
-    fn keys_released(&self) -> Keys {
-        Keys {
-            inner: self.kreleased.iter().filter(|&(_, &v)| v),
-        }
-    }
+
+    /// Returns true if the given mouse button is currently pressed
     fn mouse_button(&self, num: usize) -> bool {
         matches!(self.mdown.get(&num), Some(&true))
     }
+
+    /// Returns true if the given mouse button was pressed in this frame
     fn mouse_button_pressed(&self, num: usize) -> bool {
         matches!(self.mpressed.get(&num), Some(&true))
     }
+
+    /// returns true if the given mouse button was released in this frame
     fn mouse_button_released(&self, num: usize) -> bool {
         matches!(self.mreleased.get(&num), Some(&true))
     }
 
-    fn mouse_event(&self) -> bool {
+    /// A mouse event occurred this frame
+    fn had_mouse_event(&self) -> bool {
         self.mouse_event
     }
-    fn key_event(&self) -> bool {
+
+    /// A keyboard event occurred this frame
+    fn had_key_event(&self) -> bool {
         self.key_event
     }
 
-    fn left_clicked(&self) -> bool {
-        self.mouse_button_pressed(0)
-    }
-
-    // returns the x,y percent of the mouse on the window - (0.0-1.0, 0.0-1.0)
+    /// returns the x,y percent of the mouse on the window - (0.0-1.0, 0.0-1.0)
     fn mouse_pct(&self) -> (f32, f32) {
         self.mpos
     }
+
+    /// Returns true if user clicked the close button on the app window
     fn close_requested(&self) -> bool {
         self.close_request
     }
 }
 
-type KeyMapFilter<'a> = Filter<
-    std::collections::hash_map::Iter<'a, VirtualKeyCode, bool>,
-    fn(&(&'a VirtualKeyCode, &'a bool)) -> bool,
->;
+// type KeyMapFilter<'a> = Filter<
+//     std::collections::hash_map::Iter<'a, VirtualKeyCode, bool>,
+//     fn(&(&'a VirtualKeyCode, &'a bool)) -> bool,
+// >;
 
-/// An iterator visiting all keys in arbitrary order.
-pub struct Keys<'a> {
-    inner: KeyMapFilter<'a>,
-}
+// An iterator visiting all keys in arbitrary order.
+// pub struct Keys<'a> {
+//     inner: KeyMapFilter<'a>,
+// }
 
-impl<'a> Iterator for Keys<'a> {
-    type Item = &'a VirtualKeyCode;
+// impl<'a> Iterator for Keys<'a> {
+//     type Item = &'a VirtualKeyCode;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(c, _)| c)
-    }
-}
-
-// fn translate_key(ev: &KeyDownEvent) -> Option<String> {
-//     let mut out = "".to_owned();
-//     if ev.ctrl {
-//         out += "^";
-//     }
-//     if ev.alt {
-//         out += "#";
-//     }
-//     if let Some(key) = match (ev.key.as_str(), ev.shift) {
-//         ("Digit1", false) => Some("1"),
-//         ("Digit1", true) => Some("!"),
-//         ("Digit2", false) => Some("2"),
-//         ("Digit2", true) => Some("@"),
-//         ("Digit3", false) => Some("3"),
-//         ("Digit3", true) => Some("#"),
-//         ("Digit4", false) => Some("4"),
-//         ("Digit4", true) => Some("$"),
-//         ("Digit5", false) => Some("5"),
-//         ("Digit5", true) => Some("%"),
-//         ("Digit6", false) => Some("6"),
-//         ("Digit6", true) => Some("^"),
-//         ("Digit7", false) => Some("7"),
-//         ("Digit7", true) => Some("&"),
-//         ("Digit8", false) => Some("8"),
-//         ("Digit8", true) => Some("*"),
-//         ("Digit9", false) => Some("9"),
-//         ("Digit9", true) => Some("("),
-//         ("Digit0", false) => Some("0"),
-//         ("Digit0", true) => Some(")"),
-
-//         ("KeyA", _) => Some("a"),
-//         ("KeyB", _) => Some("b"),
-//         ("KeyC", _) => Some("c"),
-//         ("KeyD", _) => Some("d"),
-//         ("KeyE", _) => Some("e"),
-//         ("KeyF", _) => Some("f"),
-//         ("KeyG", _) => Some("g"),
-//         ("KeyH", _) => Some("h"),
-//         ("KeyI", _) => Some("i"),
-//         ("KeyJ", _) => Some("j"),
-//         ("KeyK", _) => Some("k"),
-//         ("KeyL", _) => Some("l"),
-//         ("KeyM", _) => Some("m"),
-//         ("KeyN", _) => Some("n"),
-//         ("KeyO", _) => Some("o"),
-//         ("KeyP", _) => Some("p"),
-//         ("KeyQ", _) => Some("q"),
-//         ("KeyR", _) => Some("r"),
-//         ("KeyS", _) => Some("s"),
-//         ("KeyT", _) => Some("t"),
-//         ("KeyU", _) => Some("u"),
-//         ("KeyV", _) => Some("v"),
-//         ("KeyW", _) => Some("w"),
-//         ("KeyX", _) => Some("x"),
-//         ("KeyY", _) => Some("y"),
-//         ("KeyZ", _) => Some("z"),
-
-//         ("Space", _) => Some(" "),
-//         ("Numpad0", _) => Some("0"),
-//         ("Numpad1", _) => Some("1"),
-//         ("Numpad2", _) => Some("2"),
-//         ("Numpad3", _) => Some("3"),
-//         ("Numpad4", _) => Some("4"),
-//         ("Numpad5", _) => Some("5"),
-//         ("Numpad6", _) => Some("6"),
-//         ("Numpad7", _) => Some("7"),
-//         ("Numpad8", _) => Some("8"),
-//         ("Numpad9", _) => Some("9"),
-//         ("NumpadAdd", _) => Some("+"),
-//         ("NumpadDecimal", _) => Some("."),
-//         ("NumpadDivide", _) => Some("/"),
-//         ("NumpadMultiply", _) => Some("*"),
-//         ("NumpadComma", _) => Some(","),
-//         ("NumpadEqual", _) => Some("="),
-//         ("NumpadSubtract", _) => Some("-"),
-
-//         ("Backquote", false) => Some("`"),
-//         ("Backquote", true) => Some("~"),
-//         ("Minus", false) => Some("-"),
-//         ("Minus", true) => Some("_"),
-//         ("Equal", false) => Some("="),
-//         ("Equal", true) => Some("+"),
-
-//         ("BracketLeft", false) => Some("["),
-//         ("BracketLeft", true) => Some("{"),
-//         ("BracketRight", false) => Some("]"),
-//         ("BracketRight", true) => Some("}"),
-//         ("Backslash", false) => Some("\\"),
-//         ("Backslash", true) => Some("|"),
-
-//         ("Semicolon", false) => Some(";"),
-//         ("Semicolon", true) => Some(":"),
-//         ("Apostrophe", false) => Some("'"),
-//         ("Apostrophe", true) => Some("\""),
-
-//         ("Comma", false) => Some(","),
-//         ("Comma", true) => Some("<"),
-//         ("Period", false) => Some("."),
-//         ("Period", true) => Some(">"),
-//         ("Slash", false) => Some("/"),
-//         ("Slash", true) => Some("?"),
-
-//         (x, _) if x.len() > 0 => Some(x),
-//         _ => None,
-//     } {
-//         if ev.shift {
-//             out += key.to_uppercase().as_str();
-//         } else {
-//             out += key;
-//         }
-//     }
-
-//     if out.len() > 0 {
-//         Some(out)
-//     } else {
-//         None
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.inner.next().map(|(c, _)| c)
 //     }
 // }

@@ -87,7 +87,7 @@ pub trait Screen {
     }
 
     /// Called at the goal fps, can be called multiple times per frame
-    fn update(&mut self, app: &mut dyn AppContext, frame_time_ms: f32) -> ScreenResult {
+    fn update(&mut self, app: &mut dyn AppContext, frame_time_ms: f64) -> ScreenResult {
         ScreenResult::Continue
     }
 

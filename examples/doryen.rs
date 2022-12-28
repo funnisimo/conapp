@@ -40,7 +40,7 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
         Box::new(MyRoguelike {
@@ -86,7 +86,7 @@ impl Screen for MyRoguelike {
 
     fn render(&mut self, api: &mut dyn AppContext) {
         let con = &mut self.con;
-        let mouse_pos = con.cell_pos(self.mouse_pos);
+        let mouse_pos = con.mouse_pos(self.mouse_pos);
 
         let buffer = con.buffer_mut();
 

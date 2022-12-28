@@ -10,7 +10,7 @@ struct MainScreen {
 
 impl ScreenCreator for MainScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let left = Console::new(60, 50, font.clone()).extents(0.0, 0.0, 0.75, 1.0);
         let right = Console::new(20, 30, font).extents(0.75, 0.0, 1.0, 1.0);
         let pos = (30, 25);

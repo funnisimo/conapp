@@ -1,20 +1,8 @@
 use super::context::{AppContext, AppContextImpl};
 use super::input::AppInput;
-use crate::{console, AppConfig, AppEvent, Font, Screen, ScreenCreator, ScreenResult};
+use crate::{console, AppConfig, AppEvent, Font, Image, Screen, ScreenCreator, ScreenResult};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-
-pub type GlyphMap = HashMap<String, u32>;
-
-// fps
-const MAX_FRAMESKIP: i32 = 5;
-const TICKS_PER_SECOND: f64 = 60.0;
-const SKIP_TICKS: f64 = 1.0 / TICKS_PER_SECOND;
-
-// default options
-pub const DEFAULT_CONSOLE_WIDTH: u32 = 80;
-pub const DEFAULT_CONSOLE_HEIGHT: u32 = 45;
 
 /// What is returned by the internal update and input functions
 enum RunnerEvent {
@@ -30,11 +18,16 @@ enum RunnerEvent {
 
 /// This is the game application. It handles the creation of the game window, the window events including player input events and runs the main game loop.
 pub struct Runner {
+    /// The uni_gl::App that controls the window
     app: Option<crate::app::App>,
-    // gl: uni_gl::WebGLRenderingContext,
+    /// All of the configuration settings
     config: AppConfig,
+    /// Fps tracking
     fps: Fps,
-    pub(crate) app_ctx: AppContextImpl,
+    /// Maximum number of update calls to do in one frame
+    max_frameskip: i32,
+
+    app_ctx: AppContextImpl,
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
     real_screen_size: (u32, u32),
@@ -103,6 +96,7 @@ impl Runner {
             app: Some(app),
             config: options,
             fps: Fps::new(fps_goal),
+            max_frameskip: 5,
             screens: Vec::new(),
             screen_resolution,
             real_screen_size: (real_screen_width, real_screen_height),
@@ -119,7 +113,11 @@ impl Runner {
     }
 
     pub fn load_font(&mut self, font_path: &str) -> Rc<RefCell<Font>> {
-        self.app_ctx.load_font(font_path)
+        self.app_ctx.get_font(font_path)
+    }
+
+    pub fn load_image(&mut self, image_path: &str) -> Rc<RefCell<Image>> {
+        self.app_ctx.get_image(image_path)
     }
 
     // pub fn set_engine(&mut self, engine: Box<dyn Engine>) {
@@ -255,7 +253,7 @@ impl Runner {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
 
-        let mut next_tick: f64 = crate::app::now();
+        let mut next_tick = crate::app::now();
         let mut next_frame = next_tick;
 
         let mut screen = screen;
@@ -299,8 +297,10 @@ impl Runner {
 
             let mut skipped_frames: i32 = -1;
             let time = crate::app::now();
-            while time > next_tick && skipped_frames < MAX_FRAMESKIP {
-                self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
+            let skip_ticks = (1.0 / self.fps.goal as f64) * 1000.0;
+            while time > next_tick && skipped_frames < self.max_frameskip {
+                // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
+                self.app_ctx.frame_time_ms = skip_ticks; // TODO - Use real elapsed time?
                 if let Some(event) = self.update() {
                     match event {
                         RunnerEvent::Capture(filepath) => capture_screen(
@@ -315,14 +315,16 @@ impl Runner {
                         RunnerEvent::Next => {}
                     }
                 }
-                next_tick += SKIP_TICKS;
+                next_tick += skip_ticks;
+                // next_tick += SKIP_TICKS;
                 skipped_frames += 1;
-                self.app_ctx.input.on_frame();
+                self.app_ctx.input.on_frame_end();
             }
-            if skipped_frames == MAX_FRAMESKIP {
-                next_tick = time + SKIP_TICKS;
+            if skipped_frames == self.max_frameskip {
+                // next_tick = time + SKIP_TICKS;
+                next_tick = time + skip_ticks;
             }
-            if self.fps.goal() == 0 || time > next_frame {
+            if self.fps.goal() == 0 || time >= next_frame {
                 self.render();
                 self.fps.step();
                 self.app_ctx.fps = self.fps.current();

@@ -12,7 +12,7 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(MyRoguelike {
@@ -62,7 +62,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, _app: &mut dyn AppContext, _frame_time_ms: f32) -> ScreenResult {
+    fn update(&mut self, _app: &mut dyn AppContext, _frame_time_ms: f64) -> ScreenResult {
         self.cursor += 1;
         ScreenResult::Continue
     }

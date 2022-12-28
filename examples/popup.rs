@@ -13,7 +13,7 @@ struct HelloWorld {
 }
 impl ScreenCreator for HelloWorld {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(HelloWorld {
@@ -75,12 +75,12 @@ impl Screen for HelloWorld {
 struct Popup {
     con: Console,
     is_full: bool,
-    time_left: f32,
+    time_left: f64,
 }
 
 impl Popup {
-    pub fn new(app: &mut dyn AppContext, is_full: bool, time_left: f32) -> Popup {
-        let font = app.load_font(FONT);
+    pub fn new(app: &mut dyn AppContext, is_full: bool, time_left: f64) -> Popup {
+        let font = app.get_font(FONT);
         let con = match is_full {
             true => Console::new(80, 50, font),
             false => Console::new(20, 20, font).extents(0.25, 0.25, 0.5, 0.75),
@@ -106,7 +106,7 @@ impl Screen for Popup {
         }
     }
 
-    fn update(&mut self, _ctx: &mut dyn AppContext, dt: f32) -> ScreenResult {
+    fn update(&mut self, _ctx: &mut dyn AppContext, dt: f64) -> ScreenResult {
         self.time_left -= dt;
         if self.time_left <= 0.0 {
             ScreenResult::Pop
@@ -117,7 +117,7 @@ impl Screen for Popup {
 
     fn render(&mut self, app: &mut dyn AppContext) {
         let screen_pct = app.input().mouse_pct();
-        let cell_pct = self.con.cell_pos(screen_pct);
+        let cell_pct = self.con.mouse_pos(screen_pct);
 
         let buf = self.con.buffer_mut();
 

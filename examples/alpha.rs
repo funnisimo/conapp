@@ -20,7 +20,7 @@ struct AlphaTest {
 
 impl ScreenCreator for AlphaTest {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(AlphaTest {
@@ -34,7 +34,7 @@ impl ScreenCreator for AlphaTest {
 }
 
 impl Screen for AlphaTest {
-    fn update(&mut self, _app: &mut dyn AppContext, _ms: f32) -> ScreenResult {
+    fn update(&mut self, _app: &mut dyn AppContext, _ms: f64) -> ScreenResult {
         // update the circle radius and center position
         self.angle += 0.6;
         self.radius = 10.0 + 3.0 * (self.angle / 10.0).sin();

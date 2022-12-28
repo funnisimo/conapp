@@ -12,7 +12,7 @@ pub struct Console {
 }
 
 impl Console {
-    /// create a new offscreen console that you can blit on another console
+    /// create a new offscreen console that you can draw to the screen with a font
     /// width and height are in cells (characters), not pixels.
     pub fn new(width: u32, height: u32, font: Rc<RefCell<Font>>) -> Self {
         Self {
@@ -82,7 +82,7 @@ impl Console {
     }
 
     /// returns the cell that the screen pos converts to for this console [0.0-1.0]
-    pub fn cell_pos(&self, screen_pct: (f32, f32)) -> Option<(f32, f32)> {
+    pub fn mouse_pos(&self, screen_pct: (f32, f32)) -> Option<(f32, f32)> {
         if screen_pct.0 < self.extents.0 {
             return None;
         }
@@ -109,6 +109,6 @@ impl Console {
 }
 
 pub fn subcell_console(width: u32, height: u32, app: &mut dyn AppContext) -> Console {
-    let font = app.load_font("SUBCELL");
+    let font = app.get_font("SUBCELL");
     Console::new(width, height, font)
 }

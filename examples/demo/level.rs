@@ -69,8 +69,8 @@ pub struct Level {
 impl Level {
     pub fn new(app: &mut dyn AppContext, img_path: &str) -> Self {
         Self {
-            level_img: app.load_image(&(img_path.to_owned() + ".png")),
-            ground: app.load_image(&(img_path.to_owned() + "_color.png")),
+            level_img: app.get_image(&(img_path.to_owned() + ".png")),
+            ground: app.get_image(&(img_path.to_owned() + "_color.png")),
             loaded: false,
             lightmap: Image::new_empty(1, 1),
             render_output: Image::new_empty(1, 1),

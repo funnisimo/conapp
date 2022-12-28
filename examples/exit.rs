@@ -21,7 +21,7 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(50, 30, font);
 
         Box::new(MyRoguelike { con })
@@ -29,7 +29,7 @@ impl ScreenCreator for MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn update(&mut self, app: &mut dyn AppContext, _ms: f32) -> ScreenResult {
+    fn update(&mut self, app: &mut dyn AppContext, _ms: f64) -> ScreenResult {
         if app.input().key(VirtualKeyCode::Escape) || app.input().close_requested() {
             ScreenResult::Push(Popup::create(app))
         } else {
@@ -64,7 +64,7 @@ struct Popup {
 
 impl ScreenCreator for Popup {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(24, 20, font).extents(0.25, 0.25, 0.5, 0.75);
 
         Box::new(Popup { con })

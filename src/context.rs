@@ -20,7 +20,7 @@ pub trait AppContext {
     /// return the average framerate since the start of the game
     fn average_fps(&self) -> u32;
     /// the time in ms since the last update call
-    fn frame_time_ms(&self) -> f32;
+    fn frame_time_ms(&self) -> f64;
 
     /// return the current screen size
     fn get_screen_size(&self) -> (u32, u32);
@@ -29,10 +29,10 @@ pub trait AppContext {
     fn gl(&self) -> &WebGLRenderingContext;
 
     /// Load a font program for the given font file
-    fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>>;
+    fn get_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>>;
 
     /// Load an image file
-    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>>;
+    fn get_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>>;
 }
 
 pub(crate) struct AppContextImpl {
@@ -41,7 +41,7 @@ pub(crate) struct AppContextImpl {
     pub fps: u32,
     pub average_fps: u32,
     pub screen_size: (u32, u32),
-    pub frame_time_ms: f32,
+    pub frame_time_ms: f64,
     pub gl: WebGLRenderingContext,
     pub fonts: HashMap<String, Rc<RefCell<Font>>>,
     pub images: HashMap<String, Rc<RefCell<Image>>>,
@@ -73,7 +73,7 @@ impl AppContext for AppContextImpl {
         self.average_fps
     }
 
-    fn frame_time_ms(&self) -> f32 {
+    fn frame_time_ms(&self) -> f64 {
         self.frame_time_ms
     }
 
@@ -81,7 +81,7 @@ impl AppContext for AppContextImpl {
         self.screen_size
     }
 
-    fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
+    fn get_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
         if let Some(font) = self.fonts.get(fontpath) {
             return font.clone();
         }
@@ -92,7 +92,7 @@ impl AppContext for AppContextImpl {
         font
     }
 
-    fn load_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>> {
+    fn get_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>> {
         if let Some(image) = self.images.get(imgpath) {
             return image.clone();
         }
@@ -102,13 +102,6 @@ impl AppContext for AppContextImpl {
         self.ready = false;
         image
     }
-
-    // fn get_font(&self, fontpath: &str) -> Option<Rc<RefCell<Font>>> {
-    //     match self.fonts.get(fontpath) {
-    //         None => None,
-    //         Some(font) => Some(font.clone()),
-    //     }
-    // }
 }
 
 impl AppContextImpl {

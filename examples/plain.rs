@@ -8,7 +8,7 @@ struct TextScreen {
 
 impl ScreenCreator for TextScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(TextScreen { con })

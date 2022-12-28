@@ -39,7 +39,7 @@ struct DoryenDemo {
 
 impl ScreenCreator for DoryenDemo {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
         Box::new(Self {
@@ -73,7 +73,7 @@ impl DoryenDemo {
 }
 
 impl Screen for DoryenDemo {
-    fn update(&mut self, app: &mut dyn AppContext, _ms: f32) -> ScreenResult {
+    fn update(&mut self, app: &mut dyn AppContext, _ms: f64) -> ScreenResult {
         if !self.loaded {
             if let Some(entities) = self.level.try_load() {
                 self.loaded = true;

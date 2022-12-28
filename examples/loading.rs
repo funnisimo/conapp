@@ -31,7 +31,7 @@ struct LoadingScreen {
 }
 impl ScreenCreator for LoadingScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(LoadingScreen {
@@ -43,10 +43,10 @@ impl ScreenCreator for LoadingScreen {
 
 impl Screen for LoadingScreen {
     fn setup(&mut self, app: &mut dyn AppContext) {
-        self.big_font = Some(app.load_font(BIG_FONT));
+        self.big_font = Some(app.get_font(BIG_FONT));
     }
 
-    fn update(&mut self, app: &mut dyn AppContext, _frame_time_ms: f32) -> ScreenResult {
+    fn update(&mut self, app: &mut dyn AppContext, _frame_time_ms: f64) -> ScreenResult {
         if let Some(ref font) = self.big_font {
             if font.borrow().ready() {
                 return ScreenResult::Replace(MainScreen::new(app, font.clone()));

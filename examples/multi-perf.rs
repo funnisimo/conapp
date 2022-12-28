@@ -29,10 +29,10 @@ struct PerfTest {
 
 impl ScreenCreator for PerfTest {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font_a = app.load_font(FONTA);
+        let font_a = app.get_font(FONTA);
         let left = Console::new(20, 25, font_a).extents(0.0, 0.0, 0.5, 1.0);
 
-        let font_b = app.load_font(FONTB);
+        let font_b = app.get_font(FONTB);
         let right = Console::new(40, 50, font_b).extents(0.5, 0.0, 1.0, 1.0);
 
         let mut screen = Box::new(PerfTest {

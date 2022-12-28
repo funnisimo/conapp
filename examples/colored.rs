@@ -27,7 +27,7 @@ struct ColoredScreen {
 
 impl ScreenCreator for ColoredScreen {
     fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(ColoredScreen { con })
