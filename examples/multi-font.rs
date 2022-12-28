@@ -10,7 +10,7 @@ struct MainScreen {
 }
 
 impl ScreenCreator for MainScreen {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font_a = app.get_font(FONTA);
         let left = Console::new(60, 50, font_a).extents(0.0, 0.0, 0.75, 1.0);
 
@@ -23,7 +23,7 @@ impl ScreenCreator for MainScreen {
 }
 
 impl MainScreen {
-    fn render_left(&mut self, app: &mut dyn AppContext) {
+    fn render_left(&mut self, app: &mut AppContext) {
         let buffer = self.left.buffer_mut();
         buffer.fill(
             Some('.' as u32),
@@ -57,7 +57,7 @@ impl MainScreen {
         self.left.render(app.gl());
     }
 
-    fn render_right(&mut self, app: &mut dyn AppContext) {
+    fn render_right(&mut self, app: &mut AppContext) {
         let buffer = self.right.buffer_mut();
 
         buffer.fill(Some(0), None, Some(RGBA::rgb(32, 64, 32)));
@@ -81,7 +81,7 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, _app: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Left => self.pos.0 = (self.pos.0 - 1).max(0),
@@ -100,7 +100,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         self.render_left(app);
         self.render_right(app);
     }

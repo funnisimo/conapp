@@ -8,7 +8,7 @@ struct MainScreen {
 }
 
 impl ScreenCreator for MainScreen {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
         let pos = (40, 25);
@@ -17,7 +17,7 @@ impl ScreenCreator for MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, _app: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Left => self.pos.0 = (self.pos.0 - 1).max(0),
@@ -32,7 +32,7 @@ impl Screen for MainScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
         buffer.draw(

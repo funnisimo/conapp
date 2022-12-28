@@ -67,7 +67,7 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn new(app: &mut dyn AppContext, img_path: &str) -> Self {
+    pub fn new(app: &mut AppContext, img_path: &str) -> Self {
         Self {
             level_img: app.get_image(&(img_path.to_owned() + ".png")),
             ground: app.get_image(&(img_path.to_owned() + "_color.png")),

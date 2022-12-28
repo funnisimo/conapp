@@ -20,7 +20,7 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(50, 30, font);
 
@@ -29,7 +29,7 @@ impl ScreenCreator for MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn update(&mut self, app: &mut dyn AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, app: &mut AppContext, _ms: f64) -> ScreenResult {
         if app.input().key(VirtualKeyCode::Escape) || app.input().close_requested() {
             ScreenResult::Push(Popup::create(app))
         } else {
@@ -37,7 +37,7 @@ impl Screen for MyRoguelike {
         }
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
         buffer.fill(Some('.' as u32), Some(GRAY), Some(BLACK));
 
@@ -63,7 +63,7 @@ struct Popup {
 }
 
 impl ScreenCreator for Popup {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(24, 20, font).extents(0.25, 0.25, 0.5, 0.75);
 
@@ -76,7 +76,7 @@ impl Screen for Popup {
         false
     }
 
-    fn input(&mut self, _ctx: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Y => ScreenResult::Quit,
@@ -88,7 +88,7 @@ impl Screen for Popup {
         }
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buf = self.con.buffer_mut();
 
         draw::frame(buf)

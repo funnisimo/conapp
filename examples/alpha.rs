@@ -19,7 +19,7 @@ struct AlphaTest {
 }
 
 impl ScreenCreator for AlphaTest {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
@@ -34,7 +34,7 @@ impl ScreenCreator for AlphaTest {
 }
 
 impl Screen for AlphaTest {
-    fn update(&mut self, _app: &mut dyn AppContext, _ms: f64) -> ScreenResult {
+    fn update(&mut self, _app: &mut AppContext, _ms: f64) -> ScreenResult {
         // update the circle radius and center position
         self.angle += 0.6;
         self.radius = 10.0 + 3.0 * (self.angle / 10.0).sin();
@@ -45,7 +45,7 @@ impl Screen for AlphaTest {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
 
         // reduce the alpha of each cell until they are transparent.

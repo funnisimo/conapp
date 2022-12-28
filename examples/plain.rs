@@ -7,7 +7,7 @@ struct TextScreen {
 }
 
 impl ScreenCreator for TextScreen {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
@@ -16,7 +16,7 @@ impl ScreenCreator for TextScreen {
 }
 
 impl Screen for TextScreen {
-    fn setup(&mut self, _app: &mut dyn AppContext) {
+    fn setup(&mut self, _app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
         buffer.clear(true, false, false);
 
@@ -91,7 +91,7 @@ impl Screen for TextScreen {
         draw.wrap(78, y,  "Inside a call to wrap, you can place a long text and it will automatically be wrapped at the width you specify.  Or at the end of the buffer.");
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         self.con.render(app.gl());
     }
 }

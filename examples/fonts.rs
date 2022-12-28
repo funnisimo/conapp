@@ -32,7 +32,7 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONTS[0]);
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
@@ -45,7 +45,7 @@ impl ScreenCreator for MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, app: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         let mut font_path = None;
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
@@ -72,7 +72,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
         draw::rect(buffer)
             .glyph('.' as u32)

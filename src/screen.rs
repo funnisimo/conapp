@@ -53,17 +53,17 @@ impl PartialEq for ScreenResult {
 
 /// Creates a screen
 pub trait ScreenCreator {
-    fn create(ctx: &mut dyn AppContext) -> Box<dyn Screen>;
+    fn create(ctx: &mut AppContext) -> Box<dyn Screen>;
 }
 
 /// A screen to handle input, update, and render events
 #[allow(unused_variables)]
 pub trait Screen {
     /// Called once, when the screen is first added to the [`crate::Runner`]
-    fn setup(&mut self, app: &mut dyn AppContext) {}
+    fn setup(&mut self, app: &mut AppContext) {}
 
     /// Called when the app is resized
-    fn resize(&mut self, app: &mut dyn AppContext) {}
+    fn resize(&mut self, app: &mut AppContext) {}
 
     /// Returns whether or not this screen is full size, if not the [`crate::Runner`] will render the screens below.
     fn is_full_screen(&self) -> bool {
@@ -76,24 +76,24 @@ pub trait Screen {
     }
 
     /// Called when another screen is pushed on top of this one
-    fn pause(&mut self, app: &mut dyn AppContext) {}
+    fn pause(&mut self, app: &mut AppContext) {}
 
     /// Called when this screen becomes the topmost screen
-    fn resume(&mut self, app: &mut dyn AppContext) {}
+    fn resume(&mut self, app: &mut AppContext) {}
 
     /// Called once for each input event that occurred in this frame
-    fn input(&mut self, app: &mut dyn AppContext, event: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut AppContext, event: &AppEvent) -> ScreenResult {
         ScreenResult::Continue
     }
 
     /// Called at the goal fps, can be called multiple times per frame
-    fn update(&mut self, app: &mut dyn AppContext, frame_time_ms: f64) -> ScreenResult {
+    fn update(&mut self, app: &mut AppContext, frame_time_ms: f64) -> ScreenResult {
         ScreenResult::Continue
     }
 
     /// Called once at the end of the frame
-    fn render(&mut self, app: &mut dyn AppContext) {}
+    fn render(&mut self, app: &mut AppContext) {}
 
     /// Called when this screen is popped from the stack
-    fn teardown(&mut self, app: &mut dyn AppContext) {}
+    fn teardown(&mut self, app: &mut AppContext) {}
 }

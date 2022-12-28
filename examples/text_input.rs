@@ -11,7 +11,7 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
@@ -24,7 +24,7 @@ impl ScreenCreator for MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, _app: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::CharEvent(ch) => {
                 let glyph = codepage437::to_glyph(*ch);
@@ -62,12 +62,12 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn update(&mut self, _app: &mut dyn AppContext, _frame_time_ms: f64) -> ScreenResult {
+    fn update(&mut self, _app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
         self.cursor += 1;
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
         buffer.fill(Some(' ' as u32), None, None);
 

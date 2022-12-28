@@ -28,7 +28,7 @@ struct PerfTest {
 }
 
 impl ScreenCreator for PerfTest {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font_a = app.get_font(FONTA);
         let left = Console::new(20, 25, font_a).extents(0.0, 0.0, 0.5, 1.0);
 
@@ -47,7 +47,7 @@ impl ScreenCreator for PerfTest {
 }
 
 impl PerfTest {
-    fn render_con(&mut self, is_left: bool, app: &mut dyn AppContext) {
+    fn render_con(&mut self, is_left: bool, app: &mut AppContext) {
         let con = match is_left {
             true => &mut self.left,
             false => &mut self.right,
@@ -110,12 +110,12 @@ impl PerfTest {
 }
 
 impl Screen for PerfTest {
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         self.render_con(true, app);
         self.render_con(false, app);
     }
 
-    fn resize(&mut self, api: &mut dyn AppContext) {
+    fn resize(&mut self, api: &mut AppContext) {
         let new_width = api.get_screen_size().0 / 32;
         let new_height = api.get_screen_size().1 / 16;
 

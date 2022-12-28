@@ -30,7 +30,7 @@ struct LoadingScreen {
     big_font: Option<Rc<RefCell<Font>>>,
 }
 impl ScreenCreator for LoadingScreen {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(80, 50, font);
 
@@ -42,11 +42,11 @@ impl ScreenCreator for LoadingScreen {
 }
 
 impl Screen for LoadingScreen {
-    fn setup(&mut self, app: &mut dyn AppContext) {
+    fn setup(&mut self, app: &mut AppContext) {
         self.big_font = Some(app.get_font(BIG_FONT));
     }
 
-    fn update(&mut self, app: &mut dyn AppContext, _frame_time_ms: f64) -> ScreenResult {
+    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
         if let Some(ref font) = self.big_font {
             if font.borrow().ready() {
                 return ScreenResult::Replace(MainScreen::new(app, font.clone()));
@@ -55,7 +55,7 @@ impl Screen for LoadingScreen {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         let buf = self.con.buffer_mut();
         buf.clear(true, true, true);
 
@@ -75,7 +75,7 @@ struct MainScreen {
 }
 
 impl MainScreen {
-    pub fn new(_app: &mut dyn AppContext, font: Rc<RefCell<Font>>) -> Box<MainScreen> {
+    pub fn new(_app: &mut AppContext, font: Rc<RefCell<Font>>) -> Box<MainScreen> {
         let len = font.borrow().len();
         let con = Console::new(80, 40, font);
 
@@ -88,14 +88,14 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
-    fn input(&mut self, _ctx: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::MouseDown(_) => ScreenResult::Pop,
             _ => ScreenResult::Continue,
         }
     }
 
-    fn render(&mut self, app: &mut dyn AppContext) {
+    fn render(&mut self, app: &mut AppContext) {
         // let screen_pct = app.input().mouse_pct();
         // let cell_pct = self.con.cell_pos(screen_pct);
 

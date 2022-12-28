@@ -39,7 +39,7 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut dyn AppContext) -> Box<dyn Screen> {
+    fn create(app: &mut AppContext) -> Box<dyn Screen> {
         let font = app.get_font(FONT);
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
@@ -53,7 +53,7 @@ impl ScreenCreator for MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
-    fn input(&mut self, api: &mut dyn AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, api: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(ev) => match ev.key_code {
                 VirtualKeyCode::Left => {
@@ -84,7 +84,7 @@ impl Screen for MyRoguelike {
         ScreenResult::Continue
     }
 
-    fn render(&mut self, api: &mut dyn AppContext) {
+    fn render(&mut self, api: &mut AppContext) {
         let con = &mut self.con;
         let mouse_pos = con.mouse_pos(self.mouse_pos);
 

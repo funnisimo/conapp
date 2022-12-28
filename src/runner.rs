@@ -1,4 +1,4 @@
-use super::context::{AppContext, AppContextImpl};
+use super::context::AppContext;
 use super::input::AppInput;
 use crate::{console, AppConfig, AppEvent, Font, Image, Screen, ScreenCreator, ScreenResult};
 use std::cell::RefCell;
@@ -27,7 +27,7 @@ pub struct Runner {
     /// Maximum number of update calls to do in one frame
     max_frameskip: i32,
 
-    app_ctx: AppContextImpl,
+    app_ctx: AppContext,
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
     real_screen_size: (u32, u32),
@@ -87,8 +87,7 @@ impl Runner {
             )
         };
 
-        let app_ctx = AppContextImpl::new(gl, options.size.clone(), input);
-
+        let app_ctx = AppContext::new(gl, options.size.clone(), input);
         crate::console("Runner created");
 
         Self {
@@ -243,7 +242,7 @@ impl Runner {
 
     pub fn run_with<F>(mut self, func: F)
     where
-        F: FnOnce(&mut dyn AppContext) -> Box<dyn Screen>,
+        F: FnOnce(&mut AppContext) -> Box<dyn Screen>,
     {
         let screen = func(&mut self.app_ctx);
         self.run_screen(screen);
