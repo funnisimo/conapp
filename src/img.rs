@@ -40,6 +40,11 @@ impl Image {
         }
         0
     }
+
+    pub fn img(&self) -> Option<&image::RgbaImage> {
+        self.img.as_ref()
+    }
+
     /// Create an empty image.
     pub fn new_empty(width: u32, height: u32) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {

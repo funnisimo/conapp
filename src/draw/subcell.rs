@@ -102,7 +102,7 @@ impl<'a> SubCell<'a> {
         if !img.borrow().is_loaded() {
             return;
         }
-        if let Some(ref img) = img.borrow().img {
+        if let Some(ref img) = img.borrow().img() {
             let mut grid: [RGBA; 4] = [
                 (0, 0, 0, 0).into(),
                 (0, 0, 0, 0).into(),

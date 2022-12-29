@@ -14,7 +14,8 @@ use std::env;
 use std::os::raw::c_void;
 use std::process;
 use std::rc::Rc;
-use time;
+use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 use winit::dpi::LogicalSize;
 use winit::event::ElementState;
 use winit::event::Event;
@@ -350,6 +351,9 @@ impl App {
 
 /// return the time since the start of the program in seconds
 pub fn now() -> f64 {
-    let t = time::OffsetDateTime::now_utc() - time::OffsetDateTime::UNIX_EPOCH;
-    t.as_seconds_f64()
+    let start = SystemTime::now();
+    start
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or(Duration::default())
+        .as_secs_f64()
 }

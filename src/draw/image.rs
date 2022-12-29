@@ -43,7 +43,7 @@ impl<'a> Blitter<'a> {
         }
         let buf_size = self.buffer.size();
 
-        if let Some(ref img) = image.borrow().img {
+        if let Some(ref img) = image.borrow().img() {
             let width = img.width() as i32;
             let height = img.height() as i32;
             let minx = x.max(0);
@@ -131,7 +131,7 @@ impl<'a> Blitter<'a> {
         let invscaley = 1.0 / scaley;
         let con_width = self.buffer.get_pot_width();
         let back = self.buffer.backgrounds_mut();
-        if let Some(ref img) = image.borrow().img {
+        if let Some(ref img) = image.borrow().img() {
             for cx in minx..maxx {
                 for cy in miny..maxy {
                     // map the console pixel to the image world

@@ -249,8 +249,8 @@ impl Runner {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
 
-        let mut next_tick = crate::app::now();
-        let mut next_frame = next_tick;
+        let mut last_frame_time = crate::app::now();
+        let mut next_frame = last_frame_time;
 
         let mut screen = screen;
         screen.setup(&mut self.app_ctx);
@@ -293,10 +293,10 @@ impl Runner {
 
             let mut skipped_frames: i32 = -1;
             let time = crate::app::now();
-            let skip_ticks = (1.0 / self.app_ctx.fps.goal() as f64) * 1000.0;
-            while time > next_tick && skipped_frames < self.max_frameskip {
+            let skip_ticks = 1.0 / self.app_ctx.fps.goal() as f64;
+            while time >= last_frame_time && skipped_frames < self.max_frameskip {
                 // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
-                self.app_ctx.frame_time_ms = skip_ticks; // TODO - Use real elapsed time?
+                self.app_ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
                 if let Some(event) = self.update() {
                     match event {
                         RunnerEvent::Capture(filepath) => capture_screen(
@@ -311,14 +311,14 @@ impl Runner {
                         RunnerEvent::Next => {}
                     }
                 }
-                next_tick += skip_ticks;
+                last_frame_time += skip_ticks;
                 // next_tick += SKIP_TICKS;
                 skipped_frames += 1;
                 self.app_ctx.input.on_frame_end();
             }
             if skipped_frames == self.max_frameskip {
                 // next_tick = time + SKIP_TICKS;
-                next_tick = time + skip_ticks;
+                last_frame_time = time + skip_ticks;
             }
             if self.app_ctx.fps.goal() == 0 || time >= next_frame {
                 self.render();

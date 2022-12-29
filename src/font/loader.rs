@@ -3,8 +3,6 @@ use crate::file::FileLoader;
 pub struct FontLoader {
     loader: FileLoader,
     pub img: Option<image::RgbaImage>,
-    pub char_width: u32,
-    pub char_height: u32,
     id: usize,
 }
 
@@ -13,43 +11,10 @@ impl FontLoader {
         Self {
             loader: FileLoader::new(),
             img: None,
-            char_width: 0,
-            char_height: 0,
             id: 0,
         }
     }
     pub fn load_font(&mut self, path: &str) {
-        let start = match path.rfind('_') {
-            None => {
-                panic!("Failed to load font.  Font file name must end with cell size information ('_8x8.' in 'name_8x8.png') - {}", path);
-            }
-            Some(idx) => idx,
-        };
-        let end = match path.rfind('.') {
-            None => {
-                panic!("Failed to load font.  Font file name must end with cell size information ('_8x8.' in 'name_8x8.png') - {}", path);
-            }
-            Some(idx) => idx,
-        };
-        if start > 0 && end > 0 {
-            let subpath = &path[start + 1..end];
-            let charsize: Vec<&str> = subpath.split('x').collect();
-            self.char_width = match charsize[0].parse::<u32>() {
-                Err(_) => {
-                    panic!("Failed to load font.  Font file name must end with cell size information ('_8x8.' in 'name_8x8.png') - {}", path);
-                }
-                Ok(val) => val,
-            };
-            self.char_height = match charsize[1].parse::<u32>() {
-                Err(_) => {
-                    panic!("Failed to load font.  Font file name must end with cell size information ('_8x8.' in 'name_8x8.png') - {}", path);
-                }
-                Ok(val) => val,
-            };
-        } else {
-            self.char_width = 0;
-            self.char_height = 0;
-        }
         match self.loader.load_file(path) {
             Ok(id) => {
                 self.id = id;
@@ -75,9 +40,7 @@ impl FontLoader {
         false
     }
 
-    pub fn load_bytes(&mut self, buf: &[u8], char_width: u32, char_height: u32) {
-        self.char_width = char_width;
-        self.char_height = char_height;
+    pub fn load_bytes(&mut self, buf: &[u8]) {
         let mut img = image::load_from_memory(buf).unwrap().to_rgba8();
         self.process_image(&mut img);
         self.img = Some(img);
@@ -124,7 +87,7 @@ mod test {
     #[test]
     fn subcell_font() {
         let mut loader = FontLoader::new();
-        loader.load_bytes(SUBCELL_BYTES, 4, 4);
+        loader.load_bytes(SUBCELL_BYTES);
 
         assert!(loader.img.is_some());
         assert!(loader.load_font_async());
