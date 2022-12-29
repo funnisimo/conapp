@@ -18,13 +18,13 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT);
+        let font = app.load_font(FONT);
         let con = Console::new(60, 80, font);
 
         Box::new(MyRoguelike {
             con,
             subcell: subcell_console(30, 40, app).extents(0.25, 0.25, 0.75, 0.75),
-            skull: app.get_image("resources/skull.png"),
+            skull: app.load_image("resources/skull.png").unwrap(),
         })
     }
 }
@@ -49,7 +49,7 @@ impl Screen for MyRoguelike {
         self.subcell.buffer_mut().clear(true, true, true);
         draw::subcell(self.subcell.buffer_mut())
             .transparent(RGBA::rgba(0, 0, 0, 255))
-            .blit(&self.skull, 0, 0, 0, 0, None, None);
+            .blit(&*self.skull.borrow(), 0, 0, 0, 0, None, None);
         self.subcell.render(app.gl());
     }
 }

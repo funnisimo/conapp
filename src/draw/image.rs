@@ -2,8 +2,6 @@ use crate::console;
 use crate::Buffer;
 use crate::Image;
 use crate::RGBA;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 /// Constructs a new [`Blitter`] for this buffer
 pub fn image(buffer: &mut Buffer) -> Blitter {
@@ -36,14 +34,14 @@ impl<'a> Blitter<'a> {
     /// x,y are the coordinate of the top left image pixel in the console
     ///
     /// image pixels using the transparent color will be ignored
-    pub fn blit(&mut self, x: i32, y: i32, image: &Rc<RefCell<Image>>) {
-        if !image.borrow().is_loaded() {
+    pub fn blit(&mut self, x: i32, y: i32, image: &Image) {
+        if !image.is_loaded() {
             console("Not loaded");
             return;
         }
         let buf_size = self.buffer.size();
 
-        if let Some(ref img) = image.borrow().img() {
+        if let Some(ref img) = image.img() {
             let width = img.width() as i32;
             let height = img.height() as i32;
             let minx = x.max(0);
@@ -75,19 +73,11 @@ impl<'a> Blitter<'a> {
     /// x,y are the coordinate of the image center in the console
     /// image can be scaled and rotated (angle is in radians)
     /// image pixels using the transparent color will be ignored
-    pub fn blit_ex(
-        &mut self,
-        x: f32,
-        y: f32,
-        scalex: f32,
-        scaley: f32,
-        angle: f32,
-        image: &Rc<RefCell<Image>>,
-    ) {
-        if !image.borrow().is_loaded() || scalex == 0.0 || scaley == 0.0 {
+    pub fn blit_ex(&mut self, x: f32, y: f32, scalex: f32, scaley: f32, angle: f32, image: &Image) {
+        if !image.is_loaded() || scalex == 0.0 || scaley == 0.0 {
             return;
         }
-        let size = image.borrow().get_size().unwrap();
+        let size = image.get_size().unwrap();
         let rx = x - size.0 as f32 * 0.5;
         let ry = y - size.1 as f32 * 0.5;
         if scalex == 1.0 && scaley == 1.0 && angle == 0.0 && rx.floor() == rx && ry.floor() == ry {
@@ -131,7 +121,7 @@ impl<'a> Blitter<'a> {
         let invscaley = 1.0 / scaley;
         let con_width = self.buffer.get_pot_width();
         let back = self.buffer.backgrounds_mut();
-        if let Some(ref img) = image.borrow().img() {
+        if let Some(ref img) = image.img() {
             for cx in minx..maxx {
                 for cy in miny..maxy {
                     // map the console pixel to the image world

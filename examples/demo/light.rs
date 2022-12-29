@@ -1,8 +1,8 @@
 use crate::noise::simplex;
 use conapp::{Image, RGBA};
 use doryen_fov::{FovAlgorithm, MapData};
-use std::cell::RefCell;
-use std::rc::Rc;
+// use std::cell::RefCell;
+// use std::rc::Rc;
 
 pub const LIGHT_COEF: f32 = 1.5;
 
@@ -44,7 +44,7 @@ impl Light {
         &self,
         level_map: &mut MapData,
         fov: &mut dyn FovAlgorithm,
-        lightmap: &mut Rc<RefCell<Image>>,
+        lightmap: &mut Image,
         flicker: bool,
     ) {
         let (px, py, intensity, radius) = if flicker {
@@ -59,9 +59,9 @@ impl Light {
             (self.pos.0, self.pos.1, self.intensity, self.radius)
         };
         let minx = ((px - radius).floor() as i32).max(0) as u32;
-        let maxx = ((px + radius).ceil() as i32).min(lightmap.borrow().width() as i32 - 1) as u32;
+        let maxx = ((px + radius).ceil() as i32).min(lightmap.width() as i32 - 1) as u32;
         let miny = ((py - radius).floor() as i32).max(0) as u32;
-        let maxy = ((py + radius).ceil() as i32).min(lightmap.borrow().height() as i32 - 1) as u32;
+        let maxy = ((py + radius).ceil() as i32).min(lightmap.height() as i32 - 1) as u32;
         let width = maxx - minx + 1;
         let height = maxy - miny + 1;
         let mut map = MapData::new(width as usize, height as usize);
@@ -96,9 +96,9 @@ impl Light {
                     let intensity_coef = intensity_coef / (1.0 - radius_coef);
                     if intensity_coef > 0.0 {
                         let light = RGBA::darken(light_color, 1.0 - intensity_coef);
-                        let cur_light = lightmap.borrow().pixel(x, y).unwrap();
+                        let cur_light = lightmap.pixel(x, y).unwrap();
                         lightmap
-                            .borrow_mut()
+                            // .borrow_mut()
                             .put_pixel(x, y, RGBA::mix(light, cur_light));
                     }
                 }

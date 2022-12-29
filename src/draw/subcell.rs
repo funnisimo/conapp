@@ -1,8 +1,6 @@
 use crate::Buffer;
 use crate::Image;
 use crate::RGBA;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 // sub-pixel resolution kit
 
@@ -91,7 +89,7 @@ impl<'a> SubCell<'a> {
     /// ![subcell_pyro](https://raw.githubusercontent.com/jice-nospam/doryen-rs/master/docs/subcell/subcell_pyro.png)
     pub fn blit(
         &mut self,
-        img: &Rc<RefCell<Image>>,
+        img: &Image,
         dx: i32,
         dy: i32,
         sx: i32,
@@ -99,10 +97,10 @@ impl<'a> SubCell<'a> {
         w: Option<i32>,
         h: Option<i32>,
     ) {
-        if !img.borrow().is_loaded() {
+        if !img.is_loaded() {
             return;
         }
-        if let Some(ref img) = img.borrow().img() {
+        if let Some(ref img) = img.img() {
             let mut grid: [RGBA; 4] = [
                 (0, 0, 0, 0).into(),
                 (0, 0, 0, 0).into(),

@@ -45,7 +45,7 @@ pub struct Level {
     /// whether the level_img has been loaded
     loaded: bool,
     /// computed light in the level. subcell resolution
-    lightmap: Rc<RefCell<Image>>,
+    lightmap: Image,
     /// the level size in console cells
     size: (i32, i32),
     /// the player start position in console cells
@@ -59,7 +59,7 @@ pub struct Level {
     /// what part of the level are in the player's field of view (subcell resolution)
     map: MapData,
     /// the final background image (subcell resolution)
-    render_output: Rc<RefCell<Image>>,
+    render_output: Image,
     /// dynamic lights in the level
     lights: Vec<Light>,
     /// some dim light following the player to keep him from being in total darkness
@@ -69,11 +69,13 @@ pub struct Level {
 impl Level {
     pub fn new(app: &mut AppContext, img_path: &str) -> Self {
         Self {
-            level_img: app.get_image(&(img_path.to_owned() + ".png")),
-            ground: app.get_image(&(img_path.to_owned() + "_color.png")),
+            level_img: app.load_image(&(img_path.to_owned() + ".png")).unwrap(),
+            ground: app
+                .load_image(&(img_path.to_owned() + "_color.png"))
+                .unwrap(),
             loaded: false,
-            lightmap: Image::new_empty(1, 1),
-            render_output: Image::new_empty(1, 1),
+            lightmap: Image::new(1, 1),
+            render_output: Image::new(1, 1),
             size: (0, 0),
             start: (0, 0),
             walls: Vec::new(),
@@ -88,11 +90,11 @@ impl Level {
         if !self.loaded && self.level_img.borrow_mut().is_loaded() {
             let entities = self.compute_walls_2x_and_start_pos();
             self.compute_walls();
-            self.lightmap = Image::new_empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
-            self.render_output = Image::new_empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+            self.lightmap = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+            self.render_output = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
             self.loaded = true;
             // free memory
-            self.level_img = Image::new_empty(1, 1);
+            // self.level_img = Image::new(1, 1);
             return Some(entities);
         }
         None
@@ -105,7 +107,7 @@ impl Level {
     }
     pub fn light_at(&self, (x, y): (i32, i32)) -> RGBA {
         self.lightmap
-            .borrow()
+            // .borrow()
             .pixel(x as u32 * 2, y as u32 * 2)
             .unwrap()
     }
@@ -126,7 +128,7 @@ impl Level {
                     {
                         self.visited_2x[off] = true;
                         let ground_col = self.ground.borrow().pixel(x as u32, y as u32).unwrap();
-                        let light_col = self.lightmap.borrow().pixel(x as u32, y as u32).unwrap();
+                        let light_col = self.lightmap.pixel(x as u32, y as u32).unwrap();
                         let mut r =
                             f32::from(ground_col.0) * f32::from(light_col.0) * LIGHT_COEF / 255.0;
                         let mut g =
@@ -136,7 +138,7 @@ impl Level {
                         r = r.min(255.0);
                         g = g.min(255.0);
                         b = b.min(255.0);
-                        self.render_output.borrow_mut().put_pixel(
+                        self.render_output.put_pixel(
                             x as u32,
                             y as u32,
                             (r as u8, g as u8, b as u8, 255).into(),
@@ -145,14 +147,11 @@ impl Level {
                         let col = self.ground.borrow().pixel(x as u32, y as u32).unwrap();
                         let dark_col = RGBA::blend(col, VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
                         self.render_output
-                            .borrow_mut()
+                            // .borrow_mut()
                             .put_pixel(x as u32, y as u32, dark_col);
                     } else {
-                        self.render_output.borrow_mut().put_pixel(
-                            x as u32,
-                            y as u32,
-                            (0, 0, 0, 255).into(),
-                        );
+                        self.render_output
+                            .put_pixel(x as u32, y as u32, (0, 0, 0, 255).into());
                     }
                 }
             }
@@ -181,7 +180,7 @@ impl Level {
     }
     fn compute_lightmap(&mut self, (px, py): (i32, i32)) {
         // TODO check if filling with black pixels is faster
-        self.lightmap = Image::new_empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+        self.lightmap = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
         let mut fov = FovRestrictive::new();
         *self.player_light.pos_mut() = ((px * 2) as f32, (py * 2) as f32);
         self.player_light

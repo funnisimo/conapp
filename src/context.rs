@@ -1,4 +1,4 @@
-use crate::{Image, RGBA};
+use crate::{FileLoader, Image, RGBA};
 
 use super::input::{AppInput, InputApi};
 use super::Font;
@@ -19,6 +19,7 @@ pub struct AppContext {
     pub(crate) fonts: HashMap<String, Rc<RefCell<Font>>>,
     pub(crate) images: HashMap<String, Rc<RefCell<Image>>>,
     pub(crate) ready: bool,
+    pub(crate) file_loader: FileLoader,
 }
 
 impl AppContext {
@@ -41,6 +42,7 @@ impl AppContext {
             fonts,
             images: HashMap::new(),
             ready: false,
+            file_loader: FileLoader::new(),
         }
     }
 
@@ -59,7 +61,11 @@ impl AppContext {
             }
         }
         for (_, image) in self.images.iter_mut() {
-            if !image.borrow_mut().load_async() {
+            let id = image.borrow().id;
+            if self.file_loader.check_file_ready(id) {
+                let buf = self.file_loader.get_file_content(id);
+                image.borrow_mut().intialize_image(&buf)
+            } else {
                 ready = false;
             }
         }
@@ -103,7 +109,7 @@ impl AppContext {
         self.screen_size
     }
 
-    pub fn get_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
+    pub fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
         if let Some(font) = self.fonts.get(fontpath) {
             return font.clone();
         }
@@ -114,15 +120,17 @@ impl AppContext {
         font
     }
 
-    pub fn get_image(&mut self, imgpath: &str) -> Rc<RefCell<Image>> {
+    pub fn load_image(&mut self, imgpath: &str) -> Result<Rc<RefCell<Image>>, String> {
         if let Some(image) = self.images.get(imgpath) {
-            return image.clone();
+            return Ok(image.clone());
         }
 
-        let image = Image::new(imgpath);
+        let id = self.file_loader.load_file(imgpath)?;
+
+        let image = Rc::new(RefCell::new(Image::new_async(id)));
         self.images.insert(imgpath.to_owned(), image.clone());
         self.ready = false;
-        image
+        Ok(image)
     }
 }
 

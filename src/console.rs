@@ -109,6 +109,6 @@ impl Console {
 }
 
 pub fn subcell_console(width: u32, height: u32, app: &mut AppContext) -> Console {
-    let font = app.get_font("SUBCELL");
+    let font = app.load_font("SUBCELL");
     Console::new(width, height, font)
 }

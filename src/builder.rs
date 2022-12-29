@@ -91,7 +91,7 @@ impl AppBuilder {
             runner.load_font(&font);
         }
         for image in self.images {
-            runner.load_image(&image);
+            runner.load_image(&image).expect("Failed to load image.");
         }
         runner
     }

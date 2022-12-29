@@ -109,11 +109,11 @@ impl Runner {
     }
 
     pub fn load_font(&mut self, font_path: &str) -> Rc<RefCell<Font>> {
-        self.app_ctx.get_font(font_path)
+        self.app_ctx.load_font(font_path)
     }
 
-    pub fn load_image(&mut self, image_path: &str) -> Rc<RefCell<Image>> {
-        self.app_ctx.get_image(image_path)
+    pub fn load_image(&mut self, image_path: &str) -> Result<Rc<RefCell<Image>>, String> {
+        self.app_ctx.load_image(image_path)
     }
 
     // pub fn set_engine(&mut self, engine: Box<dyn Engine>) {

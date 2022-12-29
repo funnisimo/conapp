@@ -15,12 +15,12 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.get_font(FONT);
+        let font = app.load_font(FONT);
         let con = Console::new(80, 50, font);
 
         Box::new(MyRoguelike {
             con,
-            skull: app.get_image("resources/skull.png"),
+            skull: app.load_image("resources/skull.png").unwrap(),
             angle: 0.0,
             scale_time: 0.0,
         })
@@ -46,7 +46,7 @@ impl Screen for MyRoguelike {
             scale,
             scale,
             self.angle,
-            &self.skull,
+            &*self.skull.borrow(),
         );
 
         self.con.render(app.gl())
