@@ -33,7 +33,7 @@ impl FontLoader {
         if self.loader.check_file_ready(self.id) {
             let buf = self.loader.get_file_content(self.id);
             let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
-            self.process_image(&mut img);
+            process_image(&mut img);
             self.img = Some(img);
             return true;
         }
@@ -42,37 +42,37 @@ impl FontLoader {
 
     pub fn load_bytes(&mut self, buf: &[u8]) {
         let mut img = image::load_from_memory(buf).unwrap().to_rgba8();
-        self.process_image(&mut img);
+        process_image(&mut img);
         self.img = Some(img);
     }
+}
 
-    fn process_image(&mut self, img: &mut image::RgbaImage) {
-        let pixel = img.get_pixel(0, 0);
-        let alpha = pixel[3];
-        if alpha == 255 {
-            let transparent_color = (pixel[0], pixel[1], pixel[2]);
-            let greyscale = transparent_color == (0, 0, 0);
-            crate::console(&format!(
-                "{}transparent color: {:?}",
-                if greyscale { "greyscale " } else { "" },
-                transparent_color
-            ));
-            let (width, height) = img.dimensions();
-            for y in 0..height {
-                for x in 0..width {
-                    let pixel = img.get_pixel_mut(x, y);
-                    if (pixel[0], pixel[1], pixel[2]) == transparent_color {
-                        pixel[3] = 0;
-                        pixel[0] = 0;
-                        pixel[1] = 0;
-                        pixel[2] = 0;
-                    } else if greyscale && pixel[0] == pixel[1] && pixel[1] == pixel[2] {
-                        let alpha = pixel[0];
-                        pixel[0] = 255;
-                        pixel[1] = 255;
-                        pixel[2] = 255;
-                        pixel[3] = alpha;
-                    }
+fn process_image(img: &mut image::RgbaImage) {
+    let pixel = img.get_pixel(0, 0);
+    let alpha = pixel[3];
+    if alpha == 255 {
+        let transparent_color = (pixel[0], pixel[1], pixel[2]);
+        let greyscale = transparent_color == (0, 0, 0);
+        crate::console(&format!(
+            "{}transparent color: {:?}",
+            if greyscale { "greyscale " } else { "" },
+            transparent_color
+        ));
+        let (width, height) = img.dimensions();
+        for y in 0..height {
+            for x in 0..width {
+                let pixel = img.get_pixel_mut(x, y);
+                if (pixel[0], pixel[1], pixel[2]) == transparent_color {
+                    pixel[3] = 0;
+                    pixel[0] = 0;
+                    pixel[1] = 0;
+                    pixel[2] = 0;
+                } else if greyscale && pixel[0] == pixel[1] && pixel[1] == pixel[2] {
+                    let alpha = pixel[0];
+                    pixel[0] = 255;
+                    pixel[1] = 255;
+                    pixel[2] = 255;
+                    pixel[3] = alpha;
                 }
             }
         }

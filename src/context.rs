@@ -62,7 +62,7 @@ impl AppContext {
         }
         for (_, image) in self.images.iter_mut() {
             let id = image.borrow().id;
-            if self.file_loader.check_file_ready(id) {
+            if !image.borrow().is_loaded() && self.file_loader.check_file_ready(id) {
                 let buf = self.file_loader.get_file_content(id);
                 image.borrow_mut().intialize_image(&buf)
             } else {

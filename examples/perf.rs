@@ -111,6 +111,7 @@ fn main() {
         .title("doryen-rs performance test")
         .font(FONT)
         .vsync(false)
+        .fps(0)
         .build();
 
     app.run::<PerfTest>();
