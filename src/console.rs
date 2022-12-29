@@ -35,7 +35,7 @@ impl Console {
     }
 
     pub fn ready(&self) -> bool {
-        self.font.borrow().ready()
+        self.font.borrow().is_loaded()
     }
 
     pub fn set_font(&mut self, font: Rc<RefCell<Font>>) {
@@ -109,6 +109,8 @@ impl Console {
 }
 
 pub fn subcell_console(width: u32, height: u32, app: &mut AppContext) -> Console {
-    let font = app.load_font("SUBCELL");
+    let font = app
+        .load_font("SUBCELL")
+        .expect("Failed to find SUBCELL font");
     Console::new(width, height, font)
 }

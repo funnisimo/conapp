@@ -27,7 +27,7 @@ struct PerfTest {
 
 impl ScreenCreator for PerfTest {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.load_font(FONT).expect("Failed to load font");
         let con = Console::new(80, 50, font);
         let mut screen = Box::new(PerfTest {
             con,

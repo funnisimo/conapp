@@ -33,7 +33,7 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONTS[0]);
+        let font = app.load_font(FONTS[0]).expect("Failed to load font");
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
         Box::new(MyRoguelike {
@@ -65,7 +65,7 @@ impl Screen for MyRoguelike {
         if let Some(font_path) = font_path {
             self.cur_font_name = font_path.to_owned();
 
-            let font = app.load_font(font_path);
+            let font = app.load_font(font_path).expect("Failed to load font");
             self.con.set_font(font);
         }
 
@@ -136,7 +136,7 @@ fn main() {
     let mut app = AppBuilder::new(1024, 768).title("Input Example").build();
 
     for font in FONTS.iter() {
-        app.load_font(font);
+        app.load_font(font).expect("Failed to load font");
     }
 
     app.run::<MyRoguelike>();

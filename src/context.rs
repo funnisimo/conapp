@@ -29,7 +29,7 @@ impl AppContext {
         input: AppInput,
         fps_goal: u32,
     ) -> Self {
-        let sub_cell_font: Rc<RefCell<Font>> = Font::from_bytes(SUBCELL_BYTES, &gl);
+        let sub_cell_font = Rc::new(RefCell::new(Font::from_bytes(SUBCELL_BYTES, &gl)));
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
 
@@ -56,7 +56,11 @@ impl AppContext {
         }
         let mut ready = true;
         for (_, font) in self.fonts.iter_mut() {
-            if !font.borrow_mut().load_async(&self.gl) {
+            let id = font.borrow().id;
+            if !font.borrow().is_loaded() && self.file_loader.check_file_ready(id) {
+                let buf = self.file_loader.get_file_content(id);
+                font.borrow_mut().load_font_img(&buf, &self.gl);
+            } else {
                 ready = false;
             }
         }
@@ -109,15 +113,17 @@ impl AppContext {
         self.screen_size
     }
 
-    pub fn load_font(&mut self, fontpath: &str) -> Rc<RefCell<Font>> {
+    pub fn load_font(&mut self, fontpath: &str) -> Result<Rc<RefCell<Font>>, String> {
         if let Some(font) = self.fonts.get(fontpath) {
-            return font.clone();
+            return Ok(font.clone());
         }
 
-        let font = Font::new(fontpath, &self.gl);
+        let id = self.file_loader.load_file(fontpath)?;
+
+        let font = Rc::new(RefCell::new(Font::new(id, fontpath, &self.gl)));
         self.fonts.insert(fontpath.to_owned(), font.clone());
         self.ready = false;
-        font
+        Ok(font)
     }
 
     pub fn load_image(&mut self, imgpath: &str) -> Result<Rc<RefCell<Image>>, String> {

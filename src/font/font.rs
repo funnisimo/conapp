@@ -1,13 +1,9 @@
-use super::*;
 use super::{Program, DORYEN_FS, DORYEN_VS};
 use crate::Buffer;
-use image::{ImageBuffer, Rgba};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uni_gl::WebGLRenderingContext;
 
 pub struct Font {
-    // index: u32,
+    pub(crate) id: usize,
     img_width: u32,
     img_height: u32,
     char_width: u32,
@@ -17,23 +13,24 @@ pub struct Font {
     path: String,
     loaded: bool,
     // path: Option<String>,
-    loader: FontLoader,
+    // loader: FontLoader,
+    pub(crate) img: Option<image::RgbaImage>,
 
     program: Option<Program>,
 }
 
 impl Font {
-    pub(crate) fn new(path: &str, gl: &WebGLRenderingContext) -> Rc<RefCell<Self>> {
-        let mut loader = FontLoader::new();
-        crate::console(&format!("Loading font - {}", path));
-        loader.load_font(path);
+    pub(crate) fn new(id: usize, path: &str, gl: &WebGLRenderingContext) -> Self {
+        // let mut loader = FontLoader::new();
+        // crate::console(&format!("Loading font - {}", path));
+        // loader.load_font(path);
 
         let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
 
         let (char_width, char_height) = parse_char_size(path);
 
-        Rc::new(RefCell::new(Font {
-            // index,
+        Font {
+            id,
             img_width: 0,
             img_height: 0,
             char_width,
@@ -42,20 +39,22 @@ impl Font {
 
             path: path.to_owned(),
             loaded: false,
-            loader,
+            // loader,
+            img: None,
 
             program: Some(program),
-        }))
+        }
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8], gl: &WebGLRenderingContext) -> Rc<RefCell<Self>> {
-        let mut loader = FontLoader::new();
-        crate::console("Loading font from bytes");
-        loader.load_bytes(bytes);
+    pub(crate) fn from_bytes(bytes: &[u8], gl: &WebGLRenderingContext) -> Self {
+        // let mut loader = FontLoader::new();
+        // crate::console("Loading font from bytes");
+        // loader.load_bytes(bytes);
 
         let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
 
-        let font = Rc::new(RefCell::new(Font {
+        let mut font = Font {
+            id: 0,
             // index,
             img_width: 0,
             img_height: 0,
@@ -65,14 +64,15 @@ impl Font {
 
             path: "bytes".to_owned(),
             loaded: false,
-            loader,
+            // loader,
+            img: None,
 
             program: Some(program),
-        }));
+        };
 
-        font.borrow_mut().load_font_info();
-        font.borrow_mut().setup_font(gl);
-        font.borrow_mut().loaded = true;
+        font.load_font_img(bytes, gl);
+        // font.setup_font(gl);
+        font.loaded = true;
 
         font
     }
@@ -94,35 +94,39 @@ impl Font {
         self.len
     }
 
-    pub fn ready(&self) -> bool {
+    pub fn is_loaded(&self) -> bool {
         self.loaded
     }
 
-    fn take_img(&self) -> &ImageBuffer<Rgba<u8>, Vec<u8>> {
-        self.loader.img.as_ref().unwrap()
+    pub fn img(&self) -> Option<&image::RgbaImage> {
+        self.img.as_ref()
     }
 
-    pub(crate) fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
-        if self.loaded {
-            return true;
-        }
+    // pub(crate) fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
+    //     if self.loaded {
+    //         return true;
+    //     }
 
-        if !self.loader.load_font_async() {
-            crate::console(&format!("- still loading font: {}", self.path));
-            return false;
-        }
+    //     if !self.loader.load_font_async() {
+    //         crate::console(&format!("- still loading font: {}", self.path));
+    //         return false;
+    //     }
 
-        self.load_font_info();
-        self.setup_font(gl);
-        self.loaded = true;
-        true
-    }
+    //     self.load_font_info();
+    //     self.setup_font(gl);
+    //     self.loaded = true;
+    //     true
+    // }
 
-    fn load_font_info(&mut self) {
-        let img = self.loader.img.as_ref().unwrap();
+    pub(crate) fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
+        let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
+        process_image(&mut img);
+
         self.img_width = img.width() as u32;
         self.img_height = img.height() as u32;
         self.len = (self.img_width / self.char_width) * (self.img_height / self.char_height);
+
+        self.img = Some(img);
 
         crate::console(&format!(
             "Font loaded: {} -> font size: {:?} char size: {:?} len: {:?}",
@@ -131,20 +135,21 @@ impl Font {
             (self.char_width, self.char_height),
             self.len()
         ));
-    }
 
-    fn setup_font(&mut self, gl: &WebGLRenderingContext) {
         if let Some(mut program) = self.program.take() {
             program.set_font_texture(
                 gl,
-                self.take_img(),
-                self.img_width(),
-                self.img_height(),
-                self.char_width(),
-                self.char_height(),
+                self.img.as_ref().unwrap(),
+                self.img_width,
+                self.img_height,
+                self.char_width,
+                self.char_height,
             );
             self.program = Some(program);
+            println!("Loaded font program - {}", &self.path);
         }
+
+        self.loaded = true;
     }
 
     pub fn render(
@@ -197,4 +202,36 @@ fn parse_char_size(filepath: &str) -> (u32, u32) {
         };
     }
     (char_width, char_height)
+}
+
+fn process_image(img: &mut image::RgbaImage) {
+    let pixel = img.get_pixel(0, 0);
+    let alpha = pixel[3];
+    if alpha == 255 {
+        let transparent_color = (pixel[0], pixel[1], pixel[2]);
+        let greyscale = transparent_color == (0, 0, 0);
+        crate::console(&format!(
+            "{}transparent color: {:?}",
+            if greyscale { "greyscale " } else { "" },
+            transparent_color
+        ));
+        let (width, height) = img.dimensions();
+        for y in 0..height {
+            for x in 0..width {
+                let pixel = img.get_pixel_mut(x, y);
+                if (pixel[0], pixel[1], pixel[2]) == transparent_color {
+                    pixel[3] = 0;
+                    pixel[0] = 0;
+                    pixel[1] = 0;
+                    pixel[2] = 0;
+                } else if greyscale && pixel[0] == pixel[1] && pixel[1] == pixel[2] {
+                    let alpha = pixel[0];
+                    pixel[0] = 255;
+                    pixel[1] = 255;
+                    pixel[2] = 255;
+                    pixel[3] = alpha;
+                }
+            }
+        }
+    }
 }

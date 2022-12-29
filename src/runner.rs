@@ -108,7 +108,7 @@ impl Runner {
         self.screens.push(screen);
     }
 
-    pub fn load_font(&mut self, font_path: &str) -> Rc<RefCell<Font>> {
+    pub fn load_font(&mut self, font_path: &str) -> Result<Rc<RefCell<Font>>, String> {
         self.app_ctx.load_font(font_path)
     }
 

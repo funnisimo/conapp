@@ -39,7 +39,7 @@ struct DoryenDemo {
 
 impl ScreenCreator for DoryenDemo {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT);
+        let font = app.load_font(FONT).expect("Failed to load font");
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
 
         Box::new(Self {

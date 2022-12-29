@@ -88,7 +88,7 @@ impl AppBuilder {
     pub fn build(self) -> Runner {
         let mut runner = Runner::new(self.config, self.fps_goal);
         for font in self.fonts {
-            runner.load_font(&font);
+            runner.load_font(&font).expect("Failed to load font.");
         }
         for image in self.images {
             runner.load_image(&image).expect("Failed to load image.");
