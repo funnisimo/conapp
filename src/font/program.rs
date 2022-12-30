@@ -1,6 +1,6 @@
-use crate::rgba::RGBA;
 use crate::Buffer;
-use image::{ImageBuffer, Rgba};
+use crate::{rgba::RGBA, Font};
+// use image::{ImageBuffer, Rgba};
 use std::collections::HashMap;
 use std::mem::size_of;
 use std::slice;
@@ -61,7 +61,7 @@ pub struct Program {
     pub(crate) vertex_uv_location: Option<u32>,
     pub(crate) vertex_pos_buffer: Option<WebGLBuffer>,
     pub(crate) vertex_uv_buffer: Option<WebGLBuffer>,
-    pub(crate) font: WebGLTexture,
+    // pub(crate) font: WebGLTexture,
     pub(crate) ascii: WebGLTexture,
     pub(crate) foreground: WebGLTexture,
     pub(crate) background: WebGLTexture,
@@ -160,7 +160,7 @@ impl Program {
             vertex_uv_location,
             vertex_pos_buffer,
             vertex_uv_buffer,
-            font: create_font_texture(gl),
+            // font: create_font_texture(gl),
             ascii: gl.create_texture(),
             foreground: gl.create_texture(),
             background: gl.create_texture(),
@@ -228,44 +228,45 @@ impl Program {
         }
     }
 
-    pub fn set_font_texture(
-        &mut self,
-        gl: &WebGLRenderingContext,
-        img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-        img_width: u32,
-        img_height: u32,
-        char_width: u32,
-        char_height: u32,
-    ) {
+    // pub fn set_font_texture(
+    //     &mut self,
+    //     gl: &WebGLRenderingContext,
+    //     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
+    // ) {
+    //     // gl.active_texture(FONT_TEXTURE);
+    //     gl.bind_texture(&self.font);
+
+    //     gl.tex_image2d(
+    //         uni_gl::TextureBindPoint::Texture2d, // target
+    //         0,                                   // level
+    //         img.width() as u16,                  // width
+    //         img.height() as u16,                 // height
+    //         uni_gl::PixelFormat::Rgba,           // format
+    //         uni_gl::PixelType::UnsignedByte,     // type
+    //         &*img,                               // data
+    //     );
+    // }
+
+    pub(crate) fn use_font(&mut self, gl: &WebGLRenderingContext, font: &Font) {
         gl.use_program(&self.program);
-
         gl.active_texture(FONT_TEXTURE);
-        gl.bind_texture(&self.font);
-
-        {
-            gl.tex_image2d(
-                uni_gl::TextureBindPoint::Texture2d, // target
-                0,                                   // level
-                img.width() as u16,                  // width
-                img.height() as u16,                 // height
-                uni_gl::PixelFormat::Rgba,           // format
-                uni_gl::PixelType::UnsignedByte,     // type
-                &*img,                               // data
-            );
-        }
+        gl.bind_texture(&font.texture);
 
         if let Some(&Some(ref location)) = self
             .uniform_locations
             .get(&DoryenUniforms::FontCharsPerLine)
         {
-            gl.uniform_1f(location, (img_width as f32) / (char_width as f32));
+            gl.uniform_1f(
+                location,
+                (font.img_width() as f32) / (font.char_width() as f32),
+            );
         }
         if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::FontCoef) {
             gl.uniform_2f(
                 location,
                 (
-                    (char_width as f32) / (img_width as f32),
-                    (char_height as f32) / (img_height as f32),
+                    (font.char_width() as f32) / (font.img_width() as f32),
+                    (font.char_height() as f32) / (font.img_height() as f32),
                 ),
             );
         }
@@ -276,13 +277,13 @@ impl Program {
         }
     }
 
-    pub fn render_primitive(&mut self, gl: &WebGLRenderingContext, buffer: &Buffer) {
+    pub fn render_buffer(&mut self, gl: &WebGLRenderingContext, buffer: &Buffer) {
         gl.use_program(&self.program);
         self.set_uniforms(gl, buffer);
 
         // bind font texture
-        gl.active_texture(FONT_TEXTURE);
-        gl.bind_texture(&self.font);
+        // gl.active_texture(FONT_TEXTURE);
+        // gl.bind_texture(&self.font);
 
         gl.bind_vertex_array(&self.vao);
         if let Some(ref buf) = self.vertex_pos_buffer {

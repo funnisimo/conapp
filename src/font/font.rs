@@ -1,6 +1,6 @@
-use super::{Program, DORYEN_FS, DORYEN_VS};
+use super::{create_font_texture, Program, DORYEN_FS, DORYEN_VS};
 use crate::Buffer;
-use uni_gl::WebGLRenderingContext;
+use uni_gl::{WebGLRenderingContext, WebGLTexture};
 
 pub struct Font {
     pub(crate) id: usize,
@@ -14,9 +14,10 @@ pub struct Font {
     loaded: bool,
     // path: Option<String>,
     // loader: FontLoader,
-    pub(crate) img: Option<image::RgbaImage>,
-
+    // pub(crate) img: Option<image::RgbaImage>,
     program: Option<Program>,
+
+    pub(crate) texture: WebGLTexture,
 }
 
 impl Font {
@@ -40,9 +41,9 @@ impl Font {
             path: path.to_owned(),
             loaded: false,
             // loader,
-            img: None,
-
+            // img: None,
             program: Some(program),
+            texture: create_font_texture(gl),
         }
     }
 
@@ -65,9 +66,9 @@ impl Font {
             path: "bytes".to_owned(),
             loaded: false,
             // loader,
-            img: None,
-
+            // img: None,
             program: Some(program),
+            texture: create_font_texture(gl),
         };
 
         font.load_font_img(bytes, gl);
@@ -98,9 +99,9 @@ impl Font {
         self.loaded
     }
 
-    pub fn img(&self) -> Option<&image::RgbaImage> {
-        self.img.as_ref()
-    }
+    // pub fn img(&self) -> Option<&image::RgbaImage> {
+    //     self.img.as_ref()
+    // }
 
     // pub(crate) fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
     //     if self.loaded {
@@ -126,7 +127,25 @@ impl Font {
         self.img_height = img.height() as u32;
         self.len = (self.img_width / self.char_width) * (self.img_height / self.char_height);
 
-        self.img = Some(img);
+        // self.img = Some(img);
+
+        // if let Some(mut program) = self.program.take() {
+        //     program.set_font_texture(gl, &img);
+        //     self.program = Some(program);
+        //     println!("Loaded font program - {}", &self.path);
+        // }
+
+        gl.bind_texture(&self.texture);
+
+        gl.tex_image2d(
+            uni_gl::TextureBindPoint::Texture2d, // target
+            0,                                   // level
+            img.width() as u16,                  // width
+            img.height() as u16,                 // height
+            uni_gl::PixelFormat::Rgba,           // format
+            uni_gl::PixelType::UnsignedByte,     // type
+            &*img,                               // data
+        );
 
         crate::console(&format!(
             "Font loaded: {} -> font size: {:?} char size: {:?} len: {:?}",
@@ -135,19 +154,6 @@ impl Font {
             (self.char_width, self.char_height),
             self.len()
         ));
-
-        if let Some(mut program) = self.program.take() {
-            program.set_font_texture(
-                gl,
-                self.img.as_ref().unwrap(),
-                self.img_width,
-                self.img_height,
-                self.char_width,
-                self.char_height,
-            );
-            self.program = Some(program);
-            println!("Loaded font program - {}", &self.path);
-        }
 
         self.loaded = true;
     }
@@ -162,8 +168,9 @@ impl Font {
             return;
         }
         if let Some(mut program) = self.program.take() {
+            program.use_font(gl, &self);
             program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
-            program.render_primitive(gl, buffer);
+            program.render_buffer(gl, buffer);
             self.program = Some(program);
         }
     }
