@@ -2,49 +2,49 @@ use crate::app::{AppEvent, KeyDownEvent, KeyUpEvent, VirtualKeyCode};
 use std::collections::HashMap;
 // use std::iter::Filter;
 
-/// Provides information about user input.
-///
-/// Warning, there are some slight variations from one OS to another, for example the `Command`, `F13`, `F14`, `F15` keys
-/// only exist on Mac.
-///
-/// State functions like [`InputApi::key`], [`InputApi::mouse_button`] and [`InputApi::mouse_pct`] always work.
-/// The pressed/released event functions should be called only in the update function.
-///
-pub trait InputApi {
-    // keyboard state
-    /// return the current status of a key (true if pressed)
-    fn key(&self, key: VirtualKeyCode) -> bool;
-    /// return true if a key was pressed since last update.
-    fn key_pressed(&self, key: VirtualKeyCode) -> bool;
-    /// return true if a key was released since last update.
-    fn key_released(&self, key: VirtualKeyCode) -> bool;
-    /// return an iterator over all the keys that were pressed since last update.
-    // fn keys_pressed(&self) -> Keys;
-    /// return an iterator over all the keys that were released since last update.
-    // fn keys_released(&self) -> Keys;
+// / Provides information about user input.
+// /
+// / Warning, there are some slight variations from one OS to another, for example the `Command`, `F13`, `F14`, `F15` keys
+// / only exist on Mac.
+// /
+// / State functions like [`InputApi::key`], [`InputApi::mouse_button`] and [`InputApi::mouse_pct`] always work.
+// / The pressed/released event functions should be called only in the update function.
+// /
+// pub trait InputApi {
+//     // keyboard state
+//     /// return the current status of a key (true if pressed)
+//     fn key(&self, key: VirtualKeyCode) -> bool;
+//     /// return true if a key was pressed since last update.
+//     fn key_pressed(&self, key: VirtualKeyCode) -> bool;
+//     /// return true if a key was released since last update.
+//     fn key_released(&self, key: VirtualKeyCode) -> bool;
+//     /// return an iterator over all the keys that were pressed since last update.
+//     // fn keys_pressed(&self) -> Keys;
+//     /// return an iterator over all the keys that were released since last update.
+//     // fn keys_released(&self) -> Keys;
 
-    // mouse
-    /// return the current status of a mouse button (true if pressed)
-    fn mouse_button(&self, num: usize) -> bool;
-    /// return true if a mouse button was pressed since last update.
-    fn mouse_button_pressed(&self, num: usize) -> bool;
-    /// return true if a mouse button was released since last update.
-    fn mouse_button_released(&self, num: usize) -> bool;
-    /// return the current mouse position on the screen in percent (0.0-1.0, 0.0-1.0)
-    /// give this to the console cell_pos method to get the cell the mouse is in
-    fn mouse_pct(&self) -> (f32, f32);
+//     // mouse
+//     /// return the current status of a mouse button (true if pressed)
+//     fn mouse_button(&self, num: usize) -> bool;
+//     /// return true if a mouse button was pressed since last update.
+//     fn mouse_button_pressed(&self, num: usize) -> bool;
+//     /// return true if a mouse button was released since last update.
+//     fn mouse_button_released(&self, num: usize) -> bool;
+//     /// return the current mouse position on the screen in percent (0.0-1.0, 0.0-1.0)
+//     /// give this to the console cell_pos method to get the cell the mouse is in
+//     fn mouse_pct(&self) -> (f32, f32);
 
-    /// a mouse event occurred this frame
-    fn had_mouse_event(&self) -> bool;
-    /// a key event occurred this frame
-    fn had_key_event(&self) -> bool;
+//     /// a mouse event occurred this frame
+//     fn had_mouse_event(&self) -> bool;
+//     /// a key event occurred this frame
+//     fn had_key_event(&self) -> bool;
 
-    /// Whether the window close button was clicked
-    fn close_requested(&self) -> bool;
-}
+//     /// Whether the window close button was clicked
+//     fn close_requested(&self) -> bool;
+// }
 
 /// Tracks all input events
-pub(crate) struct AppInput {
+pub struct AppInput {
     /// keys currently down
     kdown: HashMap<VirtualKeyCode, bool>,
     /// keys that were pressed this frame
@@ -77,7 +77,7 @@ pub(crate) struct AppInput {
 
 impl AppInput {
     /// Construct a new AppInput tracker with the given screen size and offset
-    pub fn new(
+    pub(crate) fn new(
         (screen_width, screen_height): (u32, u32),
         (x_offset, y_offset): (u32, u32),
     ) -> Self {
@@ -132,7 +132,7 @@ impl AppInput {
     }
 
     /// a frame has ended
-    pub fn on_frame_end(&mut self) {
+    pub(crate) fn on_frame_end(&mut self) {
         self.mpressed.clear();
         self.mreleased.clear();
         self.kreleased.clear();
@@ -144,7 +144,7 @@ impl AppInput {
     }
 
     /// an event occurred
-    pub fn on_event(&mut self, event: &AppEvent) {
+    pub(crate) fn on_event(&mut self, event: &AppEvent) {
         self.events.push(event.clone());
 
         match event {
@@ -191,7 +191,7 @@ impl AppInput {
     }
 
     /// change the size of the screen
-    pub fn resize(
+    pub(crate) fn resize(
         &mut self,
         (screen_width, screen_height): (u32, u32),
         (x_offset, y_offset): (u32, u32),
@@ -200,72 +200,54 @@ impl AppInput {
         // self.con_size = (con_width as f32, con_height as f32);
         self.mouse_offset = (x_offset as f32, y_offset as f32);
     }
-}
 
-impl InputApi for AppInput {
+    // InputAPI
+
     /// is this key currently down?
-    fn key(&self, key_code: VirtualKeyCode) -> bool {
+    pub fn key(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kdown.get(&key_code), Some(&true))
     }
     /// was this key pressed this frame?
-    fn key_pressed(&self, key_code: VirtualKeyCode) -> bool {
+    pub fn key_pressed(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kpressed.get(&key_code), Some(&true))
     }
     /// was this key released this frame?
-    fn key_released(&self, key_code: VirtualKeyCode) -> bool {
+    pub fn key_released(&self, key_code: VirtualKeyCode) -> bool {
         matches!(self.kreleased.get(&key_code), Some(&true))
     }
 
     /// Returns true if the given mouse button is currently pressed
-    fn mouse_button(&self, num: usize) -> bool {
+    pub fn mouse_button(&self, num: usize) -> bool {
         matches!(self.mdown.get(&num), Some(&true))
     }
 
     /// Returns true if the given mouse button was pressed in this frame
-    fn mouse_button_pressed(&self, num: usize) -> bool {
+    pub fn mouse_button_pressed(&self, num: usize) -> bool {
         matches!(self.mpressed.get(&num), Some(&true))
     }
 
     /// returns true if the given mouse button was released in this frame
-    fn mouse_button_released(&self, num: usize) -> bool {
+    pub fn mouse_button_released(&self, num: usize) -> bool {
         matches!(self.mreleased.get(&num), Some(&true))
     }
 
     /// A mouse event occurred this frame
-    fn had_mouse_event(&self) -> bool {
+    pub fn had_mouse_event(&self) -> bool {
         self.mouse_event
     }
 
     /// A keyboard event occurred this frame
-    fn had_key_event(&self) -> bool {
+    pub fn had_key_event(&self) -> bool {
         self.key_event
     }
 
     /// returns the x,y percent of the mouse on the window - (0.0-1.0, 0.0-1.0)
-    fn mouse_pct(&self) -> (f32, f32) {
+    pub fn mouse_pct(&self) -> (f32, f32) {
         self.mpos
     }
 
     /// Returns true if user clicked the close button on the app window
-    fn close_requested(&self) -> bool {
+    pub fn close_requested(&self) -> bool {
         self.close_request
     }
 }
-
-// type KeyMapFilter<'a> = Filter<
-//     std::collections::hash_map::Iter<'a, VirtualKeyCode, bool>,
-//     fn(&(&'a VirtualKeyCode, &'a bool)) -> bool,
-// >;
-
-// An iterator visiting all keys in arbitrary order.
-// pub struct Keys<'a> {
-//     inner: KeyMapFilter<'a>,
-// }
-
-// impl<'a> Iterator for Keys<'a> {
-//     type Item = &'a VirtualKeyCode;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.inner.next().map(|(c, _)| c)
-//     }
-// }

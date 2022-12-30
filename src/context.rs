@@ -1,6 +1,6 @@
 use crate::{FileLoader, Image, RGBA};
 
-use super::input::{AppInput, InputApi};
+use super::input::AppInput;
 use super::Font;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -93,7 +93,7 @@ impl AppContext {
         }
     }
 
-    pub fn input(&self) -> &dyn InputApi {
+    pub fn input(&self) -> &AppInput {
         &self.input
     }
 

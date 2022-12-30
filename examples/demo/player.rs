@@ -1,4 +1,4 @@
-use conapp::{Buffer, InputApi, VirtualKeyCode, RGBA};
+use conapp::{AppInput, Buffer, VirtualKeyCode, RGBA};
 
 pub struct Player {
     pos: (f32, f32),
@@ -12,7 +12,7 @@ impl Player {
             speed,
         }
     }
-    pub fn move_from_input(&self, input: &dyn InputApi) -> (i32, i32) {
+    pub fn move_from_input(&self, input: &AppInput) -> (i32, i32) {
         let mut mov = (0, 0);
         if input.key(VirtualKeyCode::Left) || input.key(VirtualKeyCode::A) {
             mov.0 = -1;

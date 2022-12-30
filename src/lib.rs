@@ -24,7 +24,7 @@ pub use draw::{BorderType, TextAlign};
 pub use file::*;
 pub use font::Font;
 pub use img::*;
-pub use input::InputApi;
+pub use input::AppInput;
 pub use rgba::*;
 pub use runner::*;
 pub use screen::*;
