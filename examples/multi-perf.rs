@@ -137,6 +137,7 @@ fn main() {
         .font(FONTA)
         .font(FONTB)
         .vsync(false)
+        .fps(0)
         .build();
 
     app.run::<PerfTest>();

@@ -240,8 +240,8 @@ impl Program {
         gl.use_program(&self.program);
 
         gl.active_texture(FONT_TEXTURE);
-
         gl.bind_texture(&self.font);
+
         {
             gl.tex_image2d(
                 uni_gl::TextureBindPoint::Texture2d, // target
