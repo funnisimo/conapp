@@ -2,6 +2,8 @@ use conapp::*;
 
 const FONT: &str = "resources/terminal_8x8.png";
 
+const GRAY: RGBA = RGBA::rgba(128, 128, 182, 255);
+
 struct MainScreen {
     con: Console,
     pos: (i32, i32),
@@ -34,7 +36,9 @@ impl Screen for MainScreen {
 
     fn render(&mut self, app: &mut AppContext) {
         let buffer = self.con.buffer_mut();
-        buffer.clear(true, false, false);
+
+        buffer.fill(Some('.' as u32), Some(GRAY), Some(BLACK));
+
         buffer.draw(
             self.pos.0,
             self.pos.1,
