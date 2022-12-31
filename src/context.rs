@@ -88,6 +88,7 @@ impl AppContext {
     }
 
     pub fn clear(&self, color: Option<RGBA>) {
+        self.gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
         match color {
             None => self.gl.clear(BufferBit::Color),
             Some(c) => {

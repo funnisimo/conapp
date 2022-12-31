@@ -118,18 +118,6 @@ impl Runner {
         self.app_ctx.load_image(image_path)
     }
 
-    // pub fn set_engine(&mut self, engine: Box<dyn Engine>) {
-    //     self.engine = Some(engine);
-    // }
-
-    // pub fn add_console(&mut self, width: u32, height: u32, font_path: &str) -> &mut Console {
-    //     let idx = self.api.cons.len() as u32;
-    //     let font = Font::new(font_path);
-    //     let con = Console::new(idx, width, height, font, &self.gl);
-    //     self.api.cons.push(con);
-    //     self.api.get_console_mut(idx as usize).unwrap()
-    // }
-
     fn resize(&mut self, hidpi_factor: f32, (real_screen_width, real_screen_height): (u32, u32)) {
         console(format!(
             "resize event - {}x{}, hidpi={}",
@@ -262,18 +250,6 @@ impl Runner {
         crate::console("Runner ready");
 
         app.run(move |app: &mut crate::app::App| {
-            // if !self.ready {
-            //     if self.api.ready() {
-            //         let mut screen = T::create(&mut self.api);
-            //         screen.setup(&mut self.api);
-            //         self.screens.push(screen);
-
-            //         self.ready = true;
-            //         crate::console("Runner ready");
-            //     }
-            // } else {
-            // self.handle_input(&mut screen, app.hidpi_factor(), app.events.clone());
-
             self.app_ctx.load_files(); // Do any font/image loading necessary
 
             if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
@@ -326,9 +302,6 @@ impl Runner {
                 self.render();
                 self.app_ctx.fps.step();
 
-                // self.gl.clear(uni_gl::BufferBit::Color);
-                // self.gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
-                // self.api.render(&self.gl);
                 if self.app_ctx.fps.goal() > 0 {
                     next_frame += 1.0 / self.app_ctx.fps.goal() as f64;
                 }
