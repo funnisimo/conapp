@@ -1,4 +1,4 @@
-use crate::Buffer;
+use crate::simple::Buffer;
 use crate::Image;
 use crate::RGBA;
 

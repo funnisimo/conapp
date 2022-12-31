@@ -1,5 +1,6 @@
+use super::Buffer;
 use crate::font::Font;
-use crate::{AppContext, Buffer};
+use crate::AppContext;
 use std::cell::RefCell;
 use std::rc::Rc;
 

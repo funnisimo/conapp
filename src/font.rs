@@ -1,6 +1,7 @@
-use super::create_font_texture;
 // use crate::Buffer;
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
+
+use crate::simple::set_texture_params;
 
 pub struct Font {
     pub(crate) id: usize,
@@ -240,4 +241,11 @@ fn process_image(img: &mut image::RgbaImage) {
             }
         }
     }
+}
+
+pub fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
+    let tex = gl.create_texture();
+    gl.bind_texture(&tex);
+    set_texture_params(gl, true);
+    tex
 }

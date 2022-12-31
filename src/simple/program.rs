@@ -1,4 +1,4 @@
-use crate::Buffer;
+use super::Buffer;
 use crate::{rgba::RGBA, Font};
 // use image::{ImageBuffer, Rgba};
 use std::collections::HashMap;
@@ -124,10 +124,10 @@ fn create_program(
 }
 
 impl Program {
-    pub fn new(gl: &WebGLRenderingContext, vertex_source: &str, fragment_source: &str) -> Program {
+    pub fn new(gl: &WebGLRenderingContext) -> Program {
         println!("Create program");
         let data = create_primitive();
-        let shader_program = create_program(gl, vertex_source, fragment_source);
+        let shader_program = create_program(gl, DORYEN_VS, DORYEN_FS);
         let vao = gl.create_vertex_array();
         let vertex_pos_location = gl.get_attrib_location(&shader_program, "aVertexPosition");
         let vertex_pos_buffer = vertex_pos_location.and(Some(gl.create_buffer()));
@@ -419,14 +419,6 @@ fn u32_to_u8(v: &[u32]) -> &[u8] {
 
 fn color_to_u8(v: &[RGBA]) -> &[u8] {
     unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * size_of::<RGBA>()) }
-}
-
-pub(crate) fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
-    let tex = gl.create_texture();
-    gl.active_texture(FONT_TEXTURE);
-    gl.bind_texture(&tex);
-    set_texture_params(gl, true);
-    tex
 }
 
 pub fn set_texture_params(gl: &WebGLRenderingContext, nearest: bool) {

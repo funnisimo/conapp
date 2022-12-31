@@ -1,6 +1,6 @@
 use super::TextAlign;
-use crate::Buffer;
-use crate::Glyph;
+use crate::simple::Buffer;
+use crate::simple::Glyph;
 use crate::{to_rgba, RGBA};
 use std::cmp::{max, min};
 use std::fmt::Display;

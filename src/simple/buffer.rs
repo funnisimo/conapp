@@ -77,6 +77,10 @@ impl Buffer {
         (self.width, self.height)
     }
 
+    pub fn pot_size(&self) -> (u32, u32) {
+        (self.pot_width, self.pot_height)
+    }
+
     /// resizes the console
     pub fn resize(&mut self, width: u32, height: u32) {
         self.width = width;

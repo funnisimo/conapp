@@ -1,5 +1,6 @@
 use super::plain;
-use crate::{codepage437, Buffer, Glyph, TextAlign, RGBA};
+use crate::simple::{Buffer, Glyph};
+use crate::{codepage437, TextAlign, RGBA};
 
 /// The border type - single, double, or colored
 #[derive(Debug, Clone, PartialEq, Copy)]

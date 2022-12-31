@@ -1,10 +1,7 @@
-use crate::{
-    font::{Program, DORYEN_FS, DORYEN_VS},
-    FileLoader, Image, RGBA,
-};
-
 use super::input::AppInput;
 use super::Font;
+use crate::simple::Program;
+use crate::{FileLoader, Image, RGBA};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -37,7 +34,7 @@ impl AppContext {
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
 
-        let program = Program::new(&gl, DORYEN_VS, DORYEN_FS);
+        let program = Program::new(&gl);
 
         AppContext {
             input,

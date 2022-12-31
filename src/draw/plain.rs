@@ -1,4 +1,5 @@
-use crate::{Buffer, Glyph, RGBA};
+use crate::simple::{Buffer, Glyph};
+use crate::RGBA;
 use std::cmp::{max, min};
 
 #[derive(Copy, Clone)]
