@@ -49,7 +49,7 @@ impl Screen for MyRoguelike {
             &*self.skull.borrow(),
         );
 
-        self.con.render(app.gl())
+        self.con.render(app)
     }
 }
 

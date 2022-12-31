@@ -133,7 +133,7 @@ impl Screen for MyRoguelike {
             .to_rgba(&to_rgba)
             .print(5, 5, "#[blue]This blue text contains a #[red]red#[] word");
 
-        con.render(api.gl());
+        con.render(api);
     }
 }
 

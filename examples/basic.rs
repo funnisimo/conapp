@@ -63,7 +63,7 @@ impl Screen for MainScreen {
             "Click the #[#F00]left mouse button#[] to #[#0FF]Quit#[] the app.",
         );
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

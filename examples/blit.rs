@@ -123,7 +123,7 @@ impl Screen for MyRoguelike {
             1.0 - self.alpha,
             Some((0, 0, 0, 255).into()),
         );
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

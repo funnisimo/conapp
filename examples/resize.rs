@@ -58,7 +58,7 @@ impl Screen for MyRoguelike {
         //     RGBA::rgba(255, 255, 255, 255),
         // );
 
-        self.con.render(app.gl())
+        self.con.render(app)
     }
 
     fn resize(&mut self, api: &mut AppContext) {

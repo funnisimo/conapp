@@ -54,7 +54,7 @@ impl MainScreen {
             "Click the #[#F00]left mouse button#[] to #[#0FF]Quit#[] the app.",
         );
 
-        self.left.render(app.gl());
+        self.left.render(app);
     }
 
     fn render_right(&mut self, app: &mut AppContext) {
@@ -76,7 +76,7 @@ impl MainScreen {
             .width(18)
             .print_lines(2, 10, "With a\ndifferent\nfont!");
 
-        self.right.render(app.gl());
+        self.right.render(app);
     }
 }
 

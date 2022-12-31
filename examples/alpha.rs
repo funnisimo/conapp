@@ -62,7 +62,7 @@ impl Screen for AlphaTest {
             let y = self.cy + self.radius * sn;
             buffer.back(x as i32, y as i32, RGBA::rgba(0, 0, 255, 255));
         }
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

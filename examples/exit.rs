@@ -54,7 +54,7 @@ impl Screen for MyRoguelike {
             "Press Escape\nto quit the app",
         );
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 
@@ -106,7 +106,7 @@ impl Screen for Popup {
         p.print(5, 12, "[N]o");
         p.print(5, 14, "[Y]es");
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

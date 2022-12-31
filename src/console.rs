@@ -2,7 +2,6 @@ use crate::font::Font;
 use crate::{AppContext, Buffer};
 use std::cell::RefCell;
 use std::rc::Rc;
-use uni_gl::WebGLRenderingContext;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
 pub struct Console {
@@ -76,9 +75,26 @@ impl Console {
         self.buffer.resize(width, height);
     }
 
-    pub fn render(&mut self, gl: &WebGLRenderingContext) {
-        let mut font = self.font.borrow_mut();
-        font.render(gl, &self.extents, &self.buffer);
+    pub fn render(&mut self, app: &mut AppContext) {
+        let font = self.font.borrow();
+
+        if !font.is_loaded() {
+            return;
+        }
+
+        let gl = &app.gl;
+        let program = &mut app.simple_program;
+        program.use_font(gl, &font);
+        program.set_extents(
+            gl,
+            self.extents.0,
+            self.extents.1,
+            self.extents.2,
+            self.extents.3,
+        );
+        program.render_buffer(gl, &self.buffer);
+
+        // font.render(gl, &self.extents, &self.buffer);
     }
 
     /// returns the cell that the screen pos converts to for this console [0.0-1.0]

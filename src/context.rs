@@ -1,4 +1,7 @@
-use crate::{FileLoader, Image, RGBA};
+use crate::{
+    font::{Program, DORYEN_FS, DORYEN_VS},
+    FileLoader, Image, RGBA,
+};
 
 use super::input::AppInput;
 use super::Font;
@@ -20,6 +23,7 @@ pub struct AppContext {
     pub(crate) images: HashMap<String, Rc<RefCell<Image>>>,
     pub(crate) ready: bool,
     pub(crate) file_loader: FileLoader,
+    pub(crate) simple_program: Program,
 }
 
 impl AppContext {
@@ -33,6 +37,8 @@ impl AppContext {
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
 
+        let program = Program::new(&gl, DORYEN_VS, DORYEN_FS);
+
         AppContext {
             input,
             fps: Fps::new(fps_goal),
@@ -43,6 +49,7 @@ impl AppContext {
             images: HashMap::new(),
             ready: false,
             file_loader: FileLoader::new(),
+            simple_program: program,
         }
     }
 

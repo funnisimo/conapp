@@ -1,5 +1,5 @@
-use super::{create_font_texture, Program, DORYEN_FS, DORYEN_VS};
-use crate::Buffer;
+use super::create_font_texture;
+// use crate::Buffer;
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
 
 pub struct Font {
@@ -15,8 +15,7 @@ pub struct Font {
     // path: Option<String>,
     // loader: FontLoader,
     // pub(crate) img: Option<image::RgbaImage>,
-    program: Option<Program>,
-
+    // program: Option<Program>,
     pub(crate) texture: WebGLTexture,
 }
 
@@ -26,7 +25,7 @@ impl Font {
         // crate::console(&format!("Loading font - {}", path));
         // loader.load_font(path);
 
-        let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
+        // let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
 
         let (char_width, char_height) = parse_char_size(path);
 
@@ -42,7 +41,7 @@ impl Font {
             loaded: false,
             // loader,
             // img: None,
-            program: Some(program),
+            // program: Some(program),
             texture: create_font_texture(gl),
         }
     }
@@ -52,7 +51,7 @@ impl Font {
         // crate::console("Loading font from bytes");
         // loader.load_bytes(bytes);
 
-        let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
+        // let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
 
         let mut font = Font {
             id: 0,
@@ -67,7 +66,7 @@ impl Font {
             loaded: false,
             // loader,
             // img: None,
-            program: Some(program),
+            // program: Some(program),
             texture: create_font_texture(gl),
         };
 
@@ -158,22 +157,22 @@ impl Font {
         self.loaded = true;
     }
 
-    pub fn render(
-        &mut self,
-        gl: &WebGLRenderingContext,
-        extents: &(f32, f32, f32, f32),
-        buffer: &Buffer,
-    ) {
-        if !self.loaded {
-            return;
-        }
-        if let Some(mut program) = self.program.take() {
-            program.use_font(gl, &self);
-            program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
-            program.render_buffer(gl, buffer);
-            self.program = Some(program);
-        }
-    }
+    // pub fn render(
+    //     &mut self,
+    //     gl: &WebGLRenderingContext,
+    //     extents: &(f32, f32, f32, f32),
+    //     buffer: &Buffer,
+    // ) {
+    //     if !self.loaded {
+    //         return;
+    //     }
+    //     if let Some(mut program) = self.program.take() {
+    //         program.use_font(gl, &self);
+    //         program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
+    //         program.render_buffer(gl, buffer);
+    //         self.program = Some(program);
+    //     }
+    // }
 }
 
 fn parse_char_size(filepath: &str) -> (u32, u32) {

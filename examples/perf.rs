@@ -96,7 +96,7 @@ impl Screen for PerfTest {
                 &format!("{} fps", fps),
             );
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 
     fn resize(&mut self, api: &mut AppContext) {

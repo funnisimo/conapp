@@ -64,7 +64,7 @@ impl Screen for LoadingScreen {
         draw::plain(buf).print(1, 1, "Hello Rust World");
         draw::plain(buf).print(1, 2, "Loading a bigger font...");
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 
@@ -112,7 +112,7 @@ impl Screen for MainScreen {
             }
         }
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

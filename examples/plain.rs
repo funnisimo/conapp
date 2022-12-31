@@ -92,7 +92,7 @@ impl Screen for TextScreen {
     }
 
     fn render(&mut self, app: &mut AppContext) {
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

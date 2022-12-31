@@ -105,7 +105,7 @@ impl PerfTest {
                 &format!("{} fps", fps),
             );
 
-        con.render(app.gl());
+        con.render(app);
     }
 }
 

@@ -128,7 +128,7 @@ impl Screen for MyRoguelike {
                 "Up/Down to change font",
             );
 
-        self.con.render(app.gl())
+        self.con.render(app)
     }
 }
 

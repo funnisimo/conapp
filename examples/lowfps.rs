@@ -47,7 +47,7 @@ impl Screen for MyRoguelike {
                 &format!("Frames since last second : #[red]{}", fps),
             );
 
-        self.con.render(app.gl())
+        self.con.render(app)
     }
 }
 

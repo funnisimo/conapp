@@ -43,7 +43,7 @@ impl Screen for MyRoguelike {
         printer.print(20, 14, "Φοβερός!");
         printer.print(20, 16, "Ça, c'est énorme!");
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

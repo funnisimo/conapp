@@ -68,7 +68,7 @@ impl Screen for HelloWorld {
             draw::plain(buf).print(1, 5, "Has Popup.");
         }
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 
@@ -154,7 +154,7 @@ impl Screen for Popup {
             }
         }
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

@@ -123,7 +123,7 @@ impl Screen for DoryenDemo {
             );
         }
 
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 

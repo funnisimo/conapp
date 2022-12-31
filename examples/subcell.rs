@@ -43,14 +43,14 @@ impl Screen for MyRoguelike {
             .fg(RGBA::rgb(0, 128, 255))
             .print_lines(30, 10, "This is a 60x80 png\non a 30x40 console.");
 
-        self.con.render(app.gl());
+        self.con.render(app);
 
         // image
         self.subcell.buffer_mut().clear(true, true, true);
         draw::subcell(self.subcell.buffer_mut())
             .transparent(RGBA::rgba(0, 0, 0, 255))
             .blit(&*self.skull.borrow(), 0, 0, 0, 0, None, None);
-        self.subcell.render(app.gl());
+        self.subcell.render(app);
     }
 }
 

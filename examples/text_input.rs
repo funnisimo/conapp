@@ -82,7 +82,7 @@ impl Screen for MyRoguelike {
             ),
         );
 
-        self.con.render(app.gl())
+        self.con.render(app)
     }
 }
 

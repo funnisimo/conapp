@@ -118,7 +118,7 @@ impl Screen for ColoredScreen {
     }
 
     fn render(&mut self, app: &mut AppContext) {
-        self.con.render(app.gl());
+        self.con.render(app);
     }
 }
 
