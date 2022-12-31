@@ -9,6 +9,7 @@ pub struct Console {
     buffer: Buffer,
     extents: (f32, f32, f32, f32),
     font: Rc<RefCell<Font>>,
+    zpos: i8,
 }
 
 impl Console {
@@ -19,6 +20,7 @@ impl Console {
             buffer: Buffer::new(width, height),
             extents: (0.0, 0.0, 1.0, 1.0),
             font,
+            zpos: 0,
         }
     }
 
@@ -27,10 +29,20 @@ impl Console {
         self
     }
 
+    pub fn zpos(mut self, zpos: i8) -> Self {
+        self.zpos = zpos;
+        self
+    }
+
     pub fn set_extents(&mut self, left: f32, top: f32, right: f32, bottom: f32) -> &mut Self {
         println!("console extents = {},{} - {},{}", left, top, right, bottom);
 
         self.extents = (left, top, right, bottom);
+        self
+    }
+
+    pub fn set_zpos(&mut self, zpos: i8) -> &mut Self {
+        self.zpos = zpos;
         self
     }
 
@@ -86,13 +98,7 @@ impl Console {
         let gl = &app.gl;
         let program = &mut app.simple_program;
         program.use_font(gl, &font);
-        program.set_extents(
-            gl,
-            self.extents.0,
-            self.extents.1,
-            self.extents.2,
-            self.extents.3,
-        );
+        program.set_extents(gl, &self.extents, self.zpos);
         program.render_buffer(gl, &self.buffer);
 
         // font.render(gl, &self.extents, &self.buffer);

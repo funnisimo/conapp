@@ -51,7 +51,7 @@ pub enum DoryenUniforms {
     FontCoef,
     TermSize,
     TermCoef,
-    // ZPos,
+    ZPos,
 }
 
 pub struct Program {
@@ -143,7 +143,7 @@ impl Program {
             (DoryenUniforms::FontCoef, "uFontCoef"),
             (DoryenUniforms::TermCoef, "uTermCoef"),
             (DoryenUniforms::TermSize, "uTermSize"),
-            // (DoryenUniforms::ZPos, "uZPos"), // If using ZPos
+            (DoryenUniforms::ZPos, "uZPos"), // If using ZPos
         ]
         .iter()
         {
@@ -172,15 +172,13 @@ impl Program {
     pub fn set_extents(
         &mut self,
         gl: &WebGLRenderingContext,
-        left: f32,
-        top: f32,
-        right: f32,
-        bottom: f32,
+        extents: &(f32, f32, f32, f32),
+        zpos: i8,
     ) {
-        let left = (left * 2.0) - 1.0;
-        let top = (top * 2.0) - 1.0;
-        let right = (right * 2.0) - 1.0;
-        let bottom = (bottom * 2.0) - 1.0;
+        let left = (extents.0 * 2.0) - 1.0;
+        let top = (extents.1 * 2.0) - 1.0;
+        let right = (extents.2 * 2.0) - 1.0;
+        let bottom = (extents.3 * 2.0) - 1.0;
 
         // println!(
         //     "set extents {} - {},{} - {},{}",
@@ -204,48 +202,23 @@ impl Program {
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
                 // println!("set extents - {:?}", self.data.pos_data);
-                set_buffer_data(
-                    gl,
-                    buf,
-                    Some(self.data.pos_data.clone()),
-                    *loc,
-                    AttributeSize::Two,
-                );
+                set_buffer_data(gl, buf, &self.data.pos_data, *loc, AttributeSize::Two);
             }
         }
 
-        // TODO - Can we just do this at create time?
         if let Some(ref buf) = self.vertex_uv_buffer {
             if let Some(ref loc) = self.vertex_uv_location {
-                set_buffer_data(
-                    gl,
-                    buf,
-                    Some(self.data.tex_data.clone()),
-                    *loc,
-                    AttributeSize::Two,
-                );
+                set_buffer_data(gl, buf, &self.data.tex_data, *loc, AttributeSize::Two);
             }
         }
+
+        // // If using ZPos
+        if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
+            let zpos: f32 = zpos as f32 / 128.0;
+            println!("zpos = {}", zpos);
+            gl.uniform_1f(location, zpos);
+        }
     }
-
-    // pub fn set_font_texture(
-    //     &mut self,
-    //     gl: &WebGLRenderingContext,
-    //     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-    // ) {
-    //     // gl.active_texture(FONT_TEXTURE);
-    //     gl.bind_texture(&self.font);
-
-    //     gl.tex_image2d(
-    //         uni_gl::TextureBindPoint::Texture2d, // target
-    //         0,                                   // level
-    //         img.width() as u16,                  // width
-    //         img.height() as u16,                 // height
-    //         uni_gl::PixelFormat::Rgba,           // format
-    //         uni_gl::PixelType::UnsignedByte,     // type
-    //         &*img,                               // data
-    //     );
-    // }
 
     pub(crate) fn use_font(&mut self, gl: &WebGLRenderingContext, font: &Font) {
         gl.use_program(&self.program);
@@ -289,13 +262,7 @@ impl Program {
         if let Some(ref buf) = self.vertex_pos_buffer {
             if let Some(ref loc) = self.vertex_pos_location {
                 // println!("render primitive - {:?}", self.data.pos_data);
-                set_buffer_data(
-                    gl,
-                    buf,
-                    Some(self.data.pos_data.clone()),
-                    *loc,
-                    AttributeSize::Two,
-                );
+                set_buffer_data(gl, buf, &self.data.pos_data, *loc, AttributeSize::Two);
             }
         }
 
@@ -304,12 +271,6 @@ impl Program {
         let con_width = buffer.get_width();
         let con_height = buffer.get_height();
 
-        // // If using ZPos
-        // if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
-        //     let zpos: f32 = self.index as f32 / -10.0;
-        //     println!("zpos = {}", zpos);
-        //     gl.uniform_1f(location, zpos);
-        // }
         if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::TermSize) {
             gl.uniform_2f(location, (con_width as f32, con_height as f32));
         }
@@ -394,15 +355,17 @@ impl Program {
 fn set_buffer_data(
     gl: &WebGLRenderingContext,
     buffer: &WebGLBuffer,
-    data: Option<Vec<f32>>,
+    data: &Vec<f32>,
     attribute_location: u32,
     count_per_vertex: AttributeSize,
 ) {
     gl.bind_buffer(BufferKind::Array, buffer);
     gl.enable_vertex_attrib_array(attribute_location);
-    if let Some(v) = data {
-        gl.buffer_data(BufferKind::Array, &v.into_bytes(), DrawMode::Stream);
-    }
+    gl.buffer_data(
+        BufferKind::Array,
+        &data.clone().into_bytes(),
+        DrawMode::Stream,
+    );
     gl.vertex_attrib_pointer(
         attribute_location,
         count_per_vertex,
