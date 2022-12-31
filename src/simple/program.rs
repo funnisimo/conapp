@@ -215,7 +215,7 @@ impl Program {
         // // If using ZPos
         if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
             let zpos: f32 = zpos as f32 / 128.0;
-            println!("zpos = {}", zpos);
+            // println!("zpos = {}", zpos);
             gl.uniform_1f(location, zpos);
         }
     }
