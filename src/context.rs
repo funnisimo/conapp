@@ -1,7 +1,7 @@
 use super::input::AppInput;
 use super::Font;
 use crate::simple::Program;
-use crate::{FileLoader, Image, RGBA};
+use crate::{Console, FileLoader, Image, LoadError, RGBA};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -117,7 +117,17 @@ impl AppContext {
         self.screen_size
     }
 
-    pub fn load_font(&mut self, fontpath: &str) -> Result<Rc<RefCell<Font>>, String> {
+    pub fn simple_console(
+        &mut self,
+        width: u32,
+        height: u32,
+        fontpath: &str,
+    ) -> Result<Console, LoadError> {
+        let font = self.load_font(fontpath)?;
+        Ok(Console::new(width, height, font))
+    }
+
+    pub fn load_font(&mut self, fontpath: &str) -> Result<Rc<RefCell<Font>>, LoadError> {
         if let Some(font) = self.fonts.get(fontpath) {
             return Ok(font.clone());
         }
@@ -130,7 +140,7 @@ impl AppContext {
         Ok(font)
     }
 
-    pub fn load_image(&mut self, imgpath: &str) -> Result<Rc<RefCell<Image>>, String> {
+    pub fn load_image(&mut self, imgpath: &str) -> Result<Rc<RefCell<Image>>, LoadError> {
         if let Some(image) = self.images.get(imgpath) {
             return Ok(image.clone());
         }

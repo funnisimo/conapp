@@ -1,6 +1,8 @@
 use super::context::AppContext;
 use super::input::AppInput;
-use crate::{console, AppConfig, AppEvent, Font, Image, Screen, ScreenCreator, ScreenResult};
+use crate::{
+    console, AppConfig, AppEvent, Font, Image, LoadError, Screen, ScreenCreator, ScreenResult,
+};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -108,11 +110,11 @@ impl Runner {
         self.screens.push(screen);
     }
 
-    pub fn load_font(&mut self, font_path: &str) -> Result<Rc<RefCell<Font>>, String> {
+    pub fn load_font(&mut self, font_path: &str) -> Result<Rc<RefCell<Font>>, LoadError> {
         self.app_ctx.load_font(font_path)
     }
 
-    pub fn load_image(&mut self, image_path: &str) -> Result<Rc<RefCell<Image>>, String> {
+    pub fn load_image(&mut self, image_path: &str) -> Result<Rc<RefCell<Image>>, LoadError> {
         self.app_ctx.load_image(image_path)
     }
 

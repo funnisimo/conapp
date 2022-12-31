@@ -3,6 +3,12 @@ use std::collections::HashMap;
 
 struct AsyncFile(String, File, Option<Vec<u8>>);
 
+#[derive(Debug)]
+pub enum LoadError {
+    OpenError(std::io::Error),
+    ReadError(std::io::Error),
+}
+
 #[derive(Default)]
 /// This provides a common way to load files for both native and web targets
 pub struct FileLoader {
@@ -15,7 +21,7 @@ impl FileLoader {
         Default::default()
     }
     /// request to load a file. returns an id you can use with other methods
-    pub fn load_file(&mut self, path: &str) -> Result<usize, String> {
+    pub fn load_file(&mut self, path: &str) -> Result<usize, LoadError> {
         crate::console(format!("loading file - {}", path));
         match open_file(path) {
             Ok(mut f) => {
@@ -28,7 +34,7 @@ impl FileLoader {
                             self.seq += 1;
                             Ok(self.seq - 1)
                         }
-                        Err(e) => Err(format!("Could not read file {} : {}", path, e)),
+                        Err(e) => Err(LoadError::ReadError(e)),
                     }
                 } else {
                     crate::console(format!("loading async file {}", path));
@@ -38,7 +44,7 @@ impl FileLoader {
                     Ok(self.seq - 1)
                 }
             }
-            Err(e) => Err(format!("Could not open file {} : {}", path, e)),
+            Err(e) => Err(LoadError::OpenError(e)),
         }
     }
 
