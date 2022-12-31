@@ -1,7 +1,7 @@
 # Prior Art
 
-This library is based extensively on [doryen-rs](https://github.com/jice-nospam/doryen-rs). The GL shaders and the data strategy are taken directly from there.
-The `app` mod is a direct copy of [uni-app](https://github.com/unrust/uni-app) with some **VERY** minor modifications.
+This library is based extensively on [doryen-rs](https://github.com/jice-nospam/doryen-rs). The GL shaders and the GL data strategy are taken directly from there.
+The `app` mod is a direct copy of [uni-app](https://github.com/unrust/uni-app) with some **VERY** minor, but important modifications.
 It is also based on [rltk](https://github.com/amethyst/bracket-lib).
 
 # Fonts
