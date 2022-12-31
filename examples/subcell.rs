@@ -23,7 +23,7 @@ impl ScreenCreator for MyRoguelike {
 
         Box::new(MyRoguelike {
             con,
-            subcell: subcell_console(30, 40, app).extents(0.25, 0.25, 0.75, 0.75),
+            subcell: subcell_console(30, 40, app).with_extents(0.25, 0.25, 0.75, 0.75),
             skull: app.load_image("resources/skull.png").unwrap(),
         })
     }

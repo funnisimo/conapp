@@ -24,12 +24,12 @@ impl Console {
         }
     }
 
-    pub fn extents(mut self, left: f32, top: f32, right: f32, bottom: f32) -> Self {
+    pub fn with_extents(mut self, left: f32, top: f32, right: f32, bottom: f32) -> Self {
         self.set_extents(left, top, right, bottom);
         self
     }
 
-    pub fn zpos(mut self, zpos: i8) -> Self {
+    pub fn with_zpos(mut self, zpos: i8) -> Self {
         self.zpos = zpos;
         self
     }

@@ -83,7 +83,7 @@ impl Popup {
         let font = app.load_font(FONT).expect("Failed to load font");
         let con = match is_full {
             true => Console::new(80, 50, font),
-            false => Console::new(20, 20, font).extents(0.25, 0.25, 0.5, 0.75),
+            false => Console::new(20, 20, font).with_extents(0.25, 0.25, 0.5, 0.75),
         };
 
         Popup {
