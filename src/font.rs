@@ -99,26 +99,6 @@ impl Font {
         self.loaded
     }
 
-    // pub fn img(&self) -> Option<&image::RgbaImage> {
-    //     self.img.as_ref()
-    // }
-
-    // pub(crate) fn load_async(&mut self, gl: &WebGLRenderingContext) -> bool {
-    //     if self.loaded {
-    //         return true;
-    //     }
-
-    //     if !self.loader.load_font_async() {
-    //         crate::console(&format!("- still loading font: {}", self.path));
-    //         return false;
-    //     }
-
-    //     self.load_font_info();
-    //     self.setup_font(gl);
-    //     self.loaded = true;
-    //     true
-    // }
-
     pub(crate) fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
         let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
         process_image(&mut img);
@@ -126,14 +106,6 @@ impl Font {
         self.img_width = img.width() as u32;
         self.img_height = img.height() as u32;
         self.len = (self.img_width / self.char_width) * (self.img_height / self.char_height);
-
-        // self.img = Some(img);
-
-        // if let Some(mut program) = self.program.take() {
-        //     program.set_font_texture(gl, &img);
-        //     self.program = Some(program);
-        //     println!("Loaded font program - {}", &self.path);
-        // }
 
         gl.bind_texture(&self.texture);
 
@@ -157,23 +129,6 @@ impl Font {
 
         self.loaded = true;
     }
-
-    // pub fn render(
-    //     &mut self,
-    //     gl: &WebGLRenderingContext,
-    //     extents: &(f32, f32, f32, f32),
-    //     buffer: &Buffer,
-    // ) {
-    //     if !self.loaded {
-    //         return;
-    //     }
-    //     if let Some(mut program) = self.program.take() {
-    //         program.use_font(gl, &self);
-    //         program.set_extents(gl, extents.0, extents.1, extents.2, extents.3);
-    //         program.render_buffer(gl, buffer);
-    //         self.program = Some(program);
-    //     }
-    // }
 }
 
 fn parse_char_size(filepath: &str) -> (u32, u32) {

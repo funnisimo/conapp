@@ -65,22 +65,7 @@ impl Image {
         }
     }
 
-    // /// Check if the image has been loaded.
-    // /// Since there's no background thread doing the work for you, you have to call some method on image for it to actually load.
-    // /// Use either [`Image::try_load`], [`Image::get_size`], [`Image::blit`] or [`Image::blit_ex`] to run the loading code.
-    // pub(crate) fn load_async(&mut self) -> bool {
-    //     if self.img.is_some() {
-    //         return true;
-    //     }
-    //     if self.file_loader.check_file_ready(0) {
-    //         console("img loaded");
-    //         let buf = self.file_loader.get_file_content(0);
-    //         self.intialize_image(&buf);
-    //         return true;
-    //     }
-    //     false
-    // }
-
+    /// Check if the image has been loaded.
     pub fn is_loaded(&self) -> bool {
         self.img.is_some()
     }
