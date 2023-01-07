@@ -1,4 +1,5 @@
 use conapp::*;
+use std::sync::Mutex;
 
 const FONT: &str = "resources/terminal_8x8.png";
 
@@ -7,14 +8,15 @@ const GRAY: RGBA = RGBA::rgb(128, 128, 128);
 const RED: RGBA = RGBA::rgb(192, 32, 32);
 const YELLOW: RGBA = RGBA::rgb(192, 192, 32);
 
+static LAST_RENDER: Mutex<u32> = Mutex::new(0);
+
 struct HelloWorld {
     con: Console,
     has_popup: bool,
 }
 impl ScreenCreator for HelloWorld {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(80, 50, FONT);
 
         Box::new(HelloWorld {
             con,
@@ -69,6 +71,13 @@ impl Screen for HelloWorld {
         }
 
         self.con.render(app);
+
+        if let Ok(mut val) = LAST_RENDER.lock() {
+            if *val != 1 {
+                *val = 1;
+                println!("HELLO");
+            }
+        }
     }
 }
 
@@ -79,11 +88,10 @@ struct Popup {
 }
 
 impl Popup {
-    pub fn new(app: &mut AppContext, is_full: bool, time_left: f64) -> Popup {
-        let font = app.load_font(FONT).expect("Failed to load font");
+    pub fn new(_app: &mut AppContext, is_full: bool, time_left: f64) -> Popup {
         let con = match is_full {
-            true => Console::new(80, 50, font),
-            false => Console::new(20, 20, font).with_extents(0.25, 0.25, 0.5, 0.75),
+            true => Console::new(80, 50, FONT),
+            false => Console::new(20, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75),
         };
 
         Popup {
@@ -123,8 +131,8 @@ impl Screen for Popup {
 
         buf.fill(Some('.' as u32), Some(GRAY), Some(BLACK));
 
-        let x = (buf.get_width() as i32 - 20) / 2;
-        let y = (buf.get_height() as i32 - 20) / 2;
+        let x = (buf.width() as i32 - 20) / 2;
+        let y = (buf.height() as i32 - 20) / 2;
 
         draw::frame(buf)
             .border(BorderType::Double)
@@ -155,6 +163,13 @@ impl Screen for Popup {
         }
 
         self.con.render(app);
+
+        if let Ok(mut val) = LAST_RENDER.lock() {
+            if *val != 2 {
+                *val = 2;
+                println!("POPUP");
+            }
+        }
     }
 }
 
@@ -162,6 +177,7 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Popup Example")
         .font(FONT)
+        .vsync(false)
         .build();
     app.run::<HelloWorld>();
 }

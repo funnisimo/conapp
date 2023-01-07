@@ -105,22 +105,6 @@ impl Buffer {
         }
     }
 
-    pub fn get_width(&self) -> u32 {
-        self.width
-    }
-    pub fn get_height(&self) -> u32 {
-        self.height
-    }
-    pub fn get_size(&self) -> (u32, u32) {
-        (self.width, self.height)
-    }
-    pub fn get_pot_width(&self) -> u32 {
-        self.pot_width
-    }
-    pub fn get_pot_height(&self) -> u32 {
-        self.pot_height
-    }
-
     /// for fast reading of the characters values
     pub fn glyphs(&self) -> &Vec<u32> {
         &self.glyph
@@ -169,10 +153,17 @@ impl Buffer {
     }
 
     fn to_idx(&self, x: i32, y: i32) -> Option<usize> {
-        if x < 0 || x >= self.get_width() as i32 || y < 0 || y >= self.get_height() as i32 {
+        if x < 0 || x >= self.width() as i32 || y < 0 || y >= self.height() as i32 {
             return None;
         }
-        Some(x as usize + y as usize * self.get_pot_width() as usize)
+        Some(x as usize + y as usize * self.pot_size().0 as usize)
+    }
+
+    pub fn has_xy(&self, x: i32, y: i32) -> bool {
+        match self.to_idx(x, y) {
+            None => false,
+            Some(_) => true,
+        }
     }
 
     /// set the character at a specific position (doesn't change the color).
@@ -198,8 +189,8 @@ impl Buffer {
     where
         F: Fn(i32, i32, &mut Glyph, &mut RGBA, &mut RGBA) -> (),
     {
-        for y in 0..self.get_height() as i32 {
-            for x in 0..self.get_width() as i32 {
+        for y in 0..self.height() as i32 {
+            for x in 0..self.width() as i32 {
                 let idx = self.to_idx(x, y).unwrap();
                 let g = self.glyph.get_mut(idx).unwrap();
                 let fg = self.fore.get_mut(idx).unwrap();
@@ -227,8 +218,8 @@ impl Buffer {
 
     /// fill the whole console with values
     pub fn fill(&mut self, fillglyph: Option<Glyph>, fore: Option<RGBA>, back: Option<RGBA>) {
-        let w = self.get_width();
-        let h = self.get_height();
+        let w = self.width();
+        let h = self.height();
         self.area(0, 0, w, h, fillglyph, fore, back);
     }
 
@@ -354,8 +345,8 @@ impl Buffer {
     //         start -= ix;
     //         ix = 0;
     //     }
-    //     if ix + str_len > self.get_width() as i32 {
-    //         str_len = self.get_width() as i32 - ix;
+    //     if ix + str_len > self.width() as i32 {
+    //         str_len = self.width() as i32 - ix;
     //     }
     //     let mut chars = stext.chars().skip(start as usize);
     //     for _ in 0..str_len {
@@ -381,16 +372,16 @@ impl Buffer {
     //     self.draw(right, down, Some(CHAR_CORNER_SE), fore, back);
     //     self.draw(right, y, Some(CHAR_CORNER_NE), fore, back);
     //     self.draw(x, down, Some(CHAR_CORNER_SW), fore, back);
-    //     if (y as u32) < self.get_height() {
+    //     if (y as u32) < self.height() {
     //         self.area(x + 1, y, w - 2, 1, fore, back, Some(CHAR_LINE_H));
     //     }
-    //     if (down as u32) < self.get_height() {
+    //     if (down as u32) < self.height() {
     //         self.area(x + 1, down, w - 2, 1, fore, back, Some(CHAR_LINE_H));
     //     }
-    //     if (x as u32) < self.get_width() {
+    //     if (x as u32) < self.width() {
     //         self.area(x, y + 1, 1, h - 2, fore, back, Some(CHAR_LINE_V));
     //     }
-    //     if (right as u32) < self.get_width() {
+    //     if (right as u32) < self.width() {
     //         self.area(right, y + 1, 1, h - 2, fore, back, Some(CHAR_LINE_V));
     //     }
     //     if fill.is_some() {
@@ -412,25 +403,25 @@ impl Buffer {
         let right = x + (w as i32);
         let down = y + (h as i32);
         if let Some(fillchar) = fillglyph {
-            for iy in y.max(0)..down.min(self.get_height() as i32) {
-                let off = iy * self.get_pot_width() as i32;
-                for ix in x.max(0)..right.min(self.get_width() as i32) {
+            for iy in y.max(0)..down.min(self.height() as i32) {
+                let off = iy * self.pot_size().0 as i32;
+                for ix in x.max(0)..right.min(self.width() as i32) {
                     self.glyphs_mut()[(off + ix) as usize] = u32::from(fillchar);
                 }
             }
         }
         if let Some(fore) = fore {
-            for iy in y.max(0)..down.min(self.get_height() as i32) {
-                let off = iy * self.get_pot_width() as i32;
-                for ix in x.max(0)..right.min(self.get_width() as i32) {
+            for iy in y.max(0)..down.min(self.height() as i32) {
+                let off = iy * self.pot_size().0 as i32;
+                for ix in x.max(0)..right.min(self.width() as i32) {
                     self.foregrounds_mut()[(off + ix) as usize] = fore;
                 }
             }
         }
         if let Some(back) = back {
-            for iy in y.max(0)..down.min(self.get_height() as i32) {
-                let off = iy * self.get_pot_width() as i32;
-                for ix in x.max(0)..right.min(self.get_width() as i32) {
+            for iy in y.max(0)..down.min(self.height() as i32) {
+                let off = iy * self.pot_size().0 as i32;
+                for ix in x.max(0)..right.min(self.width() as i32) {
                     self.backgrounds_mut()[(off + ix) as usize] = back;
                 }
             }
@@ -483,8 +474,8 @@ impl Buffer {
         self.blit_ex(
             0,
             0,
-            self.get_width() as i32,
-            self.get_height() as i32,
+            self.width() as i32,
+            self.height() as i32,
             destination,
             x,
             y,
@@ -509,8 +500,8 @@ impl Buffer {
         key_color: Option<RGBA>,
     ) {
         for y in 0..hsrc - ysrc {
-            let off = (y + ysrc) * self.get_pot_width() as i32;
-            let doff = (y + ydst) * destination.get_pot_width() as i32;
+            let off = (y + ysrc) * self.pot_size().0 as i32;
+            let doff = (y + ydst) * destination.pot_size().0 as i32;
             for x in 0..wsrc - xsrc {
                 if self.to_idx(xsrc + x, ysrc + y).is_some()
                     && destination.to_idx(xdst + x, ydst + y).is_some()

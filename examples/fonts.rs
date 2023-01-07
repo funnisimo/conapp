@@ -32,9 +32,8 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONTS[0]).expect("Failed to load font");
-        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONTS[0]);
 
         Box::new(MyRoguelike {
             con,

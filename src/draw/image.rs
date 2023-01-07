@@ -50,7 +50,7 @@ impl<'a> Blitter<'a> {
             let maxy = (y + height).min(buf_size.1 as i32);
             let offx = if x < 0 { -x } else { 0 };
             let offy = if y < 0 { -y } else { 0 };
-            let con_width = self.buffer.get_pot_width();
+            let con_width = self.buffer.pot_size().0;
             let back = self.buffer.backgrounds_mut();
             for cx in minx..maxx {
                 for cy in miny..maxy {
@@ -77,7 +77,7 @@ impl<'a> Blitter<'a> {
         if !image.is_loaded() || scalex == 0.0 || scaley == 0.0 {
             return;
         }
-        let size = image.get_size().unwrap();
+        let size = image.size().unwrap();
         let rx = x - size.0 as f32 * 0.5;
         let ry = y - size.1 as f32 * 0.5;
         if scalex == 1.0 && scaley == 1.0 && angle == 0.0 && rx.floor() == rx && ry.floor() == ry {
@@ -115,11 +115,11 @@ impl<'a> Blitter<'a> {
         // clip it
         let minx = rx.max(0);
         let miny = ry.max(0);
-        let maxx = (rx + rw).min(self.buffer.get_width() as i32);
-        let maxy = (ry + rh).min(self.buffer.get_height() as i32);
+        let maxx = (rx + rw).min(self.buffer.width() as i32);
+        let maxy = (ry + rh).min(self.buffer.height() as i32);
         let invscalex = 1.0 / scalex;
         let invscaley = 1.0 / scaley;
-        let con_width = self.buffer.get_pot_width();
+        let con_width = self.buffer.pot_size().0;
         let back = self.buffer.backgrounds_mut();
         if let Some(ref img) = image.img() {
             for cx in minx..maxx {

@@ -75,7 +75,7 @@ impl Image {
     }
 
     /// If the image has already been loaded, return its size, else return None
-    pub fn get_size(&self) -> Option<(u32, u32)> {
+    pub fn size(&self) -> Option<(u32, u32)> {
         if self.is_loaded() {
             if let Some(ref img) = self.img {
                 return Some((img.width(), img.height()));

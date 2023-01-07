@@ -78,7 +78,7 @@ impl<'a> ColoredPrinter<'a> {
 
     /// Prints the given text at the given location, returns the length printed
     pub fn print(&mut self, x: i32, y: i32, text: &str) -> i32 {
-        // let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
+        // let width = self.width.unwrap_or(self.buffer.width() as i32 - x);
         let mut widest = 0;
 
         let mut cy = y;
@@ -93,7 +93,7 @@ impl<'a> ColoredPrinter<'a> {
 
     /// Prints all the lines in the given text, truncates at width (if any), returns the (width,height) printed
     pub fn print_lines(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
-        // let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
+        // let width = self.width.unwrap_or(self.buffer.width() as i32 - x);
 
         let mut widest = 0;
 
@@ -109,7 +109,7 @@ impl<'a> ColoredPrinter<'a> {
 
     /// Performs word wrapping of the given text at the setup width (or buffer width) and prints the lines
     pub fn wrap(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
-        let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
+        let width = self.width.unwrap_or(self.buffer.width() as i32 - x);
 
         let mut widest = 0;
 

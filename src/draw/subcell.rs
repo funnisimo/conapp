@@ -112,8 +112,8 @@ impl<'a> SubCell<'a> {
             let mut ascii: i32 = ' ' as i32;
             let width = img.width() as i32;
             let height = img.height() as i32;
-            let con_width = self.buffer.get_width() as i32;
-            let con_height = self.buffer.get_height() as i32;
+            let con_width = self.buffer.width() as i32;
+            let con_height = self.buffer.height() as i32;
             let mut blit_w = w.unwrap_or(width);
             let mut blit_h = h.unwrap_or(height);
             let minx = sx.max(0);

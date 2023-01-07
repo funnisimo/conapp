@@ -26,9 +26,8 @@ fn move_con(pos: &mut (i32, i32), spd: &mut (i32, i32), size: (i32, i32)) {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(80, 50, FONT);
 
         let mut c1 = Buffer::new(20, 20);
         let mut c2 = Buffer::new(20, 20);
@@ -70,7 +69,7 @@ impl ScreenCreator for MyRoguelike {
 impl Screen for MyRoguelike {
     fn update(&mut self, _app: &mut AppContext, _ms: f64) -> ScreenResult {
         if self.step == 0 {
-            let size = (self.con.get_width() as i32, self.con.get_height() as i32);
+            let size = (self.con.width() as i32, self.con.height() as i32);
             move_con(&mut self.c1_pos, &mut self.c1_spd, size);
             move_con(&mut self.c2_pos, &mut self.c2_spd, size);
         }
@@ -85,8 +84,8 @@ impl Screen for MyRoguelike {
 
         buffer.fill(Some(' ' as u32), Some((0, 0, 0, 255).into()), None);
 
-        for x in 0..buffer.get_width() as i32 {
-            for y in 0..buffer.get_height() as i32 {
+        for x in 0..buffer.width() as i32 {
+            for y in 0..buffer.height() as i32 {
                 buffer.back(
                     x,
                     y,

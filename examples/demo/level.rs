@@ -191,7 +191,7 @@ impl Level {
     }
     fn compute_walls_2x_and_start_pos(&mut self) -> Vec<Entity> {
         let mut entities = Vec::new();
-        let image_size = self.level_img.borrow().get_size().unwrap();
+        let image_size = self.level_img.borrow().size().unwrap();
         self.size = (image_size.0 as i32 / 2, image_size.1 as i32 / 2);
         self.walls = vec![false; (self.size.0 * self.size.1) as usize];
         self.map = MapData::new(image_size.0 as usize, image_size.1 as usize);

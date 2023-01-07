@@ -42,7 +42,7 @@ impl<'a> RectPrinter<'a> {
         let down = y + (height as i32);
 
         let (buf_width, buf_height) = self.buffer.size();
-        let buf_pot_width = self.buffer.get_pot_width();
+        let buf_pot_width = self.buffer.pot_size().0;
 
         if let Some(fillchar) = self.glyph {
             for iy in y.max(0)..down.min(buf_height as i32) {

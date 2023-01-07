@@ -9,9 +9,8 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(80, 50, FONT);
 
         Box::new(MyRoguelike { con })
     }
@@ -44,7 +43,7 @@ impl Screen for MyRoguelike {
             &format!("console: {} x {}", con_size.0, con_size.1),
         );
 
-        let screen_size = app.get_screen_size();
+        let screen_size = app.screen_size();
 
         draw::plain(buffer).align(TextAlign::Center).print(
             (con_size.0 / 2) as i32,
@@ -62,9 +61,9 @@ impl Screen for MyRoguelike {
     }
 
     fn resize(&mut self, api: &mut AppContext) {
-        let font_char = self.con.get_font_char_size();
-        let width = api.get_screen_size().0 / font_char.0;
-        let height = api.get_screen_size().1 / font_char.1;
+        let font_char = self.con.font_char_size();
+        let width = api.screen_size().0 / font_char.0;
+        let height = api.screen_size().1 / font_char.1;
         self.con.resize(width, height);
     }
 }

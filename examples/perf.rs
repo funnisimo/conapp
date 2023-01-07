@@ -27,8 +27,7 @@ struct PerfTest {
 
 impl ScreenCreator for PerfTest {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+        let con = Console::new(80, 50, FONT);
         let mut screen = Box::new(PerfTest {
             con,
             rng: RNG::new(),
@@ -43,8 +42,8 @@ impl Screen for PerfTest {
     fn render(&mut self, app: &mut AppContext) {
         // let con = &mut self.con;
 
-        let con_width = self.con.get_width();
-        let con_height = self.con.get_height();
+        let con_width = self.con.width();
+        let con_height = self.con.height();
 
         let buffer = self.con.buffer_mut();
 
@@ -100,8 +99,8 @@ impl Screen for PerfTest {
     }
 
     fn resize(&mut self, api: &mut AppContext) {
-        let new_width = api.get_screen_size().0 / 8;
-        let new_height = api.get_screen_size().1 / 8;
+        let new_width = api.screen_size().0 / 8;
+        let new_height = api.screen_size().1 / 8;
         self.con.resize(new_width, new_height);
     }
 }

@@ -18,12 +18,11 @@ struct MyRoguelike {
 
 impl ScreenCreator for MyRoguelike {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(60, 80, font);
+        let con = Console::new(60, 80, FONT);
 
         Box::new(MyRoguelike {
             con,
-            subcell: subcell_console(30, 40, app).with_extents(0.25, 0.25, 0.75, 0.75),
+            subcell: subcell_console(30, 40).with_extents(0.25, 0.25, 0.75, 0.75),
             skull: app.load_image("resources/skull.png").unwrap(),
         })
     }

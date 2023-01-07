@@ -29,11 +29,8 @@ struct PerfTest {
 
 impl ScreenCreator for PerfTest {
     fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font_a = app.load_font(FONTA).expect("Failed to load font");
-        let left = Console::new(20, 25, font_a).with_extents(0.0, 0.0, 0.5, 1.0);
-
-        let font_b = app.load_font(FONTB).expect("Failed to load font");
-        let right = Console::new(40, 50, font_b).with_extents(0.5, 0.0, 1.0, 1.0);
+        let left = Console::new(20, 25, FONTA).with_extents(0.0, 0.0, 0.5, 1.0);
+        let right = Console::new(40, 50, FONTB).with_extents(0.5, 0.0, 1.0, 1.0);
 
         let mut screen = Box::new(PerfTest {
             left,
@@ -54,8 +51,8 @@ impl PerfTest {
         };
 
         let buffer = con.buffer_mut();
-        let con_width = buffer.get_width();
-        let con_height = buffer.get_height();
+        let con_width = buffer.width();
+        let con_height = buffer.height();
 
         for y in 0..con_height as i32 {
             for x in 0..con_width as i32 {
@@ -116,12 +113,12 @@ impl Screen for PerfTest {
     }
 
     fn resize(&mut self, api: &mut AppContext) {
-        let new_width = api.get_screen_size().0 / 32;
-        let new_height = api.get_screen_size().1 / 16;
+        let new_width = api.screen_size().0 / 32;
+        let new_height = api.screen_size().1 / 16;
 
         console(format!(
             "resize - {:?} => {},{}",
-            api.get_screen_size(),
+            api.screen_size(),
             new_width,
             new_height
         ));

@@ -4,11 +4,9 @@ struct MainScreen {
     con: Console,
 }
 
-impl ScreenCreator for MainScreen {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let con = app
-            .simple_console(80, 50, "resources/terminal_8x8.png")
-            .expect("Failed to load font");
+impl MainScreen {
+    pub fn new() -> Box<Self> {
+        let con = Console::new(80, 50, "DEFAULT");
         Box::new(MainScreen { con })
     }
 }
@@ -37,5 +35,5 @@ impl Screen for MainScreen {
 
 fn main() {
     let app = AppBuilder::new(1024, 768).title("Minimal Example").build();
-    app.run::<MainScreen>();
+    app.run_screen(MainScreen::new());
 }

@@ -9,10 +9,9 @@ struct MainScreen {
 }
 
 impl ScreenCreator for MainScreen {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let left = Console::new(60, 50, font.clone()).with_extents(0.0, 0.0, 0.75, 1.0);
-        let right = Console::new(20, 30, font).with_extents(0.75, 0.0, 1.0, 1.0);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let left = Console::new(60, 50, FONT).with_extents(0.0, 0.0, 0.75, 1.0);
+        let right = Console::new(20, 30, FONT).with_extents(0.75, 0.0, 1.0, 1.0);
         let pos = (30, 25);
         Box::new(MainScreen { left, right, pos })
     }
@@ -77,11 +76,11 @@ impl Screen for MainScreen {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
                 VirtualKeyCode::Left => self.pos.0 = (self.pos.0 - 1).max(0),
                 VirtualKeyCode::Right => {
-                    self.pos.0 = (self.pos.0 + 1).min(self.left.get_width() as i32 - 1)
+                    self.pos.0 = (self.pos.0 + 1).min(self.left.width() as i32 - 1)
                 }
                 VirtualKeyCode::Up => self.pos.1 = (self.pos.1 - 1).max(0),
                 VirtualKeyCode::Down => {
-                    self.pos.1 = (self.pos.1 + 1).min(self.left.get_height() as i32 - 1)
+                    self.pos.1 = (self.pos.1 + 1).min(self.left.height() as i32 - 1)
                 }
                 _ => return ScreenResult::Quit,
             },

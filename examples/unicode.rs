@@ -9,11 +9,9 @@ struct MyRoguelike {
     con: Console,
 }
 
-impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let con = app
-            .simple_console(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT)
-            .expect("Failed to load console.");
+impl MyRoguelike {
+    fn new() -> Box<Self> {
+        let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
         Box::new(MyRoguelike { con })
     }
 }
@@ -52,5 +50,5 @@ fn main() {
         .title("Unicode Example")
         .font(FONT)
         .build();
-    app.run::<MyRoguelike>();
+    app.run_screen(MyRoguelike::new());
 }

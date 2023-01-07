@@ -81,8 +81,8 @@ impl<'a> PlainPrinter<'a> {
             start -= ix;
             ix = 0;
         }
-        if ix + width > self.buffer.get_width() as i32 {
-            width = self.buffer.get_width() as i32 - ix;
+        if ix + width > self.buffer.width() as i32 {
+            width = self.buffer.width() as i32 - ix;
         }
 
         self.print_part(ix, y, start as usize, width as usize, text)
@@ -115,7 +115,7 @@ impl<'a> PlainPrinter<'a> {
     }
 
     pub fn wrap(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
-        let width = self.width.unwrap_or(self.buffer.get_width() as i32 - x);
+        let width = self.width.unwrap_or(self.buffer.width() as i32 - x);
 
         let mut widest = 0;
 

@@ -47,7 +47,12 @@ impl Font {
         }
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8], gl: &WebGLRenderingContext) -> Self {
+    pub fn from_bytes(
+        bytes: &[u8],
+        gl: &WebGLRenderingContext,
+        char_width: u32,
+        char_height: u32,
+    ) -> Self {
         // let mut loader = FontLoader::new();
         // crate::console("Loading font from bytes");
         // loader.load_bytes(bytes);
@@ -59,8 +64,8 @@ impl Font {
             // index,
             img_width: 0,
             img_height: 0,
-            char_width: 4,
-            char_height: 4,
+            char_width,
+            char_height,
             len: 0,
 
             path: "bytes".to_owned(),

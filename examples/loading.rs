@@ -30,9 +30,8 @@ struct LoadingScreen {
     big_font: Option<Rc<RefCell<Font>>>,
 }
 impl ScreenCreator for LoadingScreen {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(80, 50, FONT);
 
         Box::new(LoadingScreen {
             con,
@@ -49,7 +48,7 @@ impl Screen for LoadingScreen {
     fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
         if let Some(ref font) = self.big_font {
             if font.borrow().is_loaded() {
-                return ScreenResult::Replace(MainScreen::new(app, font.clone()));
+                return ScreenResult::Replace(MainScreen::new(app));
             }
         }
         ScreenResult::Continue
@@ -75,13 +74,12 @@ struct MainScreen {
 }
 
 impl MainScreen {
-    pub fn new(_app: &mut AppContext, font: Rc<RefCell<Font>>) -> Box<MainScreen> {
-        let len = font.borrow().len();
-        let con = Console::new(80, 40, font);
+    pub fn new(_app: &mut AppContext) -> Box<MainScreen> {
+        let con = Console::new(80, 40, FONT);
 
         Box::new(MainScreen {
             con,
-            len,
+            len: 0,
             rng: RNG::new(),
         })
     }
@@ -103,8 +101,8 @@ impl Screen for MainScreen {
 
         // buf.clear(true, true, true);
 
-        for y in 0..buf.get_height() as i32 {
-            for x in 0..buf.get_width() as i32 {
+        for y in 0..buf.height() as i32 {
+            for x in 0..buf.width() as i32 {
                 if self.rng.next_u64() % 10_u64 == 0 {
                     let glyph = self.rng.next_u64() as u32 % self.len;
                     buf.draw_opt(x, y, Some(glyph), Some(RGBA::rgb(255, 255, 255)), None)

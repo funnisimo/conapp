@@ -19,9 +19,8 @@ struct AlphaTest {
 }
 
 impl ScreenCreator for AlphaTest {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(80, 50, font);
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(80, 50, FONT);
 
         Box::new(AlphaTest {
             con,
@@ -40,8 +39,8 @@ impl Screen for AlphaTest {
         self.radius = 10.0 + 3.0 * (self.angle / 10.0).sin();
         let cs = (self.angle / 20.0).cos();
         let sn = (self.angle / 15.0).sin();
-        self.cx = (self.con.get_width() / 2) as f32 + cs * 15.0;
-        self.cy = (self.con.get_height() / 2) as f32 + sn * 15.0;
+        self.cx = (self.con.width() / 2) as f32 + cs * 15.0;
+        self.cy = (self.con.height() / 2) as f32 + sn * 15.0;
         ScreenResult::Continue
     }
 

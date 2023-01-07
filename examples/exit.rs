@@ -20,10 +20,8 @@ struct MyRoguelike {
 }
 
 impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(50, 30, font);
-
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(50, 30, FONT);
         Box::new(MyRoguelike { con })
     }
 }
@@ -63,10 +61,8 @@ struct Popup {
 }
 
 impl ScreenCreator for Popup {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let font = app.load_font(FONT).expect("Failed to load font");
-        let con = Console::new(24, 20, font).with_extents(0.25, 0.25, 0.5, 0.75);
-
+    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+        let con = Console::new(24, 20, FONT).with_extents(0.25, 0.25, 0.5, 0.75);
         Box::new(Popup { con })
     }
 }

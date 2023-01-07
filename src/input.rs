@@ -67,7 +67,7 @@ pub struct AppInput {
     mouse_offset: (f32, f32),
 
     /// all events that occurred this frame
-    events: Vec<AppEvent>,
+    // events: Vec<AppEvent>,
 
     /// a mouse event occurred this frame
     mouse_event: bool,
@@ -95,7 +95,7 @@ impl AppInput {
             // con_size: (con_width as f32, con_height as f32),
             mouse_offset: (x_offset as f32, y_offset as f32),
             // last_pressed: None,
-            events: Vec::new(),
+            // events: Vec::new(),
             mouse_event: false,
             key_event: false,
         }
@@ -138,14 +138,14 @@ impl AppInput {
         self.kreleased.clear();
         self.kpressed.clear();
         self.close_request = false;
-        self.events.clear();
+        // self.events.clear();
         self.mouse_event = false;
         self.key_event = false;
     }
 
     /// an event occurred
     pub(crate) fn on_event(&mut self, event: &AppEvent) {
-        self.events.push(event.clone());
+        // self.events.push(event.clone());
 
         match event {
             AppEvent::KeyDown(ref key) => {
@@ -156,16 +156,13 @@ impl AppInput {
                 self.on_key_up(&key);
                 self.key_event = true;
             }
-            AppEvent::CharEvent(ch) => {
-                match self.events.iter_mut().rfind(|ev| match ev {
-                    AppEvent::KeyDown(_) => true,
-                    _ => false,
-                }) {
-                    Some(AppEvent::KeyDown(ev)) => {
-                        ev.key = ch.to_string();
-                    }
-                    _ => {}
-                }
+            AppEvent::CharEvent(_ch) => {
+                // match self.events.last_mut() {
+                //     Some(AppEvent::KeyDown(ev)) => {
+                //         ev.key = ch.to_string();
+                //     }
+                //     _ => {}
+                // }
                 self.key_event = true;
             }
             AppEvent::MousePos(ref pos) => {

@@ -43,7 +43,7 @@ impl Runner {
         let real_screen_height = (options.size.1 as f32 * app.hidpi_factor()) as u32;
 
         let gl = uni_gl::WebGLRenderingContext::new(app.canvas());
-        let screen_resolution = app.get_screen_resolution();
+        let screen_resolution = app.screen_resolution();
         let (x_offset, y_offset) = if options.fullscreen && cfg!(not(target_arch = "wasm32")) {
             let x_offset = (screen_resolution.0 - real_screen_width) as i32 / 2;
             let y_offset = (screen_resolution.1 - real_screen_height) as i32 / 2;
@@ -146,7 +146,7 @@ impl Runner {
             screen.resize(&mut self.app_ctx);
         }
 
-        // let con_size = self.api.con().get_size();
+        // let con_size = self.api.con().size();
         if cfg!(target_arch = "wasm32") {
             self.app_ctx.input.resize(
                 self.config.size,
@@ -216,6 +216,12 @@ impl Runner {
                 }
             }
         }
+        // if self.app_ctx.input().had_mouse_event() {
+        //     let mpos = self.app_ctx.input.mouse_pct();
+        //     if let Some(ev) = self.handle_event(&AppEvent::MousePos(mpos)) {
+        //         return Some(ev);
+        //     }
+        // }
         None
     }
 

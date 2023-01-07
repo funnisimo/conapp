@@ -9,11 +9,9 @@ struct MainScreen {
     pos: (i32, i32),
 }
 
-impl ScreenCreator for MainScreen {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
-        let con = app
-            .simple_console(80, 50, FONT)
-            .expect("Failed to load font");
+impl MainScreen {
+    pub fn new() -> Box<Self> {
+        let con = Console::new(80, 50, FONT);
         let pos = (40, 25);
         Box::new(MainScreen { con, pos })
     }
@@ -73,5 +71,5 @@ fn main() {
         .title("Basic Example")
         .font(FONT)
         .build();
-    app.run::<MainScreen>();
+    app.run_screen(MainScreen::new());
 }

@@ -204,7 +204,7 @@ impl App {
     }
 
     /// return the screen resolution in physical pixels
-    pub fn get_screen_resolution(&self) -> (u32, u32) {
+    pub fn screen_resolution(&self) -> (u32, u32) {
         if let WindowContext::Normal(ref glwindow) = self.window {
             if let Some(ref monitor) = glwindow.window().current_monitor() {
                 return monitor.size().into();

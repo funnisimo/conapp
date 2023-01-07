@@ -212,7 +212,7 @@ impl Program {
             }
         }
 
-        // // If using ZPos
+        // If using ZPos
         if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::ZPos) {
             let zpos: f32 = zpos as f32 / 128.0;
             // println!("zpos = {}", zpos);
@@ -266,10 +266,9 @@ impl Program {
             }
         }
 
-        let pot_width = buffer.get_pot_width();
-        let pot_height = buffer.get_pot_height();
-        let con_width = buffer.get_width();
-        let con_height = buffer.get_height();
+        let (pot_width, pot_height) = buffer.pot_size();
+        let con_width = buffer.width();
+        let con_height = buffer.height();
 
         if let Some(&Some(ref location)) = self.uniform_locations.get(&DoryenUniforms::TermSize) {
             gl.uniform_2f(location, (con_width as f32, con_height as f32));
@@ -317,8 +316,7 @@ impl Program {
 
     pub fn set_uniforms(&mut self, gl: &WebGLRenderingContext, buffer: &Buffer) {
         gl.use_program(&self.program);
-        let pot_width = buffer.get_pot_width();
-        let pot_height = buffer.get_pot_height();
+        let (pot_width, pot_height) = buffer.pot_size();
         let ascii_tex = WebGLTexture(self.ascii.0);
         self.update_uniform_texture(
             gl,

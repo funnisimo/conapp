@@ -1,13 +1,14 @@
 use super::input::AppInput;
 use super::Font;
 use crate::simple::Program;
-use crate::{Console, FileLoader, Image, LoadError, RGBA};
+use crate::{FileLoader, Image, LoadError, RGBA};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
 
-pub(crate) static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
+pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
+pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
 
 pub struct AppContext {
     // pub(super) cons: Vec<Console>,
@@ -30,9 +31,16 @@ impl AppContext {
         input: AppInput,
         fps_goal: u32,
     ) -> Self {
-        let sub_cell_font = Rc::new(RefCell::new(Font::from_bytes(SUBCELL_BYTES, &gl)));
+        let sub_cell_font = Rc::new(RefCell::new(Font::from_bytes(SUBCELL_BYTES, &gl, 4, 4)));
+        let default_font = Rc::new(RefCell::new(Font::from_bytes(
+            TERMINAL_8X8_BYTES,
+            &gl,
+            8,
+            8,
+        )));
         let mut fonts = HashMap::new();
         fonts.insert("SUBCELL".to_owned(), sub_cell_font);
+        fonts.insert("DEFAULT".to_owned(), default_font);
 
         let program = Program::new(&gl);
 
@@ -89,8 +97,9 @@ impl AppContext {
 
     pub fn clear(&self, color: Option<RGBA>) {
         self.gl.clear(uni_gl::BufferBit::Depth); // If using ZPos
+        self.gl.clear(BufferBit::Color);
         match color {
-            None => self.gl.clear(BufferBit::Color),
+            None => {}
             Some(c) => {
                 let data = c.to_f32();
                 self.gl.clear_color(data.0, data.1, data.2, data.3);
@@ -114,19 +123,13 @@ impl AppContext {
         self.frame_time_ms
     }
 
-    pub fn get_screen_size(&self) -> (u32, u32) {
+    pub fn screen_size(&self) -> (u32, u32) {
         self.screen_size
     }
 
-    pub fn simple_console(
-        &mut self,
-        width: u32,
-        height: u32,
-        fontpath: &str,
-    ) -> Result<Console, LoadError> {
-        let font = self.load_font(fontpath)?;
-        Ok(Console::new(width, height, font))
-    }
+    // pub fn simple_console(&mut self, width: u32, height: u32, fontpath: &str) -> Console {
+    //     Console::new(width, height, fontpath)
+    // }
 
     pub fn load_font(&mut self, fontpath: &str) -> Result<Rc<RefCell<Font>>, LoadError> {
         if let Some(font) = self.fonts.get(fontpath) {
