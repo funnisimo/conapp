@@ -27,19 +27,16 @@ struct PerfTest {
     rng: RNG,
 }
 
-impl ScreenCreator for PerfTest {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
+impl PerfTest {
+    fn new() -> Box<Self> {
         let left = Console::new(20, 25, FONTA).with_extents(0.0, 0.0, 0.5, 1.0);
         let right = Console::new(40, 50, FONTB).with_extents(0.5, 0.0, 1.0, 1.0);
 
-        let mut screen = Box::new(PerfTest {
+        Box::new(PerfTest {
             left,
             right,
             rng: RNG::new(),
-        });
-
-        screen.resize(app);
-        screen
+        })
     }
 }
 
@@ -137,5 +134,5 @@ fn main() {
         .fps(0)
         .build();
 
-    app.run::<PerfTest>();
+    app.run_screen(PerfTest::new());
 }

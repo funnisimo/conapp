@@ -1,14 +1,41 @@
 use super::input::AppInput;
 use super::Font;
+use crate::app::File;
+use crate::console;
 use crate::simple::Program;
-use crate::{FileLoader, Image, LoadError, RGBA};
-use std::cell::RefCell;
+use crate::{Image, RGBA};
 use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
 
 pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
 pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
+
+pub type LoadCallback = dyn FnOnce(Vec<u8>, &mut AppContext) -> Result<(), LoadError>;
+
+pub struct LoadInfo {
+    path: String,
+    file: File,
+    cb: Option<Box<LoadCallback>>,
+}
+
+impl LoadInfo {
+    fn new(path: &str, cb: Box<LoadCallback>, file: File) -> Self {
+        LoadInfo {
+            path: path.to_owned(),
+            cb: Some(cb),
+            file,
+        }
+    }
+}
+
+// struct AsyncFile(String, File, Option<Vec<u8>>);
+
+#[derive(Debug)]
+pub enum LoadError {
+    OpenError(std::io::Error),
+    ReadError(std::io::Error),
+}
 
 pub struct AppContext {
     // pub(super) cons: Vec<Console>,
@@ -17,11 +44,12 @@ pub struct AppContext {
     pub(crate) screen_size: (u32, u32),
     pub(crate) frame_time_ms: f64,
     pub(crate) gl: WebGLRenderingContext,
-    pub(crate) fonts: HashMap<String, Rc<RefCell<Font>>>,
-    pub(crate) images: HashMap<String, Rc<RefCell<Image>>>,
+    pub(crate) fonts: HashMap<String, Rc<Font>>,
+    pub(crate) images: HashMap<String, Rc<Image>>,
     pub(crate) ready: bool,
-    pub(crate) file_loader: FileLoader,
+    // pub(crate) file_loader: FileLoader,
     pub(crate) simple_program: Program,
+    pub(crate) files_to_load: Vec<LoadInfo>,
 }
 
 impl AppContext {
@@ -31,64 +59,71 @@ impl AppContext {
         input: AppInput,
         fps_goal: u32,
     ) -> Self {
-        let sub_cell_font = Rc::new(RefCell::new(Font::from_bytes(SUBCELL_BYTES, &gl, 4, 4)));
-        let default_font = Rc::new(RefCell::new(Font::from_bytes(
-            TERMINAL_8X8_BYTES,
-            &gl,
-            8,
-            8,
-        )));
-        let mut fonts = HashMap::new();
-        fonts.insert("SUBCELL".to_owned(), sub_cell_font);
-        fonts.insert("DEFAULT".to_owned(), default_font);
-
-        let program = Program::new(&gl);
-
-        AppContext {
+        let mut ctx = AppContext {
             input,
             fps: Fps::new(fps_goal),
             screen_size: screen_size,
             frame_time_ms: 0.0,
+            simple_program: Program::new(&gl),
             gl,
-            fonts,
+            fonts: HashMap::new(),
             images: HashMap::new(),
             ready: false,
-            file_loader: FileLoader::new(),
-            simple_program: program,
-        }
+            // file_loader: FileLoader::new(),
+            files_to_load: Vec::new(),
+        };
+
+        let sub_cell_font = Rc::new(Font::new(&ctx.gl, SUBCELL_BYTES, (4, 4)));
+        let default_font = Rc::new(Font::new(&ctx.gl, TERMINAL_8X8_BYTES, (8, 8)));
+        ctx.insert_font("SUBCELL", sub_cell_font);
+        ctx.insert_font("DEFAULT", default_font);
+
+        ctx
     }
 
     pub(crate) fn resize(&mut self, screen_width: u32, screen_height: u32) {
         self.screen_size = (screen_width, screen_height);
     }
 
+    pub fn has_files_to_load(&self) -> bool {
+        !self.files_to_load.is_empty()
+    }
+
     pub(crate) fn load_files(&mut self) -> bool {
         if self.ready {
             return true;
         }
-        let mut ready = true;
-        for (_, font) in self.fonts.iter_mut() {
-            let id = font.borrow().id;
-            if !font.borrow().is_loaded() && self.file_loader.check_file_ready(id) {
-                let buf = self.file_loader.get_file_content(id);
-                font.borrow_mut().load_font_img(&buf, &self.gl);
+        while self.has_files_to_load() {
+            let file = &mut self.files_to_load.get_mut(0).unwrap().file;
+            if file.is_ready() {
+                match file.read_binary() {
+                    Err(e) => {
+                        println!("Failed to read file - {:?}", e);
+                    }
+                    Ok(data) => {
+                        let mut info = self.files_to_load.remove(0);
+                        let cb = info.cb.take().unwrap();
+                        match cb(data, self) {
+                            Err(e) => {
+                                println!("Error processing file({}) - {:?}", &info.path, e);
+                            }
+                            Ok(_) => {
+                                println!("Processed file({})", &info.path);
+                            }
+                        }
+                    }
+                }
             } else {
-                ready = false;
+                break;
             }
         }
-        for (_, image) in self.images.iter_mut() {
-            let id = image.borrow().id;
-            if !image.borrow().is_loaded() && self.file_loader.check_file_ready(id) {
-                let buf = self.file_loader.get_file_content(id);
-                image.borrow_mut().intialize_image(&buf)
-            } else {
-                ready = false;
-            }
+        if self.has_files_to_load() {
+            return false;
         }
-        if ready {
-            self.ready = true;
-        }
-        ready
+
+        self.ready = true;
+        console("All files loaded - ready");
+        true
     }
 
     pub fn gl(&self) -> &WebGLRenderingContext {
@@ -131,30 +166,49 @@ impl AppContext {
     //     Console::new(width, height, fontpath)
     // }
 
-    pub fn load_font(&mut self, fontpath: &str) -> Result<Rc<RefCell<Font>>, LoadError> {
-        if let Some(font) = self.fonts.get(fontpath) {
-            return Ok(font.clone());
+    pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
+        crate::console(format!("loading file - {}", path));
+        match crate::app::FileSystem::open(path) {
+            Ok(mut f) => {
+                console(format!("file open - {}", path));
+                if f.is_ready() {
+                    match f.read_binary() {
+                        Ok(buf) => {
+                            return cb(buf, self);
+                        }
+                        Err(e) => Err(LoadError::ReadError(e)),
+                    }
+                } else {
+                    crate::console(format!("loading async file {}", path));
+                    self.files_to_load.push(LoadInfo::new(path, cb, f));
+                    self.ready = false;
+                    Ok(())
+                }
+            }
+            Err(e) => Err(LoadError::OpenError(e)),
         }
-
-        let id = self.file_loader.load_file(fontpath)?;
-
-        let font = Rc::new(RefCell::new(Font::new(id, fontpath, &self.gl)));
-        self.fonts.insert(fontpath.to_owned(), font.clone());
-        self.ready = false;
-        Ok(font)
     }
 
-    pub fn load_image(&mut self, imgpath: &str) -> Result<Rc<RefCell<Image>>, LoadError> {
-        if let Some(image) = self.images.get(imgpath) {
-            return Ok(image.clone());
+    pub fn insert_font(&mut self, name: &str, font: Rc<Font>) {
+        self.fonts.insert(name.to_owned(), font);
+    }
+
+    pub fn get_font(&self, name: &str) -> Option<Rc<Font>> {
+        match self.fonts.get(name) {
+            None => None,
+            Some(font) => Some(font.clone()),
         }
+    }
 
-        let id = self.file_loader.load_file(imgpath)?;
+    pub fn insert_image(&mut self, name: &str, image: Rc<Image>) {
+        self.images.insert(name.to_owned(), image);
+    }
 
-        let image = Rc::new(RefCell::new(Image::new_async(id)));
-        self.images.insert(imgpath.to_owned(), image.clone());
-        self.ready = false;
-        Ok(image)
+    pub fn get_image(&self, name: &str) -> Option<Rc<Image>> {
+        match self.images.get(name) {
+            None => None,
+            Some(image) => Some(image.clone()),
+        }
     }
 }
 

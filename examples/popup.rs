@@ -14,8 +14,8 @@ struct HelloWorld {
     con: Console,
     has_popup: bool,
 }
-impl ScreenCreator for HelloWorld {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl HelloWorld {
+    fn new() -> Box<Self> {
         let con = Console::new(80, 50, FONT);
 
         Box::new(HelloWorld {
@@ -179,5 +179,5 @@ fn main() {
         .font(FONT)
         .vsync(false)
         .build();
-    app.run::<HelloWorld>();
+    app.run_screen(HelloWorld::new());
 }

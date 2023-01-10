@@ -12,7 +12,6 @@ cat >$FILE <<EOL
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
   </head>
   <body>
-    <canvas id="canvas" width="640" height="480"></canvas>
     <script src="./$1.js"></script>
     <script>
       window.addEventListener("load", async () => {

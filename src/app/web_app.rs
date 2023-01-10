@@ -150,8 +150,8 @@ impl App {
                 let canvas_top = canvas_rect.top();
                 event.prevent_default();
                 events.borrow_mut().push(AppEvent::MousePos((
-                    event.client_x() as f64 - canvas_left,
-                    event.client_y() as f64 - canvas_top,
+                    (event.client_x() as f64 - canvas_left) as f32,
+                    (event.client_y() as f64 - canvas_top) as f32,
                 )));
             });
         self.app_canvas
@@ -265,7 +265,7 @@ impl App {
         drag_drop_listener.forget();
     }
 
-    pub fn get_dropped_file(&mut self) -> Option<File> {
+    pub fn dropped_file(&mut self) -> Option<File> {
         self.dropped_files.borrow_mut().pop()
     }
 
@@ -276,14 +276,14 @@ impl App {
 
     pub fn exit() {}
 
-    pub fn get_screen_resolution(&self) -> (u32, u32) {
+    pub fn screen_resolution(&self) -> (u32, u32) {
         (
             window().inner_width().unwrap().as_f64().unwrap() as u32,
             window().inner_height().unwrap().as_f64().unwrap() as u32,
         )
     }
 
-    pub fn get_params() -> Vec<String> {
+    pub fn params() -> Vec<String> {
         let location = window().location().search().unwrap();
         if location.is_empty() {
             Vec::new()

@@ -6,8 +6,8 @@ struct TextScreen {
     con: Console,
 }
 
-impl ScreenCreator for TextScreen {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl TextScreen {
+    fn new() -> Box<Self> {
         let con = Console::new(80, 50, FONT);
         Box::new(TextScreen { con })
     }
@@ -99,5 +99,5 @@ fn main() {
         .title("Basic Example")
         .font(FONT)
         .build();
-    app.run::<TextScreen>();
+    app.run_screen(TextScreen::new());
 }

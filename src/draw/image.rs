@@ -1,4 +1,3 @@
-use crate::console;
 use crate::simple::Buffer;
 use crate::Image;
 use crate::RGBA;
@@ -35,35 +34,30 @@ impl<'a> Blitter<'a> {
     ///
     /// image pixels using the transparent color will be ignored
     pub fn blit(&mut self, x: i32, y: i32, image: &Image) {
-        if !image.is_loaded() {
-            console("Not loaded");
-            return;
-        }
         let buf_size = self.buffer.size();
 
-        if let Some(ref img) = image.img() {
-            let width = img.width() as i32;
-            let height = img.height() as i32;
-            let minx = x.max(0);
-            let miny = y.max(0);
-            let maxx = (x + width).min(buf_size.0 as i32);
-            let maxy = (y + height).min(buf_size.1 as i32);
-            let offx = if x < 0 { -x } else { 0 };
-            let offy = if y < 0 { -y } else { 0 };
-            let con_width = self.buffer.pot_size().0;
-            let back = self.buffer.backgrounds_mut();
-            for cx in minx..maxx {
-                for cy in miny..maxy {
-                    let pixel = img.get_pixel((cx - minx + offx) as u32, (cy - miny + offy) as u32);
-                    let color = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                    if let Some(ref t) = self.transparent {
-                        if color == *t {
-                            continue;
-                        }
+        let img = image.img();
+        let width = img.width() as i32;
+        let height = img.height() as i32;
+        let minx = x.max(0);
+        let miny = y.max(0);
+        let maxx = (x + width).min(buf_size.0 as i32);
+        let maxy = (y + height).min(buf_size.1 as i32);
+        let offx = if x < 0 { -x } else { 0 };
+        let offy = if y < 0 { -y } else { 0 };
+        let con_width = self.buffer.pot_size().0;
+        let back = self.buffer.backgrounds_mut();
+        for cx in minx..maxx {
+            for cy in miny..maxy {
+                let pixel = img.get_pixel((cx - minx + offx) as u32, (cy - miny + offy) as u32);
+                let color = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                if let Some(ref t) = self.transparent {
+                    if color == *t {
+                        continue;
                     }
-                    let offset = (cx as u32 + cy as u32 * con_width) as usize;
-                    back[offset] = color;
                 }
+                let offset = (cx as u32 + cy as u32 * con_width) as usize;
+                back[offset] = color;
             }
         }
     }
@@ -74,10 +68,10 @@ impl<'a> Blitter<'a> {
     /// image can be scaled and rotated (angle is in radians)
     /// image pixels using the transparent color will be ignored
     pub fn blit_ex(&mut self, x: f32, y: f32, scalex: f32, scaley: f32, angle: f32, image: &Image) {
-        if !image.is_loaded() || scalex == 0.0 || scaley == 0.0 {
+        if scalex == 0.0 || scaley == 0.0 {
             return;
         }
-        let size = image.size().unwrap();
+        let size = image.size();
         let rx = x - size.0 as f32 * 0.5;
         let ry = y - size.1 as f32 * 0.5;
         if scalex == 1.0 && scaley == 1.0 && angle == 0.0 && rx.floor() == rx && ry.floor() == ry {
@@ -121,35 +115,32 @@ impl<'a> Blitter<'a> {
         let invscaley = 1.0 / scaley;
         let con_width = self.buffer.pot_size().0;
         let back = self.buffer.backgrounds_mut();
-        if let Some(ref img) = image.img() {
-            for cx in minx..maxx {
-                for cy in miny..maxy {
-                    // map the console pixel to the image world
-                    let ix =
-                        (iw + (cx as f32 - x) * newx_x + (cy as f32 - y) * (-newy_x)) * invscalex;
-                    let iy =
-                        (ih + (cx as f32 - x) * (newx_y) - (cy as f32 - y) * newy_y) * invscaley;
-                    let color = if ix as i32 >= size.0 as i32
-                        || ix < 0.0
-                        || iy as i32 >= size.1 as i32
-                        || iy < 0.0
-                    {
-                        RGBA::rgba(0, 0, 0, 255)
-                    } else {
-                        let pixel = img.get_pixel(ix as u32, iy as u32);
-                        RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3])
-                    };
-                    if let Some(ref t) = self.transparent {
-                        if color == *t {
-                            continue;
-                        }
+        let img = image.img();
+        for cx in minx..maxx {
+            for cy in miny..maxy {
+                // map the console pixel to the image world
+                let ix = (iw + (cx as f32 - x) * newx_x + (cy as f32 - y) * (-newy_x)) * invscalex;
+                let iy = (ih + (cx as f32 - x) * (newx_y) - (cy as f32 - y) * newy_y) * invscaley;
+                let color = if ix as i32 >= size.0 as i32
+                    || ix < 0.0
+                    || iy as i32 >= size.1 as i32
+                    || iy < 0.0
+                {
+                    RGBA::rgba(0, 0, 0, 255)
+                } else {
+                    let pixel = img.get_pixel(ix as u32, iy as u32);
+                    RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3])
+                };
+                if let Some(ref t) = self.transparent {
+                    if color == *t {
+                        continue;
                     }
-                    let offset = (cx as u32 + cy as u32 * con_width) as usize;
-                    if scalex < 1.0 || scaley < 1.0 {
-                        // todo mipmap
-                    }
-                    back[offset] = color;
                 }
+                let offset = (cx as u32 + cy as u32 * con_width) as usize;
+                if scalex < 1.0 || scaley < 1.0 {
+                    // todo mipmap
+                }
+                back[offset] = color;
             }
         }
     }

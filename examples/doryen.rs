@@ -38,8 +38,8 @@ struct MyRoguelike {
     screenshot_idx: usize,
 }
 
-impl ScreenCreator for MyRoguelike {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl MyRoguelike {
+    fn new() -> Box<Self> {
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
 
         Box::new(MyRoguelike {
@@ -142,5 +142,5 @@ fn main() {
         .font(FONT)
         .build();
 
-    app.run::<MyRoguelike>();
+    app.run_screen(MyRoguelike::new());
 }

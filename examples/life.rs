@@ -33,6 +33,9 @@ impl MainScreen {
                 if cx >= WIDTH {
                     continue;
                 }
+                if cx == x && cy == y {
+                    continue;
+                }
                 count += match self.cells[cx as usize + cy as usize * WIDTH] {
                     false => 0,
                     true => 1,

@@ -18,8 +18,8 @@ struct AlphaTest {
     angle: f32,
 }
 
-impl ScreenCreator for AlphaTest {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl AlphaTest {
+    fn new() -> Box<Self> {
         let con = Console::new(80, 50, FONT);
 
         Box::new(AlphaTest {
@@ -70,5 +70,5 @@ fn main() {
         .title("Alpha Test")
         .font(FONT)
         .build();
-    app.run::<AlphaTest>();
+    app.run_screen(AlphaTest::new());
 }

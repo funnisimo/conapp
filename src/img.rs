@@ -6,81 +6,49 @@ use crate::rgba::RGBA;
 /// An easy way to load PNG images and blit them on the console
 pub struct Image {
     // file_loader: FileLoader,
-    pub(crate) id: usize,
-    pub(crate) img: Option<image::RgbaImage>,
+    pub(crate) img: image::RgbaImage,
 }
 
 impl Image {
     /// Create an empty image.
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn empty(width: u32, height: u32) -> Self {
         Self {
-            id: 0,
-            // file_loader: FileLoader::new(),
-            img: Some(image::RgbaImage::new(width, height)),
+            img: image::RgbaImage::new(width, height),
         }
     }
 
-    /// Create an image that will be loaded.
-    /// On the web platform, image loading is asynchronous.
-    /// Using blit methods before the image is loaded has no impact on the console.
-    pub(crate) fn new_async(id: usize) -> Self {
-        Self {
-            id,
-            // file_loader,
-            img: None,
+    pub fn new(buf: &[u8]) -> Self {
+        Image {
+            img: image::load_from_memory(buf).unwrap().to_rgba8(),
         }
     }
 
     /// Returns the image's width in pixels or 0 if the image has not yet been loaded
     pub fn width(&self) -> u32 {
-        match self.img {
-            None => 0,
-            Some(ref img) => img.width(),
-        }
+        self.img.width()
     }
     /// Returns the image's height in pixels or 0 if the image has not yet been loaded
     pub fn height(&self) -> u32 {
-        match self.img {
-            None => 0,
-            Some(ref img) => img.height(),
-        }
+        self.img.height()
     }
 
-    pub fn img(&self) -> Option<&image::RgbaImage> {
-        self.img.as_ref()
+    pub fn img(&self) -> &image::RgbaImage {
+        &self.img
     }
 
     /// get the color of a specific pixel inside the image
     pub fn pixel(&self, x: u32, y: u32) -> Option<RGBA> {
-        if let Some(ref img) = self.img {
-            let p = img.get_pixel(x, y);
-            return Some(RGBA::rgba(p[0], p[1], p[2], p[3]));
-        }
-        None
+        let p = self.img.get_pixel(x, y);
+        return Some(RGBA::rgba(p[0], p[1], p[2], p[3]));
     }
     /// sets the color of a specific pixel inside the image
     pub fn put_pixel(&mut self, x: u32, y: u32, color: RGBA) {
-        if let Some(ref mut img) = self.img {
-            img.put_pixel(x, y, image::Rgba([color.0, color.1, color.2, color.3]));
-        }
-    }
-
-    /// Check if the image has been loaded.
-    pub fn is_loaded(&self) -> bool {
-        self.img.is_some()
-    }
-
-    pub(crate) fn intialize_image(&mut self, buf: &[u8]) {
-        self.img = Some(image::load_from_memory(buf).unwrap().to_rgba8());
+        self.img
+            .put_pixel(x, y, image::Rgba([color.0, color.1, color.2, color.3]));
     }
 
     /// If the image has already been loaded, return its size, else return None
-    pub fn size(&self) -> Option<(u32, u32)> {
-        if self.is_loaded() {
-            if let Some(ref img) = self.img {
-                return Some((img.width(), img.height()));
-            }
-        }
-        None
+    pub fn size(&self) -> (u32, u32) {
+        (self.img.width(), self.img.height())
     }
 }

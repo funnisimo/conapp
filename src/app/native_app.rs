@@ -214,7 +214,7 @@ impl App {
     }
 
     /// return the command line / URL parameters
-    pub fn get_params() -> Vec<String> {
+    pub fn params() -> Vec<String> {
         let mut params: Vec<String> = env::args().collect();
         params.remove(0);
         params
@@ -248,13 +248,13 @@ impl App {
         self.window.hidpi_factor()
     }
 
-    fn get_proc_address(&self, name: &str) -> *const c_void {
+    fn proc_address(&self, name: &str) -> *const c_void {
         self.window.context().get_proc_address(name) as *const c_void
     }
 
     /// return the opengl context for this window
     pub fn canvas<'p>(&'p self) -> Box<dyn 'p + FnMut(&str) -> *const c_void> {
-        Box::new(move |name| self.get_proc_address(name))
+        Box::new(move |name| self.proc_address(name))
     }
 
     fn handle_event(&mut self, event: Event<()>) -> (bool, bool) {
@@ -324,7 +324,7 @@ impl App {
         (running, next_frame)
     }
 
-    pub fn get_dropped_file(&mut self) -> Option<File> {
+    pub fn dropped_file(&mut self) -> Option<File> {
         self.dropped_files.pop()
     }
 

@@ -51,16 +51,13 @@ impl PartialEq for ScreenResult {
     }
 }
 
-/// Creates a screen
-pub trait ScreenCreator {
-    fn create(ctx: &mut AppContext) -> Box<dyn Screen>;
-}
-
 /// A screen to handle input, update, and render events
 #[allow(unused_variables)]
 pub trait Screen {
     /// Called once, when the screen is first added to the [`crate::Runner`]
-    fn setup(&mut self, app: &mut AppContext) {}
+    fn setup(&mut self, app: &mut AppContext) {
+        self.resize(app);
+    }
 
     /// Called when the app is resized
     fn resize(&mut self, app: &mut AppContext) {}

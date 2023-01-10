@@ -25,16 +25,14 @@ struct PerfTest {
     rng: RNG,
 }
 
-impl ScreenCreator for PerfTest {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
+impl PerfTest {
+    fn new() -> Box<Self> {
         let con = Console::new(80, 50, FONT);
-        let mut screen = Box::new(PerfTest {
+        println!("Created perf test dialog");
+        Box::new(PerfTest {
             con,
             rng: RNG::new(),
-        });
-
-        screen.resize(app);
-        screen
+        })
     }
 }
 
@@ -113,5 +111,5 @@ fn main() {
         .fps(0)
         .build();
 
-    app.run::<PerfTest>();
+    app.run_screen(PerfTest::new());
 }

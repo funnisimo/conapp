@@ -2,7 +2,6 @@ use crate::entity::Entity;
 use crate::light::{Light, LIGHT_COEF};
 use conapp::{draw, AppContext, Buffer, Image, RGBA};
 use doryen_fov::{FovAlgorithm, FovRestrictive, MapData};
-use std::cell::RefCell;
 use std::rc::Rc;
 
 const START_COLOR: RGBA = RGBA::rgba(255, 0, 0, 255);
@@ -39,9 +38,9 @@ fn my_to_glyph(flag: u8) -> i32 {
 
 pub struct Level {
     /// a picture containing color coded walls, player start pos and entities. subcell resolution (2x2 pixel for each console cell)
-    level_img: Rc<RefCell<Image>>,
+    level_img: Option<Rc<Image>>,
     /// the level's ground texture. subcell resolution
-    ground: Rc<RefCell<Image>>,
+    ground: Option<Rc<Image>>,
     /// whether the level_img has been loaded
     loaded: bool,
     /// computed light in the level. subcell resolution
@@ -64,18 +63,17 @@ pub struct Level {
     lights: Vec<Light>,
     /// some dim light following the player to keep him from being in total darkness
     player_light: Light,
+    // path: String,
 }
 
 impl Level {
     pub fn new(app: &mut AppContext, img_path: &str) -> Self {
         Self {
-            level_img: app.load_image(&(img_path.to_owned() + ".png")).unwrap(),
-            ground: app
-                .load_image(&(img_path.to_owned() + "_color.png"))
-                .unwrap(),
+            level_img: app.get_image(&(img_path.to_owned() + ".png")),
+            ground: app.get_image(&(img_path.to_owned() + "_color.png")),
             loaded: false,
-            lightmap: Image::new(1, 1),
-            render_output: Image::new(1, 1),
+            lightmap: Image::empty(1, 1),
+            render_output: Image::empty(1, 1),
             size: (0, 0),
             start: (0, 0),
             walls: Vec::new(),
@@ -87,11 +85,11 @@ impl Level {
         }
     }
     pub fn try_load(&mut self) -> Option<Vec<Entity>> {
-        if !self.loaded && self.level_img.borrow_mut().is_loaded() {
+        if !self.loaded {
             let entities = self.compute_walls_2x_and_start_pos();
             self.compute_walls();
-            self.lightmap = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
-            self.render_output = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+            self.lightmap = Image::empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+            self.render_output = Image::empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
             self.loaded = true;
             // free memory
             // self.level_img = Image::new(1, 1);
@@ -99,6 +97,7 @@ impl Level {
         }
         None
     }
+
     pub fn start_pos(&self) -> (i32, i32) {
         self.start
     }
@@ -117,9 +116,9 @@ impl Level {
         }
     }
     pub fn render(&mut self, buffer: &mut Buffer, player_pos: (i32, i32)) {
-        if self.ground.borrow().is_loaded() {
-            self.compute_lightmap(player_pos);
+        self.compute_lightmap(player_pos);
 
+        if let Some(ref ground) = self.ground {
             for y in 0..self.size.1 as usize * 2 {
                 for x in 0..self.size.0 as usize * 2 {
                     let off = self.offset_2x((x as i32, y as i32));
@@ -127,7 +126,7 @@ impl Level {
                         && (self.map.is_transparent(x, y) || !self.visited_2x[off])
                     {
                         self.visited_2x[off] = true;
-                        let ground_col = self.ground.borrow().pixel(x as u32, y as u32).unwrap();
+                        let ground_col = ground.pixel(x as u32, y as u32).unwrap();
                         let light_col = self.lightmap.pixel(x as u32, y as u32).unwrap();
                         let mut r =
                             f32::from(ground_col.0) * f32::from(light_col.0) * LIGHT_COEF / 255.0;
@@ -144,7 +143,7 @@ impl Level {
                             (r as u8, g as u8, b as u8, 255).into(),
                         );
                     } else if self.visited_2x[off] {
-                        let col = self.ground.borrow().pixel(x as u32, y as u32).unwrap();
+                        let col = ground.pixel(x as u32, y as u32).unwrap();
                         let dark_col = RGBA::blend(col, VISITED_BLEND_COLOR, VISITED_BLEND_COEF);
                         self.render_output
                             // .borrow_mut()
@@ -155,17 +154,17 @@ impl Level {
                     }
                 }
             }
-
-            draw::subcell(buffer).to_glyph(&my_to_glyph).blit(
-                &self.render_output,
-                0,
-                0,
-                0,
-                0,
-                None,
-                None,
-            );
         }
+
+        draw::subcell(buffer).to_glyph(&my_to_glyph).blit(
+            &self.render_output,
+            0,
+            0,
+            0,
+            0,
+            None,
+            None,
+        );
     }
     pub fn is_in_fov(&self, pos: (i32, i32)) -> bool {
         self.map.is_in_fov(pos.0 as usize * 2, pos.1 as usize * 2)
@@ -175,12 +174,12 @@ impl Level {
         self.fov
             .compute_fov(&mut self.map, x as usize * 2, y as usize * 2, radius, true);
     }
-    fn add_light(&mut self, pos: (i32, i32)) {
-        self.lights.push(Light::new(pos, LIGHT_RADIUS, LIGHT_COLOR));
-    }
+    // fn add_light(&mut self, pos: (i32, i32)) {
+    //     self.lights.push(Light::new(pos, LIGHT_RADIUS, LIGHT_COLOR));
+    // }
     fn compute_lightmap(&mut self, (px, py): (i32, i32)) {
         // TODO check if filling with black pixels is faster
-        self.lightmap = Image::new(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
+        self.lightmap = Image::empty(self.size.0 as u32 * 2, self.size.1 as u32 * 2);
         let mut fov = FovRestrictive::new();
         *self.player_light.pos_mut() = ((px * 2) as f32, (py * 2) as f32);
         self.player_light
@@ -191,13 +190,14 @@ impl Level {
     }
     fn compute_walls_2x_and_start_pos(&mut self) -> Vec<Entity> {
         let mut entities = Vec::new();
-        let image_size = self.level_img.borrow().size().unwrap();
+        let level_img = self.level_img.as_ref().unwrap();
+        let image_size = level_img.size();
         self.size = (image_size.0 as i32 / 2, image_size.1 as i32 / 2);
         self.walls = vec![false; (self.size.0 * self.size.1) as usize];
         self.map = MapData::new(image_size.0 as usize, image_size.1 as usize);
         for y in 0..image_size.1 {
             for x in 0..image_size.0 {
-                let p = self.level_img.borrow().pixel(x, y).unwrap();
+                let p = level_img.pixel(x, y).unwrap();
                 self.map
                     .set_transparent(x as usize, y as usize, p != WALL_COLOR);
                 self.visited_2x.push(false);
@@ -205,7 +205,13 @@ impl Level {
                 match p {
                     START_COLOR => self.start = pos_1x,
                     LIGHT_COLOR => {
-                        self.add_light((x as i32, y as i32));
+                        // self.add_light((x as i32, y as i32));
+                        self.lights.push(Light::new(
+                            (x as i32, y as i32),
+                            LIGHT_RADIUS,
+                            LIGHT_COLOR,
+                        ));
+
                         entities.push(Entity::new_light(pos_1x));
                     }
                     GOBLIN_COLOR => {

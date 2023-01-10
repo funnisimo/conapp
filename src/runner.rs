@@ -1,7 +1,9 @@
 use super::context::AppContext;
 use super::input::AppInput;
+use crate::font::parse_char_size;
 use crate::{
-    console, AppConfig, AppEvent, Font, Image, LoadError, Screen, ScreenCreator, ScreenResult,
+    console, AppConfig, AppEvent, Font, Image, LoadCallback, LoadError, LoadingScreen, Screen,
+    ScreenResult,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -110,12 +112,35 @@ impl Runner {
         self.screens.push(screen);
     }
 
-    pub fn load_font(&mut self, font_path: &str) -> Result<Rc<RefCell<Font>>, LoadError> {
-        self.app_ctx.load_font(font_path)
+    pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
+        self.app_ctx.load_file(path, cb)
     }
 
-    pub fn load_image(&mut self, image_path: &str) -> Result<Rc<RefCell<Image>>, LoadError> {
-        self.app_ctx.load_image(image_path)
+    pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
+        let char_size = parse_char_size(font_path);
+        let path = font_path.to_owned();
+
+        self.app_ctx.load_file(
+            font_path,
+            Box::new(move |data, app: &mut AppContext| {
+                let font = Rc::new(Font::new(app.gl(), &data, char_size));
+                app.insert_font(&path, font);
+                console(format!("font load complete - {}", path));
+                Ok(())
+            }),
+        )
+    }
+
+    pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
+        let path = image_path.to_owned();
+        self.app_ctx.load_file(
+            image_path,
+            Box::new(move |data, app| {
+                let image = Rc::new(Image::new(&data));
+                app.insert_image(&path, image);
+                Ok(())
+            }),
+        )
     }
 
     fn resize(&mut self, hidpi_factor: f32, (real_screen_width, real_screen_height): (u32, u32)) {
@@ -225,35 +250,30 @@ impl Runner {
         None
     }
 
-    pub fn run<T>(mut self)
-    where
-        T: ScreenCreator,
-    {
-        let screen = T::create(&mut self.app_ctx);
-        self.run_screen(screen);
+    pub fn run_screen(self, screen: Box<dyn Screen>) {
+        self.run_with(Box::new(|_| screen))
     }
 
-    pub fn run_with<F>(mut self, func: F)
-    where
-        F: FnOnce(&mut AppContext) -> Box<dyn Screen>,
-    {
-        let screen = func(&mut self.app_ctx);
-        self.run_screen(screen);
-    }
-
-    pub fn run_screen(mut self, screen: Box<dyn Screen>) {
+    pub fn run_with(mut self, func: Box<dyn FnOnce(&mut AppContext) -> Box<dyn Screen>>) {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
 
         let mut last_frame_time = crate::app::now();
         let mut next_frame = last_frame_time;
 
-        let mut screen = screen;
+        let mut screen = match self.app_ctx.has_files_to_load() {
+            false => func(&mut self.app_ctx),
+            true => {
+                console("Using loading screen");
+                LoadingScreen::new(func)
+            }
+        };
+        // let mut screen = LoadingScreen::new(func);
         screen.setup(&mut self.app_ctx);
         self.screens.push(screen);
 
         self.ready = true;
-        crate::console("Runner ready");
+        crate::console(format!("Runner ready"));
 
         app.run(move |app: &mut crate::app::App| {
             self.app_ctx.load_files(); // Do any font/image loading necessary
@@ -270,14 +290,21 @@ impl Runner {
                             &filepath,
                         )
                     }
-                    RunnerEvent::Exit => crate::app::App::exit(),
+                    RunnerEvent::Exit => {
+                        console("App Exit");
+                        crate::app::App::exit();
+                    }
                     RunnerEvent::Next => {}
                 }
             }
 
             let mut skipped_frames: i32 = -1;
             let time = crate::app::now();
-            let skip_ticks = 1.0 / self.app_ctx.fps.goal() as f64;
+            let skip_ticks = match self.app_ctx.fps.goal() {
+                0 => time - last_frame_time,
+                x => 1.0 / x as f64,
+            };
+
             while time >= last_frame_time && skipped_frames < self.max_frameskip {
                 // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
                 self.app_ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
@@ -298,8 +325,8 @@ impl Runner {
                 last_frame_time += skip_ticks;
                 // next_tick += SKIP_TICKS;
                 skipped_frames += 1;
-                self.app_ctx.input.on_frame_end();
             }
+            self.app_ctx.input.on_frame_end();
             if skipped_frames == self.max_frameskip {
                 // next_tick = time + SKIP_TICKS;
                 last_frame_time = time + skip_ticks;

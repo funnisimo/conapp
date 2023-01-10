@@ -1,7 +1,6 @@
 use super::Buffer;
 use crate::font::Font;
-use crate::AppContext;
-use std::cell::RefCell;
+use crate::{console, AppContext};
 use std::rc::Rc;
 
 /// This contains the data for a console (including the one displayed on the screen) and methods to draw on it.
@@ -9,7 +8,7 @@ pub struct Console {
     buffer: Buffer,
     extents: (f32, f32, f32, f32),
     fontpath: String,
-    font: Option<Rc<RefCell<Font>>>,
+    font: Option<Rc<Font>>,
     zpos: i8,
 }
 
@@ -49,13 +48,10 @@ impl Console {
     }
 
     pub fn ready(&self) -> bool {
-        match self.font {
-            None => false,
-            Some(ref f) => f.borrow().is_loaded(),
-        }
+        self.font.is_some()
     }
 
-    pub fn set_font(&mut self, font: Rc<RefCell<Font>>) {
+    pub fn set_font(&mut self, font: Rc<Font>) {
         self.font = Some(font);
     }
 
@@ -86,10 +82,7 @@ impl Console {
     pub fn font_char_size(&self) -> (u32, u32) {
         match self.font {
             None => (0, 0),
-            Some(ref f) => {
-                let font = f.borrow();
-                (font.char_width(), font.char_height())
-            }
+            Some(ref f) => f.char_size(),
         }
     }
 
@@ -101,17 +94,12 @@ impl Console {
     pub fn render(&mut self, app: &mut AppContext) {
         match self.font {
             None => {
-                self.font = Some(
-                    app.load_font(self.fontpath.as_ref())
-                        .expect("Failed to load console font."),
-                );
-            }
-            Some(ref f) => {
-                let font = f.borrow();
-                if !font.is_loaded() {
-                    return;
+                self.font = app.get_font(self.fontpath.as_ref());
+                if self.font.is_some() {
+                    console(format!("Got font - {}", self.fontpath));
                 }
-
+            }
+            Some(ref font) => {
                 let gl = &app.gl;
                 let program = &mut app.simple_program;
                 program.use_font(gl, &font);

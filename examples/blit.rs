@@ -25,8 +25,8 @@ fn move_con(pos: &mut (i32, i32), spd: &mut (i32, i32), size: (i32, i32)) {
     }
 }
 
-impl ScreenCreator for MyRoguelike {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl MyRoguelike {
+    fn new() -> Box<Self> {
         let con = Console::new(80, 50, FONT);
 
         let mut c1 = Buffer::new(20, 20);
@@ -131,5 +131,5 @@ fn main() {
         .title("Blitting Example")
         .font(FONT)
         .build();
-    app.run::<MyRoguelike>();
+    app.run_screen(MyRoguelike::new());
 }

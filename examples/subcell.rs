@@ -1,5 +1,4 @@
 use conapp::*;
-use std::cell::RefCell;
 use std::rc::Rc;
 
 // doryen-rs/examples/subcell
@@ -9,21 +8,22 @@ use std::rc::Rc;
 // you must implement a font that has subcell chars yourself
 
 const FONT: &str = "resources/terminal_8x8.png";
+const SKULL: &str = "resources/skull.png";
 
 struct MyRoguelike {
     con: Console,
     subcell: Console,
-    skull: Rc<RefCell<Image>>,
+    skull: Option<Rc<Image>>,
 }
 
-impl ScreenCreator for MyRoguelike {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
+impl MyRoguelike {
+    fn new() -> Box<dyn Screen> {
         let con = Console::new(60, 80, FONT);
 
         Box::new(MyRoguelike {
             con,
             subcell: subcell_console(30, 40).with_extents(0.25, 0.25, 0.75, 0.75),
-            skull: app.load_image("resources/skull.png").unwrap(),
+            skull: None,
         })
     }
 }
@@ -44,12 +44,16 @@ impl Screen for MyRoguelike {
 
         self.con.render(app);
 
-        // image
-        self.subcell.buffer_mut().clear(true, true, true);
-        draw::subcell(self.subcell.buffer_mut())
-            .transparent(RGBA::rgba(0, 0, 0, 255))
-            .blit(&*self.skull.borrow(), 0, 0, 0, 0, None, None);
-        self.subcell.render(app);
+        if let Some(ref skull) = self.skull {
+            // image
+            self.subcell.buffer_mut().clear(true, true, true);
+            draw::subcell(self.subcell.buffer_mut())
+                .transparent(RGBA::rgba(0, 0, 0, 255))
+                .blit(skull, 0, 0, 0, 0, None, None);
+            self.subcell.render(app);
+        } else {
+            self.skull = app.get_image(SKULL);
+        }
     }
 }
 
@@ -57,6 +61,7 @@ fn main() {
     let app = AppBuilder::new(768, 1024)
         .title("SubCell Resolution Example")
         .font(FONT)
+        .image(SKULL)
         .build();
-    app.run::<MyRoguelike>();
+    app.run_screen(MyRoguelike::new());
 }

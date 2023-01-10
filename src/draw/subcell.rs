@@ -97,112 +97,108 @@ impl<'a> SubCell<'a> {
         w: Option<i32>,
         h: Option<i32>,
     ) {
-        if !img.is_loaded() {
-            return;
-        }
-        if let Some(ref img) = img.img() {
-            let mut grid: [RGBA; 4] = [
-                (0, 0, 0, 0).into(),
-                (0, 0, 0, 0).into(),
-                (0, 0, 0, 0).into(),
-                (0, 0, 0, 0).into(),
-            ];
-            let mut back: RGBA = (0, 0, 0, 0).into();
-            let mut front: Option<RGBA> = None;
-            let mut ascii: i32 = ' ' as i32;
-            let width = img.width() as i32;
-            let height = img.height() as i32;
-            let con_width = self.buffer.width() as i32;
-            let con_height = self.buffer.height() as i32;
-            let mut blit_w = w.unwrap_or(width);
-            let mut blit_h = h.unwrap_or(height);
-            let minx = sx.max(0);
-            let miny = sy.max(0);
-            blit_w = blit_w.min(width - minx);
-            blit_h = blit_h.min(height - miny);
-            let mut maxx = if dx + blit_w / 2 <= con_width {
-                blit_w
-            } else {
-                (con_width - dx) * 2
-            };
-            let mut maxy = if dy + blit_h / 2 <= con_height {
-                blit_h
-            } else {
-                (con_height - dy) * 2
-            };
-            maxx += minx;
-            maxy += miny;
-            let mut cx = minx;
-            while cx < maxx {
-                let mut cy = miny;
-                while cy < maxy {
-                    // get the 2x2 super pixel colors from the image
-                    let conx = dx + (cx - minx) / 2;
-                    let cony = dy + (cy - miny) / 2;
-                    let console_back = self.buffer.get_back(conx, cony).unwrap().clone();
-                    let pixel = img.get_pixel(cx as u32, cy as u32);
-                    grid[0] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                    if let Some(ref t) = self.transparent {
-                        if grid[0] == *t {
-                            grid[0] = console_back;
-                        }
+        let img = img.img();
+        let mut grid: [RGBA; 4] = [
+            (0, 0, 0, 0).into(),
+            (0, 0, 0, 0).into(),
+            (0, 0, 0, 0).into(),
+            (0, 0, 0, 0).into(),
+        ];
+        let mut back: RGBA = (0, 0, 0, 0).into();
+        let mut front: Option<RGBA> = None;
+        let mut ascii: i32 = ' ' as i32;
+        let width = img.width() as i32;
+        let height = img.height() as i32;
+        let con_width = self.buffer.width() as i32;
+        let con_height = self.buffer.height() as i32;
+        let mut blit_w = w.unwrap_or(width);
+        let mut blit_h = h.unwrap_or(height);
+        let minx = sx.max(0);
+        let miny = sy.max(0);
+        blit_w = blit_w.min(width - minx);
+        blit_h = blit_h.min(height - miny);
+        let mut maxx = if dx + blit_w / 2 <= con_width {
+            blit_w
+        } else {
+            (con_width - dx) * 2
+        };
+        let mut maxy = if dy + blit_h / 2 <= con_height {
+            blit_h
+        } else {
+            (con_height - dy) * 2
+        };
+        maxx += minx;
+        maxy += miny;
+        let mut cx = minx;
+        while cx < maxx {
+            let mut cy = miny;
+            while cy < maxy {
+                // get the 2x2 super pixel colors from the image
+                let conx = dx + (cx - minx) / 2;
+                let cony = dy + (cy - miny) / 2;
+                let console_back = self.buffer.get_back(conx, cony).unwrap().clone();
+                let pixel = img.get_pixel(cx as u32, cy as u32);
+                grid[0] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                if let Some(ref t) = self.transparent {
+                    if grid[0] == *t {
+                        grid[0] = console_back;
                     }
-                    if cx < maxx - 1 {
-                        let pixel = img.get_pixel(cx as u32 + 1, cy as u32);
-                        grid[1] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                        if let Some(ref t) = self.transparent {
-                            if grid[1] == *t {
-                                grid[1] = console_back;
-                            }
-                        }
-                    } else {
-                        grid[1] = console_back;
-                    }
-                    if cy < maxy - 1 {
-                        let pixel = img.get_pixel(cx as u32, cy as u32 + 1);
-                        grid[2] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                        if let Some(ref t) = self.transparent {
-                            if grid[2] == *t {
-                                grid[2] = console_back;
-                            }
-                        }
-                    } else {
-                        grid[2] = console_back;
-                    }
-                    if cx < maxx - 1 && cy < maxy - 1 {
-                        let pixel = img.get_pixel(cx as u32 + 1, cy as u32 + 1);
-                        grid[3] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
-                        if let Some(ref t) = self.transparent {
-                            if grid[3] == *t {
-                                grid[3] = console_back;
-                            }
-                        }
-                    } else {
-                        grid[3] = console_back;
-                    }
-                    // analyse color, posterize, get pattern
-                    compute_pattern(self.to_glyph, &grid, &mut back, &mut front, &mut ascii);
-                    if let Some(front) = front {
-                        if ascii >= 0 {
-                            let glyph = ascii as u32;
-                            self.buffer.back(conx, cony, back);
-                            self.buffer.fore(conx, cony, front);
-                            self.buffer.glyph(conx, cony, glyph);
-                        } else {
-                            let glyph = -ascii as u32;
-                            self.buffer.back(conx, cony, front);
-                            self.buffer.fore(conx, cony, back);
-                            self.buffer.glyph(conx, cony, glyph);
-                        }
-                    } else {
-                        // single color
-                        self.buffer.back(conx, cony, back);
-                        self.buffer.glyph(conx, cony, ascii as u32);
-                    }
-                    cy += 2;
                 }
-                cx += 2;
+                if cx < maxx - 1 {
+                    let pixel = img.get_pixel(cx as u32 + 1, cy as u32);
+                    grid[1] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                    if let Some(ref t) = self.transparent {
+                        if grid[1] == *t {
+                            grid[1] = console_back;
+                        }
+                    }
+                } else {
+                    grid[1] = console_back;
+                }
+                if cy < maxy - 1 {
+                    let pixel = img.get_pixel(cx as u32, cy as u32 + 1);
+                    grid[2] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                    if let Some(ref t) = self.transparent {
+                        if grid[2] == *t {
+                            grid[2] = console_back;
+                        }
+                    }
+                } else {
+                    grid[2] = console_back;
+                }
+                if cx < maxx - 1 && cy < maxy - 1 {
+                    let pixel = img.get_pixel(cx as u32 + 1, cy as u32 + 1);
+                    grid[3] = RGBA::rgba(pixel[0], pixel[1], pixel[2], pixel[3]);
+                    if let Some(ref t) = self.transparent {
+                        if grid[3] == *t {
+                            grid[3] = console_back;
+                        }
+                    }
+                } else {
+                    grid[3] = console_back;
+                }
+                // analyse color, posterize, get pattern
+                compute_pattern(self.to_glyph, &grid, &mut back, &mut front, &mut ascii);
+                if let Some(front) = front {
+                    if ascii >= 0 {
+                        let glyph = ascii as u32;
+                        self.buffer.back(conx, cony, back);
+                        self.buffer.fore(conx, cony, front);
+                        self.buffer.glyph(conx, cony, glyph);
+                    } else {
+                        let glyph = -ascii as u32;
+                        self.buffer.back(conx, cony, front);
+                        self.buffer.fore(conx, cony, back);
+                        self.buffer.glyph(conx, cony, glyph);
+                    }
+                } else {
+                    // single color
+                    self.buffer.back(conx, cony, back);
+                    self.buffer.glyph(conx, cony, ascii as u32);
+                }
+                cy += 2;
             }
+            cx += 2;
         }
     }
 }

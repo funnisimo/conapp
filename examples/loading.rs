@@ -1,14 +1,12 @@
 use conapp::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 const FONT: &str = "resources/terminal_8x8.png";
 const BIG_FONT: &str = "resources/ProjectUtumno_full_32x32.png";
 
-const BLACK: RGBA = RGBA::rgb(0, 0, 0);
+const _BLACK: RGBA = RGBA::rgb(0, 0, 0);
 const _GRAY: RGBA = RGBA::rgb(128, 128, 128);
 const _RED: RGBA = RGBA::rgb(192, 32, 32);
-const YELLOW: RGBA = RGBA::rgb(192, 192, 32);
+const _YELLOW: RGBA = RGBA::rgb(192, 192, 32);
 
 struct RNG {
     seed: u64,
@@ -25,47 +23,36 @@ impl RNG {
     }
 }
 
-struct LoadingScreen {
-    con: Console,
-    big_font: Option<Rc<RefCell<Font>>>,
-}
-impl ScreenCreator for LoadingScreen {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
-        let con = Console::new(80, 50, FONT);
+// struct LoadingScreen {
+//     con: Console,
+// }
+// impl LoadingScreen {
+//     fn new() -> Box<Self> {
+//         let con = Console::new(80, 50, "DEFAULT");
+//         Box::new(LoadingScreen { con })
+//     }
+// }
 
-        Box::new(LoadingScreen {
-            con,
-            big_font: None,
-        })
-    }
-}
+// impl Screen for LoadingScreen {
+//     fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
+//         if app.get_font(BIG_FONT).is_some() {
+//             return ScreenResult::Replace(MainScreen::new());
+//         }
+//         ScreenResult::Continue
+//     }
 
-impl Screen for LoadingScreen {
-    fn setup(&mut self, app: &mut AppContext) {
-        self.big_font = Some(app.load_font(BIG_FONT).expect("Failed to load font"));
-    }
+//     fn render(&mut self, app: &mut AppContext) {
+//         let buf = self.con.buffer_mut();
+//         buf.clear(true, true, true);
 
-    fn update(&mut self, app: &mut AppContext, _frame_time_ms: f64) -> ScreenResult {
-        if let Some(ref font) = self.big_font {
-            if font.borrow().is_loaded() {
-                return ScreenResult::Replace(MainScreen::new(app));
-            }
-        }
-        ScreenResult::Continue
-    }
+//         buf.fill(Some('.' as u32), Some(YELLOW), Some(BLACK));
 
-    fn render(&mut self, app: &mut AppContext) {
-        let buf = self.con.buffer_mut();
-        buf.clear(true, true, true);
+//         draw::plain(buf).print(1, 1, "Hello Rust World");
+//         draw::plain(buf).print(1, 2, "Loading a bigger font...");
 
-        buf.fill(Some('.' as u32), Some(YELLOW), Some(BLACK));
-
-        draw::plain(buf).print(1, 1, "Hello Rust World");
-        draw::plain(buf).print(1, 2, "Loading a bigger font...");
-
-        self.con.render(app);
-    }
-}
+//         self.con.render(app);
+//     }
+// }
 
 struct MainScreen {
     con: Console,
@@ -74,8 +61,8 @@ struct MainScreen {
 }
 
 impl MainScreen {
-    pub fn new(_app: &mut AppContext) -> Box<MainScreen> {
-        let con = Console::new(80, 40, FONT);
+    pub fn new() -> Box<MainScreen> {
+        let con = Console::new(80, 40, BIG_FONT);
 
         Box::new(MainScreen {
             con,
@@ -86,6 +73,16 @@ impl MainScreen {
 }
 
 impl Screen for MainScreen {
+    fn update(&mut self, app: &mut AppContext, _ms: f64) -> ScreenResult {
+        if self.len == 0 {
+            match app.get_font(BIG_FONT) {
+                None => {}
+                Some(font) => self.len = font.count(),
+            }
+        }
+        ScreenResult::Continue
+    }
+
     fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::MouseDown(_) => ScreenResult::Pop,
@@ -96,6 +93,10 @@ impl Screen for MainScreen {
     fn render(&mut self, app: &mut AppContext) {
         // let screen_pct = app.input().mouse_pct();
         // let cell_pct = self.con.cell_pos(screen_pct);
+
+        if self.len == 0 {
+            return;
+        }
 
         let buf = self.con.buffer_mut();
 
@@ -118,6 +119,8 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Loading Screen Example")
         .font(FONT)
+        .font(BIG_FONT)
+        .vsync(false)
         .build();
-    app.run::<LoadingScreen>();
+    app.run_screen(MainScreen::new());
 }

@@ -11,6 +11,7 @@ use level::Level;
 use player::Player;
 
 const FONT: &str = "resources/terminal_8x8.png";
+const LEVEL_PREFIX: &str = "resources/demo_level";
 
 const CONSOLE_WIDTH: u32 = 80;
 const CONSOLE_HEIGHT: u32 = 45;
@@ -37,15 +38,15 @@ struct DoryenDemo {
     loaded: bool,
 }
 
-impl ScreenCreator for DoryenDemo {
-    fn create(app: &mut AppContext) -> Box<dyn Screen> {
+impl  DoryenDemo {
+    fn new(app: &mut AppContext) -> Box<Self> {
         let con = Console::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, FONT);
 
         Box::new(Self {
             con,
             player: Player::new(PLAYER_SPEED),
             mouse_pos: (0.0, 0.0),
-            level: Level::new(app, "resources/demo_level"),
+            level: Level::new(app, LEVEL_PREFIX),
             entities: Vec::new(),
             loaded: false,
         })
@@ -131,8 +132,10 @@ fn main() {
     let app = AppBuilder::new(1024, 768)
         .title("Close App Example")
         .font(FONT)
+        .image(&(LEVEL_PREFIX.to_owned() + ".png"))
+        .image(&(LEVEL_PREFIX.to_owned() + "_color.png"))
         .vsync(false)
         .build();
 
-    app.run::<DoryenDemo>();
+    app.run_with(Box::new(|app| DoryenDemo::new(app)));
 }

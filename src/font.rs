@@ -1,116 +1,56 @@
 // use crate::Buffer;
 use uni_gl::{WebGLRenderingContext, WebGLTexture};
 
-use crate::simple::set_texture_params;
+use crate::{console, simple::set_texture_params};
 
 pub struct Font {
-    pub(crate) id: usize,
-    img_width: u32,
-    img_height: u32,
-    char_width: u32,
-    char_height: u32,
-    len: u32,
-
-    path: String,
-    loaded: bool,
-    // path: Option<String>,
-    // loader: FontLoader,
-    // pub(crate) img: Option<image::RgbaImage>,
-    // program: Option<Program>,
+    img_size: (u32, u32),
+    char_size: (u32, u32),
+    count: u32,
     pub(crate) texture: WebGLTexture,
 }
 
 impl Font {
-    pub(crate) fn new(id: usize, path: &str, gl: &WebGLRenderingContext) -> Self {
-        // let mut loader = FontLoader::new();
-        // crate::console(&format!("Loading font - {}", path));
-        // loader.load_font(path);
-
-        // let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
-
-        let (char_width, char_height) = parse_char_size(path);
-
-        Font {
-            id,
-            img_width: 0,
-            img_height: 0,
-            char_width,
-            char_height,
-            len: 0,
-
-            path: path.to_owned(),
-            loaded: false,
-            // loader,
-            // img: None,
-            // program: Some(program),
-            texture: create_font_texture(gl),
-        }
-    }
-
-    pub fn from_bytes(
-        bytes: &[u8],
-        gl: &WebGLRenderingContext,
-        char_width: u32,
-        char_height: u32,
-    ) -> Self {
-        // let mut loader = FontLoader::new();
-        // crate::console("Loading font from bytes");
-        // loader.load_bytes(bytes);
-
-        // let program = Program::new(gl, DORYEN_VS, DORYEN_FS);
-
+    pub fn new(gl: &WebGLRenderingContext, bytes: &[u8], char_size: (u32, u32)) -> Self {
         let mut font = Font {
-            id: 0,
-            // index,
-            img_width: 0,
-            img_height: 0,
-            char_width,
-            char_height,
-            len: 0,
-
-            path: "bytes".to_owned(),
-            loaded: false,
-            // loader,
-            // img: None,
-            // program: Some(program),
+            img_size: (0, 0),
+            char_size,
+            count: 0,
             texture: create_font_texture(gl),
         };
 
         font.load_font_img(bytes, gl);
-        // font.setup_font(gl);
-        font.loaded = true;
-
         font
     }
 
     pub fn img_width(&self) -> u32 {
-        self.img_width
+        self.img_size.0
     }
     pub fn img_height(&self) -> u32 {
-        self.img_height
+        self.img_size.1
     }
     pub fn char_width(&self) -> u32 {
-        self.char_width
+        self.char_size.0
     }
     pub fn char_height(&self) -> u32 {
-        self.char_height
+        self.char_size.1
+    }
+    pub fn char_size(&self) -> (u32, u32) {
+        self.char_size
     }
 
-    pub fn len(&self) -> u32 {
-        self.len
+    pub fn count(&self) -> u32 {
+        self.count
     }
 
-    pub fn is_loaded(&self) -> bool {
-        self.loaded
-    }
-
-    pub(crate) fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
+    fn load_font_img(&mut self, buf: &[u8], gl: &WebGLRenderingContext) {
+        console(format!("load font image - {}", buf.len()));
         let mut img = image::load_from_memory(&buf).unwrap().to_rgba8();
         process_image(&mut img);
 
-        self.img_width = img.width() as u32;
-        self.img_height = img.height() as u32;
-        self.len = (self.img_width / self.char_width) * (self.img_height / self.char_height);
+        self.img_size = (img.width() as u32, img.height() as u32);
+        self.count =
+            (self.img_width() / self.char_width()) * (self.img_height() / self.char_height());
 
         gl.bind_texture(&self.texture);
 
@@ -123,20 +63,10 @@ impl Font {
             uni_gl::PixelType::UnsignedByte,     // type
             &*img,                               // data
         );
-
-        crate::console(&format!(
-            "Font loaded: {} -> font size: {:?} char size: {:?} len: {:?}",
-            self.path.as_str(),
-            (self.img_width, self.img_height),
-            (self.char_width, self.char_height),
-            self.len()
-        ));
-
-        self.loaded = true;
     }
 }
 
-fn parse_char_size(filepath: &str) -> (u32, u32) {
+pub fn parse_char_size(filepath: &str) -> (u32, u32) {
     let mut char_width = 0;
     let mut char_height = 0;
 
@@ -203,7 +133,7 @@ fn process_image(img: &mut image::RgbaImage) {
     }
 }
 
-pub fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
+fn create_font_texture(gl: &WebGLRenderingContext) -> WebGLTexture {
     let tex = gl.create_texture();
     gl.bind_texture(&tex);
     set_texture_params(gl, true);

@@ -1,10 +1,10 @@
+use crate::console;
+use js_sys::Uint8Array;
 use std;
 use std::cell::RefCell;
 use std::io::ErrorKind;
 use std::rc::Rc;
 use std::str;
-
-use js_sys::Uint8Array;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{XmlHttpRequest, XmlHttpRequestResponseType};
 
@@ -32,11 +32,13 @@ impl FileSystem {
         req.set_response_type(XmlHttpRequestResponseType::Arraybuffer);
         let load_req = ref_req.clone();
         let load_buffer_state = buffer_state.clone();
+        let file_name = file_url.to_owned();
         let load_listener = Closure::<dyn FnMut(_)>::new(move |_: web_sys::ProgressEvent| {
             let req = load_req.borrow();
             let status = req.status().unwrap();
             if status == 200 {
                 if let Ok(data) = req.response() {
+                    console(format!("got file - {}", file_name));
                     let array = Uint8Array::new(&data);
                     *load_buffer_state.borrow_mut() = BufferState::Buffer(array.to_vec());
                     return;
@@ -76,11 +78,7 @@ impl File {
         let mut bs = self.buffer_state.borrow_mut();
         match *bs {
             BufferState::Error(ref s) => Err(std::io::Error::new(ErrorKind::Other, s.clone())),
-            BufferState::Buffer(ref mut v) => Ok({
-                let mut r = Vec::new();
-                r.append(v);
-                r
-            }),
+            BufferState::Buffer(ref mut v) => Ok(v.clone()),
             _ => unreachable!(),
         }
     }

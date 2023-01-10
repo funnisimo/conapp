@@ -9,8 +9,8 @@ struct MainScreen {
     pos: (i32, i32),
 }
 
-impl ScreenCreator for MainScreen {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl MainScreen {
+    fn new() -> Box<Self> {
         let left = Console::new(60, 50, FONTA).with_extents(0.0, 0.0, 0.75, 1.0);
         let right = Console::new(20, 30, FONTB).with_extents(0.75, 0.0, 1.0, 1.0);
         let pos = (30, 25);
@@ -108,5 +108,5 @@ fn main() {
         .font(FONTA)
         .font(FONTB)
         .build();
-    app.run::<MainScreen>();
+    app.run_screen(MainScreen::new());
 }

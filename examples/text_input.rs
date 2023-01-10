@@ -10,8 +10,8 @@ struct MyRoguelike {
     con: Console,
 }
 
-impl ScreenCreator for MyRoguelike {
-    fn create(_app: &mut AppContext) -> Box<dyn Screen> {
+impl MyRoguelike {
+    fn new() -> Box<dyn Screen> {
         let con = Console::new(80, 50, FONT);
 
         Box::new(MyRoguelike {
@@ -90,5 +90,5 @@ fn main() {
         .title("Input Example")
         .font(FONT)
         .build();
-    app.run::<MyRoguelike>();
+    app.run_screen(MyRoguelike::new());
 }

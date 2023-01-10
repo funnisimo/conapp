@@ -66,6 +66,18 @@ impl AppBuilder {
         self
     }
 
+    /// Loads a colors file on startup
+    pub fn colors(self, _file_path: &str) -> Self {
+        // self.fonts.push(font_path.to_owned());
+        self
+    }
+
+    /// Loads a stylesheet on startup
+    pub fn css(self, _css_path: &str) -> Self {
+        // self.fonts.push(font_path.to_owned());
+        self
+    }
+
     /// Loads a font on startup
     pub fn font(mut self, font_path: &str) -> Self {
         self.fonts.push(font_path.to_owned());
