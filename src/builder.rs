@@ -1,4 +1,6 @@
-use crate::{AppConfig, Runner};
+use crate::AppConfig;
+use crate::LoadCallback;
+use crate::Runner;
 
 /// Builds an application runner
 pub struct AppBuilder {
@@ -8,6 +10,8 @@ pub struct AppBuilder {
     fonts: Vec<String>,
     /// images to load
     images: Vec<String>,
+    /// files to load
+    files: Vec<(String, Box<LoadCallback>)>,
     /// fps goal for application
     fps_goal: u32,
 }
@@ -20,6 +24,7 @@ impl AppBuilder {
             config: options,
             fonts: Vec::new(),
             images: Vec::new(),
+            files: Vec::new(),
             fps_goal: 60,
         }
     }
@@ -66,15 +71,9 @@ impl AppBuilder {
         self
     }
 
-    /// Loads a colors file on startup
-    pub fn colors(self, _file_path: &str) -> Self {
-        // self.fonts.push(font_path.to_owned());
-        self
-    }
-
-    /// Loads a stylesheet on startup
-    pub fn css(self, _css_path: &str) -> Self {
-        // self.fonts.push(font_path.to_owned());
+    /// Loads a file on startup
+    pub fn file(mut self, file_path: &str, func: Box<LoadCallback>) -> Self {
+        self.files.push((file_path.to_owned(), func));
         self
     }
 
@@ -104,6 +103,9 @@ impl AppBuilder {
         }
         for image in self.images {
             runner.load_image(&image).expect("Failed to load image.");
+        }
+        for (path, func) in self.files {
+            runner.load_file(&path, func).expect("Failed to load file.");
         }
         runner
     }

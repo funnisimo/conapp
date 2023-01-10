@@ -78,10 +78,19 @@ impl AppContext {
         ctx.insert_font("SUBCELL", sub_cell_font);
         ctx.insert_font("DEFAULT", default_font);
 
+        console(format!(
+            "AppContext::new - screen_size={:?}",
+            ctx.screen_size()
+        ));
+
         ctx
     }
 
     pub(crate) fn resize(&mut self, screen_width: u32, screen_height: u32) {
+        console(format!(
+            "appcontext::resize - {}x{}",
+            screen_width, screen_height
+        ));
         self.screen_size = (screen_width, screen_height);
     }
 

@@ -145,7 +145,7 @@ impl Runner {
 
     fn resize(&mut self, hidpi_factor: f32, (real_screen_width, real_screen_height): (u32, u32)) {
         console(format!(
-            "resize event - {}x{}, hidpi={}",
+            "runner::resize - {}x{}, hidpi={}",
             real_screen_width, real_screen_height, hidpi_factor
         ));
 

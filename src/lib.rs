@@ -27,7 +27,7 @@ pub use load_screen::*;
 pub use rgba::*;
 pub use runner::*;
 pub use screen::*;
-pub use simple::{default_console, subcell_console, Buffer, Console, Glyph};
+pub use simple::*;
 
 pub fn console<T: AsRef<str>>(msg: T) {
     app::App::print(msg.as_ref());

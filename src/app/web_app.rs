@@ -1,5 +1,6 @@
 mod web_keycode;
 
+use crate::console;
 use crate::AppConfig;
 use js_sys::Uint8Array;
 use wasm_bindgen::__rt::IntoJsResult;
@@ -206,9 +207,11 @@ impl App {
         key_up_listener.forget();
         let events = self.events.clone();
         let resize_canvas = self.app_canvas.clone();
+        let hidpi_factor = self.hidpi_factor();
         let resize_listener = Closure::<dyn FnMut(_)>::new(move |_: Event| {
-            let width = resize_canvas.offset_width() as u32;
-            let height = resize_canvas.offset_height() as u32;
+            let width = (resize_canvas.offset_width() as f32 * hidpi_factor).round() as u32;
+            let height = (resize_canvas.offset_height() as f32 * hidpi_factor).round() as u32;
+            console(format!("resized - {}x{}", width, height));
             events.borrow_mut().push(AppEvent::Resized((width, height)));
         });
         window().set_onresize(Some(resize_listener.as_ref().unchecked_ref()));

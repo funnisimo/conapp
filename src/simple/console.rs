@@ -145,3 +145,35 @@ pub fn subcell_console(width: u32, height: u32) -> Console {
 pub fn default_console(width: u32, height: u32) -> Console {
     Console::new(width, height, "DEFAULT")
 }
+
+pub fn calc_window_pct(
+    screen_size_px: (u32, u32),
+    char_size_px: (u32, u32),
+    window_size_cells: (u32, u32),
+) -> (f32, f32) {
+    let window_size_px = (
+        window_size_cells.0 * char_size_px.0,
+        window_size_cells.1 * char_size_px.1,
+    );
+    (
+        (window_size_px.0 as f32 / screen_size_px.0 as f32).min(1.0),
+        (window_size_px.1 as f32 / screen_size_px.1 as f32).min(1.0),
+    )
+}
+
+pub fn calc_center_offset(window_size_pct: (f32, f32)) -> (f32, f32) {
+    (
+        (1.0 - window_size_pct.0).max(0.0) / 2.0,
+        (1.0 - window_size_pct.1).max(0.0) / 2.0,
+    )
+}
+
+pub fn calc_center_extents(window_size_pct: (f32, f32)) -> (f32, f32, f32, f32) {
+    let offset = calc_center_offset(window_size_pct);
+    (
+        offset.0,
+        offset.1,
+        offset.0 + window_size_pct.0,
+        offset.1 + window_size_pct.1,
+    )
+}
