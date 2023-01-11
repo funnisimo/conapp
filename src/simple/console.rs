@@ -7,7 +7,7 @@ use std::rc::Rc;
 pub struct Console {
     buffer: Buffer,
     extents: (f32, f32, f32, f32),
-    fontpath: String,
+    font_name: String,
     font: Option<Rc<Font>>,
     zpos: i8,
 }
@@ -15,11 +15,11 @@ pub struct Console {
 impl Console {
     /// create a new offscreen console that you can draw to the screen with a font
     /// width and height are in cells (characters), not pixels.
-    pub fn new(width: u32, height: u32, font: &str) -> Self {
+    pub fn new(width: u32, height: u32, font_name: &str) -> Self {
         Self {
             buffer: Buffer::new(width, height),
             extents: (0.0, 0.0, 1.0, 1.0),
-            fontpath: font.to_owned(),
+            font_name: font_name.to_owned(),
             font: None,
             zpos: 0,
         }
@@ -30,15 +30,22 @@ impl Console {
         self
     }
 
-    pub fn with_zpos(mut self, zpos: i8) -> Self {
-        self.zpos = zpos;
-        self
-    }
-
     pub fn set_extents(&mut self, left: f32, top: f32, right: f32, bottom: f32) -> &mut Self {
         println!("console extents = {},{} - {},{}", left, top, right, bottom);
 
         self.extents = (left, top, right, bottom);
+        self
+    }
+
+    pub fn is_full_screen(&self) -> bool {
+        self.extents.0 == 0.0
+            && self.extents.1 == 0.0
+            && self.extents.2 == 1.0
+            && self.extents.3 == 1.0
+    }
+
+    pub fn with_zpos(mut self, zpos: i8) -> Self {
+        self.zpos = zpos;
         self
     }
 
@@ -49,6 +56,10 @@ impl Console {
 
     pub fn ready(&self) -> bool {
         self.font.is_some()
+    }
+
+    pub fn font_name(&self) -> &String {
+        &self.font_name
     }
 
     pub fn set_font(&mut self, font: Rc<Font>) {
@@ -94,9 +105,9 @@ impl Console {
     pub fn render(&mut self, app: &mut AppContext) {
         match self.font {
             None => {
-                self.font = app.get_font(self.fontpath.as_ref());
+                self.font = app.get_font(self.font_name.as_ref());
                 if self.font.is_some() {
-                    console(format!("Got font - {}", self.fontpath));
+                    console(format!("Got font - {}", self.font_name));
                 }
             }
             Some(ref font) => {
