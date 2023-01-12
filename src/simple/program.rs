@@ -176,23 +176,18 @@ impl Program {
         zpos: i8,
     ) {
         let left = (extents.0 * 2.0) - 1.0;
-        let top = (extents.1 * 2.0) - 1.0;
+        let top = 1.0 - (extents.1 * 2.0);
         let right = (extents.2 * 2.0) - 1.0;
-        let bottom = (extents.3 * 2.0) - 1.0;
-
-        // println!(
-        //     "set extents {} - {},{} - {},{}",
-        //     self.index, left, top, right, bottom
-        // );
+        let bottom = 1.0 - (extents.3 * 2.0);
 
         self.data.pos_data[0] = left;
-        self.data.pos_data[1] = top;
+        self.data.pos_data[1] = bottom;
         self.data.pos_data[2] = left;
-        self.data.pos_data[3] = bottom;
+        self.data.pos_data[3] = top;
         self.data.pos_data[4] = right;
-        self.data.pos_data[5] = bottom;
+        self.data.pos_data[5] = top;
         self.data.pos_data[6] = right;
-        self.data.pos_data[7] = top;
+        self.data.pos_data[7] = bottom;
 
         // println!("{:?}", self.data.pos_data);
 

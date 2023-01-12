@@ -339,10 +339,6 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 }
 
 pub fn now() -> f64 {
-    // perforamce now is in ms
-    // https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
-    // window().performance().unwrap().now() / 1000.0
-
     // changed to this so that we can seed RNGs
     js_sys::Date::now()
 }

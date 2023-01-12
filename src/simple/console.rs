@@ -122,6 +122,23 @@ impl Console {
         }
     }
 
+    pub fn contains_screen_pct(&self, screen_pct: (f32, f32)) -> bool {
+        if screen_pct.0 < self.extents.0 {
+            return false;
+        }
+        if screen_pct.1 < self.extents.1 {
+            return false;
+        }
+        if screen_pct.0 > self.extents.2 {
+            return false;
+        }
+        if screen_pct.1 > self.extents.3 {
+            return false;
+        }
+
+        true
+    }
+
     /// returns the cell that the screen pos converts to for this console [0.0-1.0]
     pub fn mouse_pos(&self, screen_pct: (f32, f32)) -> Option<(f32, f32)> {
         if screen_pct.0 < self.extents.0 {

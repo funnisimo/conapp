@@ -1,5 +1,4 @@
 use conapp::*;
-use std::sync::Mutex;
 
 const FONT: &str = "resources/terminal_8x8.png";
 
@@ -7,8 +6,6 @@ const BLACK: RGBA = RGBA::rgb(0, 0, 0);
 const GRAY: RGBA = RGBA::rgb(128, 128, 128);
 const RED: RGBA = RGBA::rgb(192, 32, 32);
 const YELLOW: RGBA = RGBA::rgb(192, 192, 32);
-
-static LAST_RENDER: Mutex<u32> = Mutex::new(0);
 
 struct HelloWorld {
     con: Console,
@@ -71,13 +68,6 @@ impl Screen for HelloWorld {
         }
 
         self.con.render(app);
-
-        if let Ok(mut val) = LAST_RENDER.lock() {
-            if *val != 1 {
-                *val = 1;
-                println!("HELLO");
-            }
-        }
     }
 }
 
@@ -163,13 +153,6 @@ impl Screen for Popup {
         }
 
         self.con.render(app);
-
-        if let Ok(mut val) = LAST_RENDER.lock() {
-            if *val != 2 {
-                *val = 2;
-                println!("POPUP");
-            }
-        }
     }
 }
 

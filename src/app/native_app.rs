@@ -358,11 +358,11 @@ pub fn now() -> f64 {
         .as_secs_f64()
 }
 
-/// return the ms since the start of the program
+/// return a time in secs
 pub fn perf_now() -> f64 {
     let start = SystemTime::now();
     start
         .duration_since(UNIX_EPOCH)
         .unwrap_or(Duration::default())
-        .as_millis() as f64
+        .as_secs_f64()
 }

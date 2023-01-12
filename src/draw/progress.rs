@@ -1,6 +1,10 @@
 use crate::simple::Buffer;
 use crate::RGBA;
 
+pub fn progress<'a>(buffer: &'a mut Buffer) -> Progress {
+    Progress::new(buffer)
+}
+
 pub struct Progress<'a> {
     buffer: &'a mut Buffer,
     fg: Option<RGBA>,
