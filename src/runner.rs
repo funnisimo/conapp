@@ -258,7 +258,7 @@ impl Runner {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
 
-        let mut last_frame_time = crate::app::now();
+        let mut last_frame_time = crate::app::perf_now();
         let mut next_frame = last_frame_time;
 
         let mut screen = match self.app_ctx.has_files_to_load() {
@@ -299,7 +299,7 @@ impl Runner {
             }
 
             let mut skipped_frames: i32 = -1;
-            let time = crate::app::now();
+            let time = crate::app::perf_now();
             let skip_ticks = match self.app_ctx.fps.goal() {
                 0 => time - last_frame_time,
                 x => 1.0 / x as f64,

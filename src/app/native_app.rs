@@ -349,11 +349,20 @@ impl App {
     }
 }
 
-/// return the time since the start of the program in seconds
+/// return the seconds since the epoch
 pub fn now() -> f64 {
     let start = SystemTime::now();
     start
         .duration_since(UNIX_EPOCH)
         .unwrap_or(Duration::default())
         .as_secs_f64()
+}
+
+/// return the ms since the start of the program
+pub fn perf_now() -> f64 {
+    let start = SystemTime::now();
+    start
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or(Duration::default())
+        .as_millis() as f64
 }

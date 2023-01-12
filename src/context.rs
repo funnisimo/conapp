@@ -8,6 +8,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use uni_gl::{BufferBit, WebGLRenderingContext};
 
+// #[cfg(feature = "ecs")]
+// use legion::*;
+
 pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
 pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
 
@@ -50,6 +53,10 @@ pub struct AppContext {
     // pub(crate) file_loader: FileLoader,
     pub(crate) simple_program: Program,
     pub(crate) files_to_load: Vec<LoadInfo>,
+    // #[cfg(feature = "ecs")]
+    // pub resources: Resources,
+    // #[cfg(feature = "ecs")]
+    // pub world: World,
 }
 
 impl AppContext {
@@ -71,6 +78,10 @@ impl AppContext {
             ready: false,
             // file_loader: FileLoader::new(),
             files_to_load: Vec::new(),
+            // #[cfg(feature = "ecs")]
+            // resources: Resources::default(),
+            // #[cfg(feature = "ecs")]
+            // world: World::default(),
         };
 
         let sub_cell_font = Rc::new(Font::new(&ctx.gl, SUBCELL_BYTES, (4, 4)));

@@ -14,7 +14,8 @@ mod screen;
 mod simple;
 
 pub use app::{
-    App, AppConfig, AppEvent, KeyDownEvent, KeyUpEvent, MouseButtonEvent, VirtualKeyCode,
+    now, perf_now, App, AppConfig, AppEvent, KeyDownEvent, KeyUpEvent, MouseButtonEvent,
+    VirtualKeyCode,
 };
 pub use builder::*;
 pub use context::*;
@@ -34,3 +35,8 @@ pub fn console<T: AsRef<str>>(msg: T) {
 }
 
 pub use uni_gl::WebGLRenderingContext;
+
+// #[cfg(feature = "ecs")]
+// pub mod ecs {
+//     pub use legion::*;
+// }
