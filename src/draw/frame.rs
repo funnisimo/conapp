@@ -164,11 +164,11 @@ impl<'a> Frame<'a> {
                 TextAlign::Center => x + width as i32 / 2,
             };
 
-            let mut printer = match self.title_fg {
+            let printer = match self.title_fg {
                 None => plain(self.buffer),
                 Some(x) => plain(self.buffer).fg(x),
             };
-            printer.print(tx, y, &self.title);
+            printer.align(self.title_align).print(tx, y, &self.title);
             // self.title.draw(dest);
         }
     }

@@ -1,4 +1,4 @@
-use crate::console;
+// use crate::console;
 use std::{ops, str::FromStr};
 
 /// White color
@@ -268,12 +268,18 @@ pub enum ColorParseErr {
 /// - RRGGBBAA
 /// Where R,G,B,A are all hex values [0-9A-Fa-f]
 pub fn parse_color_hex(text: &str) -> Result<RGBA, ColorParseErr> {
-    let base = match text.starts_with("#") {
+    let no_hash = match text.starts_with("#") {
         false => text,
         true => &text[1..],
     };
 
+    let base = match no_hash.chars().position(|ch| ch == ' ') {
+        None => no_hash,
+        Some(pos) => &no_hash[..pos],
+    };
+
     if !base.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        println!("NonHexDigit - {}", text);
         return Err(ColorParseErr::NonHexDigit);
     }
 
@@ -377,8 +383,8 @@ pub fn parse_color(name: &str) -> Result<RGBA, ColorParseErr> {
 /// Returns RGBA if the text can parse successfully
 pub fn to_rgba(name: &str) -> Option<RGBA> {
     match parse_color(name) {
-        Err(e) => {
-            console(format!("{:?}", e));
+        Err(_) => {
+            // console(format!("{:?}", e));
             None
         }
         Ok(c) => Some(c),
@@ -499,6 +505,8 @@ mod test {
         assert_eq!(parse_color("F00").unwrap(), RED);
         assert_eq!(parse_color("0F0F").unwrap(), GREEN);
         assert_eq!(parse_color("0000FF").unwrap(), BLUE);
+        assert_eq!(parse_color("0000FF # comment").unwrap(), BLUE);
+
         assert_eq!(
             parse_color("80808080").unwrap(),
             RGBA::rgba(128, 128, 128, 128)
