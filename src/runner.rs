@@ -278,6 +278,10 @@ impl Runner {
         app.run(move |app: &mut crate::app::App| {
             self.app_ctx.load_files(); // Do any font/image loading necessary
 
+            if self.screens.is_empty() {
+                return crate::app::App::exit();
+            }
+
             if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
                 match event {
                     RunnerEvent::Capture(filepath) => {
