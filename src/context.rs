@@ -2,6 +2,7 @@ use super::input::AppInput;
 use super::Font;
 use crate::app::File;
 use crate::console;
+use crate::font::parse_char_size;
 use crate::simple::Program;
 use crate::{Image, RGBA};
 use std::collections::HashMap;
@@ -207,6 +208,33 @@ impl AppContext {
             }
             Err(e) => Err(LoadError::OpenError(e)),
         }
+    }
+
+    pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
+        let char_size = parse_char_size(font_path);
+        let path = font_path.to_owned();
+
+        self.load_file(
+            font_path,
+            Box::new(move |data, app: &mut AppContext| {
+                let font = Rc::new(Font::new(app.gl(), &data, char_size));
+                app.insert_font(&path, font);
+                console(format!("font load complete - {}", path));
+                Ok(())
+            }),
+        )
+    }
+
+    pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
+        let path = image_path.to_owned();
+        self.load_file(
+            image_path,
+            Box::new(move |data, app| {
+                let image = Rc::new(Image::new(&data));
+                app.insert_image(&path, image);
+                Ok(())
+            }),
+        )
     }
 
     pub fn insert_font(&mut self, name: &str, font: Rc<Font>) {

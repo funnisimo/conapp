@@ -1,9 +1,7 @@
 use super::context::AppContext;
 use super::input::AppInput;
-use crate::font::parse_char_size;
 use crate::{
-    console, AppConfig, AppEvent, Font, Image, LoadCallback, LoadError, LoadingScreen, Screen,
-    ScreenResult,
+    console, AppConfig, AppEvent, LoadCallback, LoadError, LoadingScreen, Screen, ScreenResult,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -37,7 +35,7 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(mut options: AppConfig, fps_goal: u32) -> Self {
+    pub fn new(mut options: AppConfig) -> Self {
         options.headless = false;
         let app = crate::app::App::new(options.clone());
 
@@ -89,7 +87,7 @@ impl Runner {
             )
         };
 
-        let app_ctx = AppContext::new(gl, options.size.clone(), input, fps_goal);
+        let app_ctx = AppContext::new(gl, options.size.clone(), input, options.fps);
         crate::console("Runner created");
 
         Self {
@@ -117,30 +115,11 @@ impl Runner {
     }
 
     pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
-        let char_size = parse_char_size(font_path);
-        let path = font_path.to_owned();
-
-        self.app_ctx.load_file(
-            font_path,
-            Box::new(move |data, app: &mut AppContext| {
-                let font = Rc::new(Font::new(app.gl(), &data, char_size));
-                app.insert_font(&path, font);
-                console(format!("font load complete - {}", path));
-                Ok(())
-            }),
-        )
+        self.app_ctx.load_font(font_path)
     }
 
     pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
-        let path = image_path.to_owned();
-        self.app_ctx.load_file(
-            image_path,
-            Box::new(move |data, app| {
-                let image = Rc::new(Image::new(&data));
-                app.insert_image(&path, image);
-                Ok(())
-            }),
-        )
+        self.app_ctx.load_image(image_path)
     }
 
     fn resize(&mut self, hidpi_factor: f32, (real_screen_width, real_screen_height): (u32, u32)) {

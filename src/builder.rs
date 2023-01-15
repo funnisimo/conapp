@@ -12,20 +12,19 @@ pub struct AppBuilder {
     images: Vec<String>,
     /// files to load
     files: Vec<(String, Box<LoadCallback>)>,
-    /// fps goal for application
-    fps_goal: u32,
 }
 
 impl AppBuilder {
     /// Starts building a [`Runner`] with the given screen width and height in pixels
     pub fn new(width: u32, height: u32) -> Self {
-        let options = AppConfig::new("application", (width, height));
+        let mut options = AppConfig::new("application", (width, height));
+        options.fps = 60;
+
         AppBuilder {
             config: options,
             fonts: Vec::new(),
             images: Vec::new(),
             files: Vec::new(),
-            fps_goal: 60,
         }
     }
 
@@ -91,13 +90,13 @@ impl AppBuilder {
 
     /// Sets the fps goal
     pub fn fps(mut self, fps_goal: u32) -> Self {
-        self.fps_goal = fps_goal;
+        self.config.fps = fps_goal;
         self
     }
 
     /// Builds the [`Runner`]
     pub fn build(self) -> Runner {
-        let mut runner = Runner::new(self.config, self.fps_goal);
+        let mut runner = Runner::new(self.config);
         for font in self.fonts {
             runner.load_font(&font).expect("Failed to load font.");
         }
