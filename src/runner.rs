@@ -1,8 +1,6 @@
 use super::context::AppContext;
 use super::input::AppInput;
-use crate::{
-    console, App, AppConfig, AppEvent, LoadCallback, LoadError, LoadingScreen, Screen, ScreenResult,
-};
+use crate::{console, App, AppBuilder, AppConfig, AppEvent, LoadingScreen, Screen, ScreenResult};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -23,7 +21,7 @@ pub struct Runner {
     /// The uni_gl::App that controls the window
     app: Option<crate::app::App>,
     /// All of the configuration settings
-    config: AppConfig,
+    builder: AppBuilder,
     /// Maximum number of update calls to do in one frame
     max_frameskip: i32,
 
@@ -35,7 +33,8 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(mut options: AppConfig) -> Self {
+    pub fn new(mut builder: AppBuilder) -> Self {
+        let options = &mut builder.config;
         options.headless = false;
         let app = crate::app::App::new(options.clone());
 
@@ -49,13 +48,17 @@ impl Runner {
         Self {
             app_ctx: Some(create_ctx(&app, &options)),
             app: Some(app),
-            config: options,
+            builder,
             max_frameskip: 5,
             screens: Vec::new(),
             screen_resolution,
             real_screen_size: (real_screen_width, real_screen_height),
             ready: false,
         }
+    }
+
+    fn config(&self) -> &AppConfig {
+        &self.builder.config
     }
 
     fn push(&mut self, ctx: &mut AppContext, mut screen: Box<dyn Screen>) {
@@ -66,17 +69,17 @@ impl Runner {
         self.screens.push(screen);
     }
 
-    pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
-        self.app_ctx.as_mut().unwrap().load_file(path, cb)
-    }
+    // pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
+    //     self.app_ctx.as_mut().unwrap().load_file(path, cb)
+    // }
 
-    pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
-        self.app_ctx.as_mut().unwrap().load_font(font_path)
-    }
+    // pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
+    //     self.app_ctx.as_mut().unwrap().load_font(font_path)
+    // }
 
-    pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
-        self.app_ctx.as_mut().unwrap().load_image(image_path)
-    }
+    // pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
+    //     self.app_ctx.as_mut().unwrap().load_image(image_path)
+    // }
 
     fn resize(
         &mut self,
@@ -89,7 +92,8 @@ impl Runner {
             real_screen_width, real_screen_height, hidpi_factor
         ));
 
-        let (x_offset, y_offset) = if self.config.fullscreen && cfg!(not(target_arch = "wasm32")) {
+        let (x_offset, y_offset) = if self.config().fullscreen && cfg!(not(target_arch = "wasm32"))
+        {
             let x_offset = (self.screen_resolution.0 - real_screen_width) as i32 / 2;
             let y_offset = (self.screen_resolution.1 - real_screen_height) as i32 / 2;
             (x_offset, y_offset)
@@ -113,7 +117,7 @@ impl Runner {
         // let con_size = self.api.con().size();
         if cfg!(target_arch = "wasm32") {
             ctx.input.resize(
-                self.config.size,
+                self.config().size,
                 // con_size,
                 (x_offset as u32, y_offset as u32),
             )
@@ -190,10 +194,21 @@ impl Runner {
     pub fn run_with(mut self, func: Box<dyn FnOnce(&mut AppContext) -> Box<dyn Screen>>) {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
-        let mut ctx = self.app_ctx.take().unwrap();
 
         let mut last_frame_time = crate::app::perf_now();
         let mut next_frame = last_frame_time;
+
+        let mut ctx = self.app_ctx.take().unwrap();
+
+        for font in self.builder.fonts.drain(..) {
+            ctx.load_font(&font).expect("Failed to load font.");
+        }
+        for image in self.builder.images.drain(..) {
+            ctx.load_image(&image).expect("Failed to load image.");
+        }
+        for (path, func) in self.builder.files.drain(..) {
+            ctx.load_file(&path, func).expect("Failed to load file.");
+        }
 
         let mut screen = match ctx.has_files_to_load() {
             false => func(&mut ctx),

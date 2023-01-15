@@ -15,7 +15,7 @@ use uni_gl::{BufferBit, WebGLRenderingContext};
 pub static SUBCELL_BYTES: &[u8] = include_bytes!("../resources/subcell.png");
 pub static TERMINAL_8X8_BYTES: &[u8] = include_bytes!("../resources/terminal_8x8.png");
 
-pub type LoadCallback = dyn FnOnce(Vec<u8>, &mut AppContext) -> Result<(), LoadError>;
+pub type LoadCallback = dyn Fn(Vec<u8>, &mut AppContext) -> Result<(), LoadError>;
 
 pub struct LoadInfo {
     path: String,

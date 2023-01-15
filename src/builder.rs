@@ -1,17 +1,22 @@
 use crate::AppConfig;
+use crate::AppContext;
 use crate::LoadCallback;
 use crate::Runner;
+
+pub type StartupFn = dyn Fn(&mut AppContext) -> ();
 
 /// Builds an application runner
 pub struct AppBuilder {
     /// window configuration info
-    config: AppConfig,
+    pub(crate) config: AppConfig,
     /// fonts to load
-    fonts: Vec<String>,
+    pub(crate) fonts: Vec<String>,
     /// images to load
-    images: Vec<String>,
+    pub(crate) images: Vec<String>,
     /// files to load
-    files: Vec<(String, Box<LoadCallback>)>,
+    pub(crate) files: Vec<(String, Box<LoadCallback>)>,
+
+    pub(crate) startup: Vec<Box<StartupFn>>,
 }
 
 impl AppBuilder {
@@ -25,6 +30,7 @@ impl AppBuilder {
             fonts: Vec::new(),
             images: Vec::new(),
             files: Vec::new(),
+            startup: Vec::new(),
         }
     }
 
@@ -70,6 +76,12 @@ impl AppBuilder {
         self
     }
 
+    /// Sets a func that will get called when the app is fully ready
+    pub fn startup(mut self, func: Box<StartupFn>) -> Self {
+        self.startup.push(func);
+        self
+    }
+
     /// Loads a file on startup
     pub fn file(mut self, file_path: &str, func: Box<LoadCallback>) -> Self {
         self.files.push((file_path.to_owned(), func));
@@ -96,16 +108,16 @@ impl AppBuilder {
 
     /// Builds the [`Runner`]
     pub fn build(self) -> Runner {
-        let mut runner = Runner::new(self.config);
-        for font in self.fonts {
-            runner.load_font(&font).expect("Failed to load font.");
-        }
-        for image in self.images {
-            runner.load_image(&image).expect("Failed to load image.");
-        }
-        for (path, func) in self.files {
-            runner.load_file(&path, func).expect("Failed to load file.");
-        }
-        runner
+        Runner::new(self)
+        // for font in self.fonts {
+        //     runner.load_font(&font).expect("Failed to load font.");
+        // }
+        // for image in self.images {
+        //     runner.load_image(&image).expect("Failed to load image.");
+        // }
+        // for (path, func) in self.files {
+        //     runner.load_file(&path, func).expect("Failed to load file.");
+        // }
+        // runner
     }
 }

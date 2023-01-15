@@ -134,11 +134,12 @@ impl Screen for MyRoguelike {
 }
 
 fn main() {
-    let mut app = AppBuilder::new(1024, 768).title("Input Example").build();
+    let mut builder = AppBuilder::new(1024, 768).title("Input Example");
 
     for font in FONTS.iter() {
-        app.load_font(font).expect("Failed to load font");
+        builder = builder.font(font);
     }
 
+    let app = builder.build();
     app.run_screen(MyRoguelike::new());
 }
