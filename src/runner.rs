@@ -27,7 +27,7 @@ pub struct Runner {
     /// Maximum number of update calls to do in one frame
     max_frameskip: i32,
 
-    app_ctx: AppContext,
+    app_ctx: Option<AppContext>,
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
     real_screen_size: (u32, u32),
@@ -47,7 +47,7 @@ impl Runner {
         crate::console("Runner created");
 
         Self {
-            app_ctx: create_ctx(&app, &options),
+            app_ctx: Some(create_ctx(&app, &options)),
             app: Some(app),
             config: options,
             max_frameskip: 5,
@@ -58,27 +58,32 @@ impl Runner {
         }
     }
 
-    fn push(&mut self, mut screen: Box<dyn Screen>) {
-        screen.setup(&mut self.app_ctx);
+    fn push(&mut self, ctx: &mut AppContext, mut screen: Box<dyn Screen>) {
+        screen.setup(ctx);
         if screen.is_full_screen() {
-            self.app_ctx.clear(None);
+            ctx.clear(None);
         }
         self.screens.push(screen);
     }
 
     pub fn load_file(&mut self, path: &str, cb: Box<LoadCallback>) -> Result<(), LoadError> {
-        self.app_ctx.load_file(path, cb)
+        self.app_ctx.as_mut().unwrap().load_file(path, cb)
     }
 
     pub fn load_font(&mut self, font_path: &str) -> Result<(), LoadError> {
-        self.app_ctx.load_font(font_path)
+        self.app_ctx.as_mut().unwrap().load_font(font_path)
     }
 
     pub fn load_image(&mut self, image_path: &str) -> Result<(), LoadError> {
-        self.app_ctx.load_image(image_path)
+        self.app_ctx.as_mut().unwrap().load_image(image_path)
     }
 
-    fn resize(&mut self, hidpi_factor: f32, (real_screen_width, real_screen_height): (u32, u32)) {
+    fn resize(
+        &mut self,
+        ctx: &mut AppContext,
+        hidpi_factor: f32,
+        (real_screen_width, real_screen_height): (u32, u32),
+    ) {
         console(format!(
             "runner::resize - {}x{}, hidpi={}",
             real_screen_width, real_screen_height, hidpi_factor
@@ -93,28 +98,27 @@ impl Runner {
         };
         self.real_screen_size = (real_screen_width, real_screen_height);
 
-        self.app_ctx
-            .gl
+        ctx.gl
             .viewport(x_offset, y_offset, real_screen_width, real_screen_height);
-        self.app_ctx.resize(
+        ctx.resize(
             (real_screen_width as f32 / hidpi_factor) as u32,
             (real_screen_height as f32 / hidpi_factor) as u32,
         );
 
         // engine.resize(&mut self.api);
         for screen in self.screens.iter_mut() {
-            screen.resize(&mut self.app_ctx);
+            screen.resize(ctx);
         }
 
         // let con_size = self.api.con().size();
         if cfg!(target_arch = "wasm32") {
-            self.app_ctx.input.resize(
+            ctx.input.resize(
                 self.config.size,
                 // con_size,
                 (x_offset as u32, y_offset as u32),
             )
         } else {
-            self.app_ctx.input.resize(
+            ctx.input.resize(
                 (real_screen_width, real_screen_height),
                 // con_size,
                 (x_offset as u32, y_offset as u32),
@@ -122,8 +126,7 @@ impl Runner {
         };
     }
 
-    fn handle_event(&mut self, ev: &AppEvent) -> Option<RunnerEvent> {
-        let ctx = &mut self.app_ctx;
+    fn handle_event(&mut self, ctx: &mut AppContext, ev: &AppEvent) -> Option<RunnerEvent> {
         ctx.input.on_event(ev);
         if let Some(mode) = self.screens.last_mut() {
             match mode.input(ctx, ev) {
@@ -144,13 +147,13 @@ impl Runner {
                     ctx.clear(None);
                     mode.teardown(ctx);
                     self.screens.pop();
-                    self.push(next);
+                    self.push(ctx, next);
                     // self.render(ctx);
                     return Some(RunnerEvent::Next);
                 }
                 ScreenResult::Push(next) => {
                     mode.pause(ctx);
-                    self.push(next);
+                    self.push(ctx, next);
                     // self.render(ctx);
                     return Some(RunnerEvent::Next);
                 }
@@ -164,14 +167,15 @@ impl Runner {
 
     fn handle_input(
         &mut self,
+        ctx: &mut AppContext,
         hidpi_factor: f32,
         events: Rc<RefCell<Vec<crate::app::AppEvent>>>,
     ) -> Option<RunnerEvent> {
         for evt in events.borrow().iter() {
             if let crate::app::AppEvent::Resized(size) = evt {
-                self.resize(hidpi_factor, *size);
+                self.resize(ctx, hidpi_factor, *size);
             } else {
-                if let Some(ev) = self.handle_event(evt) {
+                if let Some(ev) = self.handle_event(ctx, evt) {
                     return Some(ev);
                 }
             }
@@ -186,36 +190,38 @@ impl Runner {
     pub fn run_with(mut self, func: Box<dyn FnOnce(&mut AppContext) -> Box<dyn Screen>>) {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
+        let mut ctx = self.app_ctx.take().unwrap();
 
         let mut last_frame_time = crate::app::perf_now();
         let mut next_frame = last_frame_time;
 
-        let mut screen = match self.app_ctx.has_files_to_load() {
-            false => func(&mut self.app_ctx),
+        let mut screen = match ctx.has_files_to_load() {
+            false => func(&mut ctx),
             true => {
                 console("Using loading screen");
                 LoadingScreen::new(func)
             }
         };
         // let mut screen = LoadingScreen::new(func);
-        screen.setup(&mut self.app_ctx);
+        screen.setup(&mut ctx);
         self.screens.push(screen);
 
         self.ready = true;
         crate::console(format!("Runner ready"));
 
         app.run(move |app: &mut crate::app::App| {
-            self.app_ctx.load_files(); // Do any font/image loading necessary
+            ctx.load_files(); // Do any font/image loading necessary
 
             if self.screens.is_empty() {
                 return crate::app::App::exit();
             }
 
-            if let Some(event) = self.handle_input(app.hidpi_factor(), app.events.clone()) {
+            if let Some(event) = self.handle_input(&mut ctx, app.hidpi_factor(), app.events.clone())
+            {
                 match event {
                     RunnerEvent::Capture(filepath) => {
                         capture_screen(
-                            &self.app_ctx.gl,
+                            &ctx.gl,
                             self.real_screen_size.0,
                             // self.screen_resolution.0 * app.hidpi_factor() as u32,
                             self.real_screen_size.1,
@@ -233,18 +239,18 @@ impl Runner {
 
             let mut skipped_frames: i32 = -1;
             let time = crate::app::perf_now();
-            let skip_ticks = match self.app_ctx.fps.goal() {
+            let skip_ticks = match ctx.fps.goal() {
                 0 => time - last_frame_time,
                 x => 1.0 / x as f64,
             };
 
             while time >= last_frame_time && skipped_frames < self.max_frameskip {
                 // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
-                self.app_ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
-                if let Some(event) = self.update() {
+                ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
+                if let Some(event) = self.update(&mut ctx) {
                     match event {
                         RunnerEvent::Capture(filepath) => capture_screen(
-                            &self.app_ctx.gl,
+                            &ctx.gl,
                             self.real_screen_size.0,
                             // self.screen_resolution.0 * app.hidpi_factor() as u32,
                             self.real_screen_size.1,
@@ -259,47 +265,47 @@ impl Runner {
                 // next_tick += SKIP_TICKS;
                 skipped_frames += 1;
             }
-            self.app_ctx.input.on_frame_end();
+            ctx.input.on_frame_end();
             if skipped_frames == self.max_frameskip {
                 // next_tick = time + SKIP_TICKS;
                 last_frame_time = time + skip_ticks;
             }
-            if self.app_ctx.fps.goal() == 0 || time >= next_frame {
-                self.render();
-                self.app_ctx.fps.step();
+            if ctx.fps.goal() == 0 || time >= next_frame {
+                self.render(&mut ctx);
+                ctx.fps.step();
 
-                if self.app_ctx.fps.goal() > 0 {
-                    next_frame += 1.0 / self.app_ctx.fps.goal() as f64;
+                if ctx.fps.goal() > 0 {
+                    next_frame += 1.0 / ctx.fps.goal() as f64;
                 }
             }
             // }
         });
     }
 
-    fn update(&mut self) -> Option<RunnerEvent> {
-        let frame_time_ms = self.app_ctx.frame_time_ms();
+    fn update(&mut self, ctx: &mut AppContext) -> Option<RunnerEvent> {
+        let frame_time_ms = ctx.frame_time_ms();
         if let Some(screen) = self.screens.last_mut() {
-            match screen.update(&mut self.app_ctx, frame_time_ms) {
+            match screen.update(ctx, frame_time_ms) {
                 ScreenResult::Continue => (),
                 ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
-                    self.app_ctx.clear(None);
-                    screen.teardown(&mut self.app_ctx);
+                    ctx.clear(None);
+                    screen.teardown(ctx);
                     self.screens.pop();
                     match self.screens.last_mut() {
-                        Some(m) => m.resume(&mut self.app_ctx),
+                        Some(m) => m.resume(ctx),
                         _ => {}
                     }
                 }
                 ScreenResult::Replace(next) => {
-                    self.app_ctx.clear(None);
-                    screen.teardown(&mut self.app_ctx);
+                    ctx.clear(None);
+                    screen.teardown(ctx);
                     self.screens.pop();
-                    self.push(next);
+                    self.push(ctx, next);
                 }
                 ScreenResult::Push(next) => {
-                    screen.pause(&mut self.app_ctx);
-                    self.push(next);
+                    screen.pause(ctx);
+                    self.push(ctx, next);
                 }
                 ScreenResult::Quit => {
                     return Some(RunnerEvent::Exit);
@@ -312,7 +318,7 @@ impl Runner {
     /// This is called before drawing the console on the screen. The framerate depends on the screen frequency, the graphic cards and on whether you activated vsync or not.
     /// The framerate is not reliable so don't update time related stuff in this function.
     /// The screen will display the content of the root console provided by `api.con()`
-    fn render(&mut self) {
+    fn render(&mut self, ctx: &mut AppContext) {
         // Find last full screen mode (that is where we start drawing)
         let mut start_idx = 0;
         for (idx, m) in self.screens.iter().enumerate() {
@@ -320,9 +326,9 @@ impl Runner {
                 start_idx = idx;
             }
         }
-        self.app_ctx.clear(None);
+        ctx.clear(None);
         for screen in self.screens.iter_mut().skip(start_idx) {
-            screen.render(&mut self.app_ctx);
+            screen.render(ctx);
         }
     }
 }
