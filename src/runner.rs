@@ -1,7 +1,7 @@
 use super::context::AppContext;
 use super::input::AppInput;
 use crate::{
-    console, AppConfig, AppEvent, LoadCallback, LoadError, LoadingScreen, Screen, ScreenResult,
+    console, App, AppConfig, AppEvent, LoadCallback, LoadError, LoadingScreen, Screen, ScreenResult,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -42,56 +42,12 @@ impl Runner {
         let real_screen_width = (options.size.0 as f32 * app.hidpi_factor()) as u32;
         let real_screen_height = (options.size.1 as f32 * app.hidpi_factor()) as u32;
 
-        let gl = uni_gl::WebGLRenderingContext::new(app.canvas());
         let screen_resolution = app.screen_resolution();
-        let (x_offset, y_offset) = if options.fullscreen && cfg!(not(target_arch = "wasm32")) {
-            let x_offset = (screen_resolution.0 - real_screen_width) as i32 / 2;
-            let y_offset = (screen_resolution.1 - real_screen_height) as i32 / 2;
-            (x_offset, y_offset)
-        } else {
-            (0, 0)
-        };
-        crate::console(&format!(
-            "Screen size {} x {} offset {} x {} GL viewport : {} x {}  hidpi factor : {}",
-            options.size.0,
-            options.size.1,
-            x_offset,
-            y_offset,
-            real_screen_width,
-            real_screen_height,
-            app.hidpi_factor()
-        ));
-        gl.viewport(x_offset, y_offset, real_screen_width, real_screen_height);
-        gl.enable(uni_gl::Flag::Blend as i32);
-        // gl.enable(uni_gl::Flag::DepthTest as i32);   // If using ZPos
-        gl.clear_color(0.0, 0.0, 0.0, 1.0);
-        gl.clear(uni_gl::BufferBit::Color);
-        // gl.clear(uni_gl::BufferBit::Depth);  // If using ZPos
-        gl.blend_equation(uni_gl::BlendEquation::FuncAdd);
-        gl.blend_func(
-            uni_gl::BlendMode::SrcAlpha,
-            uni_gl::BlendMode::OneMinusSrcAlpha,
-        );
 
-        let input = if cfg!(target_arch = "wasm32") {
-            AppInput::new(
-                (options.size.0, options.size.1),
-                // (options.console_width, options.console_height),
-                (x_offset as u32, y_offset as u32),
-            )
-        } else {
-            AppInput::new(
-                (real_screen_width, real_screen_height),
-                // (options.console_width, options.console_height),
-                (x_offset as u32, y_offset as u32),
-            )
-        };
-
-        let app_ctx = AppContext::new(gl, options.size.clone(), input, options.fps);
         crate::console("Runner created");
 
         Self {
-            app_ctx,
+            app_ctx: create_ctx(&app, &options),
             app: Some(app),
             config: options,
             max_frameskip: 5,
@@ -375,6 +331,59 @@ impl Runner {
             screen.render(&mut self.app_ctx);
         }
     }
+}
+
+fn create_ctx(app: &App, options: &AppConfig) -> AppContext {
+    let real_screen_width = (options.size.0 as f32 * app.hidpi_factor()) as u32;
+    let real_screen_height = (options.size.1 as f32 * app.hidpi_factor()) as u32;
+
+    let screen_resolution = app.screen_resolution();
+    let (x_offset, y_offset) = if options.fullscreen && cfg!(not(target_arch = "wasm32")) {
+        let x_offset = (screen_resolution.0 - real_screen_width) as i32 / 2;
+        let y_offset = (screen_resolution.1 - real_screen_height) as i32 / 2;
+        (x_offset, y_offset)
+    } else {
+        (0, 0)
+    };
+    crate::console(&format!(
+        "Screen size {} x {} offset {} x {} GL viewport : {} x {}  hidpi factor : {}",
+        options.size.0,
+        options.size.1,
+        x_offset,
+        y_offset,
+        real_screen_width,
+        real_screen_height,
+        app.hidpi_factor()
+    ));
+
+    let gl = uni_gl::WebGLRenderingContext::new(app.canvas());
+    gl.viewport(x_offset, y_offset, real_screen_width, real_screen_height);
+    gl.enable(uni_gl::Flag::Blend as i32);
+    // gl.enable(uni_gl::Flag::DepthTest as i32);   // If using ZPos
+    gl.clear_color(0.0, 0.0, 0.0, 1.0);
+    gl.clear(uni_gl::BufferBit::Color);
+    // gl.clear(uni_gl::BufferBit::Depth);  // If using ZPos
+    gl.blend_equation(uni_gl::BlendEquation::FuncAdd);
+    gl.blend_func(
+        uni_gl::BlendMode::SrcAlpha,
+        uni_gl::BlendMode::OneMinusSrcAlpha,
+    );
+
+    let input = if cfg!(target_arch = "wasm32") {
+        AppInput::new(
+            (options.size.0, options.size.1),
+            // (options.console_width, options.console_height),
+            (x_offset as u32, y_offset as u32),
+        )
+    } else {
+        AppInput::new(
+            (real_screen_width, real_screen_height),
+            // (options.console_width, options.console_height),
+            (x_offset as u32, y_offset as u32),
+        )
+    };
+
+    AppContext::new(gl, options.size.clone(), input, options.fps)
 }
 
 /// This captures an in-game screenshot and saves it to the file
