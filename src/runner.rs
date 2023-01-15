@@ -176,12 +176,6 @@ impl Runner {
                 }
             }
         }
-        // if self.app_ctx.input().had_mouse_event() {
-        //     let mpos = self.app_ctx.input.mouse_pct();
-        //     if let Some(ev) = self.handle_event(&AppEvent::MousePos(mpos)) {
-        //         return Some(ev);
-        //     }
-        // }
         None
     }
 
@@ -284,13 +278,13 @@ impl Runner {
 
     fn update(&mut self) -> Option<RunnerEvent> {
         let frame_time_ms = self.app_ctx.frame_time_ms();
-        if let Some(mode) = self.screens.last_mut() {
-            match mode.update(&mut self.app_ctx, frame_time_ms) {
+        if let Some(screen) = self.screens.last_mut() {
+            match screen.update(&mut self.app_ctx, frame_time_ms) {
                 ScreenResult::Continue => (),
                 ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
                 ScreenResult::Pop => {
                     self.app_ctx.clear(None);
-                    mode.teardown(&mut self.app_ctx);
+                    screen.teardown(&mut self.app_ctx);
                     self.screens.pop();
                     match self.screens.last_mut() {
                         Some(m) => m.resume(&mut self.app_ctx),
@@ -299,12 +293,12 @@ impl Runner {
                 }
                 ScreenResult::Replace(next) => {
                     self.app_ctx.clear(None);
-                    mode.teardown(&mut self.app_ctx);
+                    screen.teardown(&mut self.app_ctx);
                     self.screens.pop();
                     self.push(next);
                 }
                 ScreenResult::Push(next) => {
-                    mode.pause(&mut self.app_ctx);
+                    screen.pause(&mut self.app_ctx);
                     self.push(next);
                 }
                 ScreenResult::Quit => {
