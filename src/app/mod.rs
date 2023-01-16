@@ -87,6 +87,7 @@ pub mod events {
     pub struct MouseButtonEvent {
         /// the button number (0=left, 1=middle, 2=right, ...)
         pub button: usize,
+        pub pos: (f32, f32),
     }
 
     #[derive(Clone)]

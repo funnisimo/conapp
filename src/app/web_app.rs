@@ -114,12 +114,21 @@ impl App {
 
     fn setup_listener(&mut self) {
         let events = self.events.clone();
+        let move_canvas = self.app_canvas.clone();
         let mouse_down_listener =
             Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
+                let canvas_rect = move_canvas.get_bounding_client_rect();
+                let canvas_left = canvas_rect.left();
+                let canvas_top = canvas_rect.top();
+                event.prevent_default();
                 events
                     .borrow_mut()
                     .push(AppEvent::MouseDown(events::MouseButtonEvent {
                         button: event.button() as usize,
+                        pos: (
+                            (event.client_x() as f64 - canvas_left) as f32,
+                            (event.client_y() as f64 - canvas_top) as f32,
+                        ),
                     }));
             });
         self.app_canvas
@@ -129,13 +138,21 @@ impl App {
             )
             .unwrap();
         mouse_down_listener.forget();
+        let move_canvas = self.app_canvas.clone();
         let events = self.events.clone();
         let mouse_up_listener = Closure::<dyn FnMut(_)>::new(move |event: web_sys::MouseEvent| {
+            let canvas_rect = move_canvas.get_bounding_client_rect();
+            let canvas_left = canvas_rect.left();
+            let canvas_top = canvas_rect.top();
             event.prevent_default();
             events
                 .borrow_mut()
                 .push(AppEvent::MouseUp(events::MouseButtonEvent {
                     button: event.button() as usize,
+                    pos: (
+                        (event.client_x() as f64 - canvas_left) as f32,
+                        (event.client_y() as f64 - canvas_top) as f32,
+                    ),
                 }));
         });
         self.app_canvas
@@ -283,6 +300,14 @@ impl App {
         (
             window().inner_width().unwrap().as_f64().unwrap() as u32,
             window().inner_height().unwrap().as_f64().unwrap() as u32,
+        )
+    }
+
+    pub fn viewport_size(&self) -> (u32, u32) {
+        let hdpi = self.hidpi_factor();
+        (
+            (self.app_canvas.width() as f32 / hdpi) as u32,
+            (self.app_canvas.height() as f32 / hdpi) as u32,
         )
     }
 

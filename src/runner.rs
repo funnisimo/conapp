@@ -130,7 +130,7 @@ impl Runner {
         };
     }
 
-    fn handle_event(&mut self, ctx: &mut AppContext, ev: &AppEvent) -> Option<RunnerEvent> {
+    fn handle_event(&mut self, ctx: &mut AppContext, ev: &mut AppEvent) -> Option<RunnerEvent> {
         ctx.input.on_event(ev);
         if let Some(mode) = self.screens.last_mut() {
             match mode.input(ctx, ev) {
@@ -176,7 +176,7 @@ impl Runner {
         hidpi_factor: f32,
         events: Rc<RefCell<Vec<crate::app::AppEvent>>>,
     ) -> Option<RunnerEvent> {
-        for evt in events.borrow().iter() {
+        for evt in events.borrow_mut().iter_mut() {
             if let crate::app::AppEvent::Resized(size) = evt {
                 self.resize(ctx, hidpi_factor, *size);
             } else {

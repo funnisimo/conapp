@@ -64,12 +64,43 @@ impl WindowContext {
     }
 }
 
+struct InputState {
+    modifiers: ModifiersState,
+    mouse_pos: (f32, f32),
+}
+
+impl InputState {
+    fn new() -> Self {
+        InputState {
+            modifiers: ModifiersState::empty(),
+            mouse_pos: (0.0, 0.0),
+        }
+    }
+
+    fn shift(&self) -> bool {
+        self.modifiers.shift()
+    }
+
+    fn alt(&self) -> bool {
+        self.modifiers.alt()
+    }
+
+    fn ctrl(&self) -> bool {
+        self.modifiers.ctrl()
+    }
+
+    fn logo(&self) -> bool {
+        self.modifiers.logo()
+    }
+}
+
 /// the main application struct
 pub struct App {
     window: WindowContext,
     events_loop: Option<EventLoop<()>>,
     intercept_close_request: bool,
-    modifiers_state: ModifiersState,
+    input_state: InputState,
+    // pub events: Rc<RefCell<Vec<AppEvent>>>,
     pub events: Rc<RefCell<Vec<AppEvent>>>,
     dropped_files: Vec<File>,
     fullscreen_resolution: VideoMode,
@@ -92,7 +123,7 @@ fn get_scan_code(input: KeyboardInput) -> String {
     translate_scan_code(input.scancode & 0xFF).into()
 }
 
-fn translate_event(e: Event<()>, modifiers: &ModifiersState) -> Option<AppEvent> {
+fn translate_event(e: Event<()>, input_state: &mut InputState) -> Option<AppEvent> {
     if let Event::WindowEvent {
         event: winevent, ..
     } = e
@@ -105,29 +136,35 @@ fn translate_event(e: Event<()>, modifiers: &ModifiersState) -> Option<AppEvent>
                     MouseButton::Right => 2,
                     MouseButton::Other(val) => val as usize,
                 };
-                let event = events::MouseButtonEvent { button: button_num };
+                let event = events::MouseButtonEvent {
+                    button: button_num,
+                    pos: input_state.mouse_pos,
+                };
                 match state {
                     ElementState::Pressed => Some(AppEvent::MouseDown(event)),
                     ElementState::Released => Some(AppEvent::MouseUp(event)),
                 }
             }
-            WindowEvent::CursorMoved { position, .. } => Some(AppEvent::MousePos(position.into())),
+            WindowEvent::CursorMoved { position, .. } => {
+                input_state.mouse_pos = position.into();
+                Some(AppEvent::MousePos(input_state.mouse_pos))
+            }
             WindowEvent::KeyboardInput { input, .. } => match input.state {
                 ElementState::Pressed => Some(AppEvent::KeyDown(events::KeyDownEvent {
                     key: get_virtual_key(input),
                     code: get_scan_code(input),
                     key_code: input.virtual_keycode.unwrap(),
-                    shift: modifiers.shift(),
-                    alt: modifiers.alt(),
-                    ctrl: modifiers.ctrl(),
+                    shift: input_state.shift(),
+                    alt: input_state.alt(),
+                    ctrl: input_state.ctrl(),
                 })),
                 ElementState::Released => Some(AppEvent::KeyUp(events::KeyUpEvent {
                     key: get_virtual_key(input),
                     code: get_scan_code(input),
                     key_code: input.virtual_keycode.unwrap(),
-                    shift: modifiers.shift(),
-                    alt: modifiers.alt(),
-                    ctrl: modifiers.ctrl(),
+                    shift: input_state.shift(),
+                    alt: input_state.alt(),
+                    ctrl: input_state.ctrl(),
                 })),
             },
             WindowEvent::ReceivedCharacter(c) => Some(AppEvent::CharEvent(c)),
@@ -198,7 +235,7 @@ impl App {
             intercept_close_request: config.intercept_close_request,
             events: Rc::new(RefCell::new(Vec::new())),
             dropped_files: Vec::new(),
-            modifiers_state: ModifiersState::default(),
+            input_state: InputState::new(),
             fullscreen_resolution,
         }
     }
@@ -211,6 +248,11 @@ impl App {
             }
         }
         (0, 0)
+    }
+
+    pub fn viewport_size(&self) -> (u32, u32) {
+        let size = self.window.window().window().inner_size();
+        (size.width, size.height)
     }
 
     /// return the command line / URL parameters
@@ -278,14 +320,14 @@ impl App {
                     }
                 }
                 WindowEvent::ModifiersChanged(new_state) => {
-                    self.modifiers_state = *new_state;
+                    self.input_state.modifiers = *new_state;
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
                     // issue tracked in https://github.com/tomaka/winit/issues/41
                     // Right now we handle it manually.
                     if cfg!(target_os = "macos") {
                         if let Some(keycode) = input.virtual_keycode {
-                            if keycode == VirtualKeyCode::Q && self.modifiers_state.logo() {
+                            if keycode == VirtualKeyCode::Q && self.input_state.logo() {
                                 running = false;
                             }
                         }
@@ -300,7 +342,7 @@ impl App {
             _ => (),
         };
 
-        if let Some(app_event) = translate_event(event, &self.modifiers_state) {
+        if let Some(app_event) = translate_event(event, &mut self.input_state) {
             // println!("uni app event - {:?}", app_event);
             let mut ev = self.events.borrow_mut();
             if match app_event {

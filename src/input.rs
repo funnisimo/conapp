@@ -144,7 +144,7 @@ impl AppInput {
     }
 
     /// an event occurred
-    pub(crate) fn on_event(&mut self, event: &AppEvent) {
+    pub(crate) fn on_event(&mut self, event: &mut AppEvent) {
         // self.events.push(event.clone());
 
         match event {
@@ -165,18 +165,24 @@ impl AppInput {
                 // }
                 self.key_event = true;
             }
-            AppEvent::MousePos(ref pos) => {
+            AppEvent::MousePos(ref mut pos) => {
                 self.mpos = (
                     (pos.0 as f32 - self.mouse_offset.0) / self.screen_size.0,
                     (pos.1 as f32 - self.mouse_offset.1) / self.screen_size.1,
                 );
+                pos.0 = self.mpos.0;
+                pos.1 = self.mpos.1;
                 self.mouse_event = true;
             }
-            AppEvent::MouseDown(ref mouse) => {
+            AppEvent::MouseDown(ref mut mouse) => {
+                mouse.pos.0 = (mouse.pos.0 as f32 - self.mouse_offset.0) / self.screen_size.0;
+                mouse.pos.1 = (mouse.pos.1 as f32 - self.mouse_offset.1) / self.screen_size.1;
                 self.on_mouse_down(mouse.button);
                 self.mouse_event = true;
             }
-            AppEvent::MouseUp(ref mouse) => {
+            AppEvent::MouseUp(ref mut mouse) => {
+                mouse.pos.0 = (mouse.pos.0 as f32 - self.mouse_offset.0) / self.screen_size.0;
+                mouse.pos.1 = (mouse.pos.1 as f32 - self.mouse_offset.1) / self.screen_size.1;
                 self.on_mouse_up(mouse.button);
                 self.mouse_event = true;
             }
