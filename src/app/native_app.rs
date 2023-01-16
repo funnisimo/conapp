@@ -333,6 +333,7 @@ impl App {
     where
         F: 'static + FnMut(&mut Self) -> (),
     {
+        self.events.borrow_mut().push(AppEvent::Ready);
         let events_loop = self.events_loop.take().unwrap();
         events_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();

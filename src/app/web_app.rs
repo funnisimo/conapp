@@ -311,6 +311,8 @@ impl App {
     {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
+        self.events.borrow_mut().push(AppEvent::Ready);
+
         let mut app = self.clone();
         *g.borrow_mut() = Some(Closure::new(move || {
             callback(&mut app);

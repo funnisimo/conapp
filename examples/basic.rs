@@ -25,9 +25,10 @@ impl Screen for MainScreen {
                 VirtualKeyCode::Right => self.pos.0 = (self.pos.0 + 1).min(79),
                 VirtualKeyCode::Up => self.pos.1 = (self.pos.1 - 1).max(0),
                 VirtualKeyCode::Down => self.pos.1 = (self.pos.1 + 1).min(49),
-                _ => return ScreenResult::Quit,
+                VirtualKeyCode::Q => return ScreenResult::Quit,
+                _ => {}
             },
-            AppEvent::MouseDown(_) => return ScreenResult::Quit,
+            AppEvent::MouseDown(_) => {}
             _ => {}
         }
         ScreenResult::Continue
@@ -59,7 +60,7 @@ impl Screen for MainScreen {
         draw::colored(buffer).fg(RGBA::rgb(255, 255, 255)).print(
             10,
             14,
-            "Click the #[#F00]left mouse button#[] to #[#0FF]Quit#[] the app.",
+            "Press #[#F00]Q#[] to #[#0FF]Quit#[] the app.",
         );
 
         self.con.render(app);

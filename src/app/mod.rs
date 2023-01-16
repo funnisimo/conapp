@@ -183,6 +183,11 @@ pub enum AppEvent {
     FileDropped(String),
     /// window close button was pressed and [`AppConfig.intercept_close_request`] is true
     CloseRequested,
+
+    /// window and gl context are ready
+    Ready,
+    /// app is in background, window and gl invalid
+    Suspended,
 }
 
 // use uni_app::*;

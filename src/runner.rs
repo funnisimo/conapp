@@ -4,6 +4,8 @@ use crate::{console, App, AppBuilder, AppConfig, AppEvent, LoadingScreen, Screen
 use std::cell::RefCell;
 use std::rc::Rc;
 
+pub type ScreenCreateFn = dyn FnOnce(&mut AppContext) -> Box<dyn Screen>;
+
 /// What is returned by the internal update and input functions
 enum RunnerEvent {
     /// Save a screenshot. parameter = file path.
@@ -162,6 +164,7 @@ impl Runner {
                     return Some(RunnerEvent::Next);
                 }
                 ScreenResult::Quit => {
+                    console("Received Quit");
                     return Some(RunnerEvent::Exit);
                 }
             }
@@ -180,6 +183,12 @@ impl Runner {
                 self.resize(ctx, hidpi_factor, *size);
             } else {
                 if let Some(ev) = self.handle_event(ctx, evt) {
+                    match ev {
+                        RunnerEvent::Exit => {
+                            self.screens.clear(); // clear all screens on quit
+                        }
+                        _ => {}
+                    }
                     return Some(ev);
                 }
             }
@@ -191,15 +200,46 @@ impl Runner {
         self.run_with(Box::new(|_| screen))
     }
 
-    pub fn run_with(mut self, func: Box<dyn FnOnce(&mut AppContext) -> Box<dyn Screen>>) {
+    pub fn run_with(mut self, func: Box<ScreenCreateFn>) {
         // self.api.set_font_path(&self.options.font_path);
         let app = self.app.take().unwrap();
 
         let mut last_frame_time = crate::app::perf_now();
         let mut next_frame = last_frame_time;
 
-        let mut ctx = self.app_ctx.take().unwrap();
+        let mut create = Some(func);
+        self.ready = false;
+        crate::console(format!("Runner started"));
 
+        app.run(move |app: &mut crate::app::App| {
+            let mut ctx = self.app_ctx.take().unwrap();
+
+            match self.ready {
+                false => {
+                    for ev in app.events.borrow().iter() {
+                        match ev {
+                            AppEvent::Ready => {
+                                crate::console("Runner ready");
+                                if let Some(func) = create.take() {
+                                    self.do_startup_files(&mut ctx);
+                                    self.do_startup_screen(&mut ctx, func);
+                                }
+                                self.ready = true;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                true => {
+                    self.do_frame(&mut ctx, app, &mut last_frame_time, &mut next_frame);
+                }
+            }
+
+            self.app_ctx = Some(ctx);
+        });
+    }
+
+    fn do_startup_files(&mut self, ctx: &mut AppContext) {
         for font in self.builder.fonts.drain(..) {
             ctx.load_font(&font).expect("Failed to load font.");
         }
@@ -209,92 +249,95 @@ impl Runner {
         for (path, func) in self.builder.files.drain(..) {
             ctx.load_file(&path, func).expect("Failed to load file.");
         }
+    }
 
+    fn do_startup_screen(&mut self, ctx: &mut AppContext, func: Box<ScreenCreateFn>) {
         let mut screen = match ctx.has_files_to_load() {
-            false => func(&mut ctx),
+            false => func(ctx),
             true => {
                 console("Using loading screen");
                 LoadingScreen::new(func)
             }
         };
         // let mut screen = LoadingScreen::new(func);
-        screen.setup(&mut ctx);
+        screen.setup(ctx);
         self.screens.push(screen);
+    }
 
-        self.ready = true;
-        crate::console(format!("Runner ready"));
+    fn do_frame(
+        &mut self,
+        ctx: &mut AppContext,
+        app: &mut App,
+        last_frame_time: &mut f64,
+        next_frame: &mut f64,
+    ) {
+        ctx.load_files(); // Do any font/image loading necessary
 
-        app.run(move |app: &mut crate::app::App| {
-            ctx.load_files(); // Do any font/image loading necessary
+        if self.screens.is_empty() {
+            return crate::app::App::exit();
+        }
 
-            if self.screens.is_empty() {
-                return crate::app::App::exit();
+        if let Some(event) = self.handle_input(ctx, app.hidpi_factor(), app.events.clone()) {
+            match event {
+                RunnerEvent::Capture(filepath) => {
+                    capture_screen(
+                        &ctx.gl,
+                        self.real_screen_size.0,
+                        // self.screen_resolution.0 * app.hidpi_factor() as u32,
+                        self.real_screen_size.1,
+                        // self.screen_resolution.1 * app.hidpi_factor() as u32,
+                        &filepath,
+                    )
+                }
+                RunnerEvent::Exit => {
+                    console("App Exit");
+                    crate::app::App::exit();
+                }
+                RunnerEvent::Next => {}
             }
+        }
 
-            if let Some(event) = self.handle_input(&mut ctx, app.hidpi_factor(), app.events.clone())
-            {
+        let mut skipped_frames: i32 = -1;
+        let time = crate::app::perf_now();
+        let skip_ticks = match ctx.fps.goal() {
+            0 => time - *last_frame_time,
+            x => 1.0 / x as f64,
+        };
+
+        while time >= *last_frame_time && skipped_frames < self.max_frameskip {
+            // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
+            ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
+            if let Some(event) = self.update(ctx) {
                 match event {
-                    RunnerEvent::Capture(filepath) => {
-                        capture_screen(
-                            &ctx.gl,
-                            self.real_screen_size.0,
-                            // self.screen_resolution.0 * app.hidpi_factor() as u32,
-                            self.real_screen_size.1,
-                            // self.screen_resolution.1 * app.hidpi_factor() as u32,
-                            &filepath,
-                        )
-                    }
-                    RunnerEvent::Exit => {
-                        console("App Exit");
-                        crate::app::App::exit();
-                    }
+                    RunnerEvent::Capture(filepath) => capture_screen(
+                        &ctx.gl,
+                        self.real_screen_size.0,
+                        // self.screen_resolution.0 * app.hidpi_factor() as u32,
+                        self.real_screen_size.1,
+                        // self.screen_resolution.1 * app.hidpi_factor() as u32,
+                        &filepath,
+                    ),
+                    RunnerEvent::Exit => crate::app::App::exit(),
                     RunnerEvent::Next => {}
                 }
             }
+            *last_frame_time += skip_ticks;
+            // next_tick += SKIP_TICKS;
+            skipped_frames += 1;
+        }
+        ctx.input.on_frame_end();
+        if skipped_frames == self.max_frameskip {
+            // next_tick = time + SKIP_TICKS;
+            *last_frame_time = time + skip_ticks;
+        }
+        if ctx.fps.goal() == 0 || time >= *next_frame {
+            self.render(ctx);
+            ctx.fps.step();
 
-            let mut skipped_frames: i32 = -1;
-            let time = crate::app::perf_now();
-            let skip_ticks = match ctx.fps.goal() {
-                0 => time - last_frame_time,
-                x => 1.0 / x as f64,
-            };
-
-            while time >= last_frame_time && skipped_frames < self.max_frameskip {
-                // self.app_ctx.frame_time_ms = SKIP_TICKS as f32 * 1000.0; // TODO - Use real elapsed time?
-                ctx.frame_time_ms = skip_ticks * 1000.0; // TODO - Use real elapsed time?
-                if let Some(event) = self.update(&mut ctx) {
-                    match event {
-                        RunnerEvent::Capture(filepath) => capture_screen(
-                            &ctx.gl,
-                            self.real_screen_size.0,
-                            // self.screen_resolution.0 * app.hidpi_factor() as u32,
-                            self.real_screen_size.1,
-                            // self.screen_resolution.1 * app.hidpi_factor() as u32,
-                            &filepath,
-                        ),
-                        RunnerEvent::Exit => crate::app::App::exit(),
-                        RunnerEvent::Next => {}
-                    }
-                }
-                last_frame_time += skip_ticks;
-                // next_tick += SKIP_TICKS;
-                skipped_frames += 1;
+            if ctx.fps.goal() > 0 {
+                *next_frame += 1.0 / ctx.fps.goal() as f64;
             }
-            ctx.input.on_frame_end();
-            if skipped_frames == self.max_frameskip {
-                // next_tick = time + SKIP_TICKS;
-                last_frame_time = time + skip_ticks;
-            }
-            if ctx.fps.goal() == 0 || time >= next_frame {
-                self.render(&mut ctx);
-                ctx.fps.step();
-
-                if ctx.fps.goal() > 0 {
-                    next_frame += 1.0 / ctx.fps.goal() as f64;
-                }
-            }
-            // }
-        });
+        }
     }
 
     fn update(&mut self, ctx: &mut AppContext) -> Option<RunnerEvent> {
