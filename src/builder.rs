@@ -94,9 +94,25 @@ impl AppBuilder {
         self
     }
 
+    /// Loads a list of fonts on startup
+    pub fn fonts(mut self, font_paths: &[&str]) -> Self {
+        for font_path in font_paths {
+            self.fonts.push((*font_path).to_owned());
+        }
+        self
+    }
+
     /// Loads an image on startup
     pub fn image(mut self, image_path: &str) -> Self {
         self.images.push(image_path.to_owned());
+        self
+    }
+
+    /// Loads an image on startup
+    pub fn images(mut self, image_paths: &[&str]) -> Self {
+        for image_path in image_paths {
+            self.images.push((*image_path).to_owned());
+        }
         self
     }
 

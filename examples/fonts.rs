@@ -134,12 +134,10 @@ impl Screen for MyRoguelike {
 }
 
 fn main() {
-    let mut builder = AppBuilder::new(1024, 768).title("Input Example");
+    let app = AppBuilder::new(1024, 768)
+        .title("Input Example")
+        .fonts(&FONTS)
+        .build();
 
-    for font in FONTS.iter() {
-        builder = builder.font(font);
-    }
-
-    let app = builder.build();
     app.run_screen(MyRoguelike::new());
 }
