@@ -31,7 +31,6 @@ pub struct Runner {
     screens: Vec<Box<dyn Screen>>,
     screen_resolution: (u32, u32),
     real_screen_size: (u32, u32),
-    ready: bool,
 }
 
 impl Runner {
@@ -48,14 +47,13 @@ impl Runner {
         crate::console("Runner created");
 
         Self {
-            app_ctx: Some(create_ctx(&app, &options)),
+            app_ctx: None,
             app: Some(app),
             builder,
             max_frameskip: 5,
             screens: Vec::new(),
             screen_resolution,
             real_screen_size: (real_screen_width, real_screen_height),
-            ready: false,
         }
     }
 
@@ -208,34 +206,29 @@ impl Runner {
         let mut next_frame = last_frame_time;
 
         let mut create = Some(func);
-        self.ready = false;
         crate::console(format!("Runner started"));
 
-        app.run(move |app: &mut crate::app::App| {
-            let mut ctx = self.app_ctx.take().unwrap();
-
-            match self.ready {
-                false => {
-                    for ev in app.events.borrow().iter() {
-                        match ev {
-                            AppEvent::Ready => {
-                                crate::console("Runner ready");
-                                if let Some(func) = create.take() {
-                                    self.do_startup_files(&mut ctx);
-                                    self.do_startup_screen(&mut ctx, func);
-                                }
-                                self.ready = true;
+        app.run(move |app: &mut crate::app::App| match self.app_ctx.take() {
+            None => {
+                for ev in app.events.borrow().iter() {
+                    match ev {
+                        AppEvent::Ready => {
+                            crate::console("Runner ready");
+                            let mut ctx = create_ctx(&app, self.config());
+                            if let Some(func) = create.take() {
+                                self.do_startup_files(&mut ctx);
+                                self.do_startup_screen(&mut ctx, func);
                             }
-                            _ => {}
+                            self.app_ctx = Some(ctx);
                         }
+                        _ => {}
                     }
                 }
-                true => {
-                    self.do_frame(&mut ctx, app, &mut last_frame_time, &mut next_frame);
-                }
             }
-
-            self.app_ctx = Some(ctx);
+            Some(mut ctx) => {
+                self.do_frame(&mut ctx, app, &mut last_frame_time, &mut next_frame);
+                self.app_ctx = Some(ctx);
+            }
         });
     }
 
