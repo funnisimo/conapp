@@ -36,7 +36,7 @@ pub struct Runner {
 impl Runner {
     pub fn new(mut builder: AppBuilder) -> Self {
         let options = &mut builder.config;
-        options.headless = false;
+        // options.headless = false;
         let app = crate::app::App::new(options.clone());
 
         let real_screen_width = (options.size.0 as f32 * app.hidpi_factor()) as u32;

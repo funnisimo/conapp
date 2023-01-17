@@ -30,7 +30,7 @@ use winit::window::Fullscreen;
 use winit::window::WindowBuilder;
 
 enum WindowContext {
-    Headless(Context<PossiblyCurrent>),
+    // Headless(Context<PossiblyCurrent>),
     Normal(WindowedContext<PossiblyCurrent>),
 }
 
@@ -38,28 +38,28 @@ impl WindowContext {
     fn hidpi_factor(&self) -> f32 {
         match self {
             WindowContext::Normal(ref w) => w.window().scale_factor() as f32,
-            _ => 1.0,
+            // _ => 1.0,
         }
     }
 
     fn window(&self) -> &WindowedContext<PossiblyCurrent> {
         match self {
             WindowContext::Normal(ref w) => w,
-            _ => unimplemented!(),
+            // _ => unimplemented!(),
         }
     }
 
     fn context(&self) -> &Context<PossiblyCurrent> {
         match self {
             WindowContext::Normal(w) => w.context(),
-            WindowContext::Headless(w) => w,
+            // WindowContext::Headless(w) => w,
         }
     }
 
     fn swap_buffers(&self) -> Result<(), glutin::ContextError> {
         match self {
             WindowContext::Normal(ref w) => w.swap_buffers(),
-            WindowContext::Headless(_) => Ok(()),
+            // WindowContext::Headless(_) => Ok(()),
         }
     }
 }
@@ -196,38 +196,38 @@ impl App {
             .video_modes()
             .nth(0)
             .unwrap();
-        let window = if config.headless {
-            let headless_context = ContextBuilder::new()
-                .with_gl(gl_req)
-                .with_gl_profile(GlProfile::Core)
-                .build_headless(&events_loop, (config.size.0, config.size.1).into())
-                .unwrap();
+        // let window = if config.headless {
+        //     let headless_context = ContextBuilder::new()
+        //         .with_gl(gl_req)
+        //         .with_gl_profile(GlProfile::Core)
+        //         .build_headless(&events_loop, (config.size.0, config.size.1).into())
+        //         .unwrap();
 
-            WindowContext::Headless(unsafe { headless_context.make_current().unwrap() })
-        } else {
-            let window_builder = WindowBuilder::new()
-                .with_title(config.title)
-                .with_fullscreen(if config.fullscreen {
-                    Some(Fullscreen::Exclusive(fullscreen_resolution.clone()))
-                } else {
-                    None
-                })
-                .with_resizable(config.resizable)
-                .with_inner_size(LogicalSize::new(config.size.0, config.size.1));
+        //     WindowContext::Headless(unsafe { headless_context.make_current().unwrap() })
+        // } else {
+        let window_builder = WindowBuilder::new()
+            .with_title(config.title)
+            .with_fullscreen(if config.fullscreen {
+                Some(Fullscreen::Exclusive(fullscreen_resolution.clone()))
+            } else {
+                None
+            })
+            .with_resizable(config.resizable)
+            .with_inner_size(LogicalSize::new(config.size.0, config.size.1));
 
-            let windowed_context = ContextBuilder::new()
-                .with_vsync(config.vsync)
-                .with_gl(gl_req)
-                .with_gl_profile(GlProfile::Core)
-                .build_windowed(window_builder, &events_loop)
-                .unwrap();
+        let windowed_context = ContextBuilder::new()
+            .with_vsync(config.vsync)
+            .with_gl(gl_req)
+            .with_gl_profile(GlProfile::Core)
+            .build_windowed(window_builder, &events_loop)
+            .unwrap();
 
-            windowed_context
-                .window()
-                .set_cursor_visible(config.show_cursor);
+        windowed_context
+            .window()
+            .set_cursor_visible(config.show_cursor);
 
-            WindowContext::Normal(unsafe { windowed_context.make_current().unwrap() })
-        };
+        let window = WindowContext::Normal(unsafe { windowed_context.make_current().unwrap() });
+        // };
 
         App {
             window,
@@ -242,10 +242,9 @@ impl App {
 
     /// return the screen resolution in physical pixels
     pub fn screen_resolution(&self) -> (u32, u32) {
-        if let WindowContext::Normal(ref glwindow) = self.window {
-            if let Some(ref monitor) = glwindow.window().current_monitor() {
-                return monitor.size().into();
-            }
+        let WindowContext::Normal(ref glwindow) = self.window;
+        if let Some(ref monitor) = glwindow.window().current_monitor() {
+            return monitor.size().into();
         }
         (0, 0)
     }
@@ -264,14 +263,13 @@ impl App {
 
     /// activate or deactivate fullscreen. only works on native target
     pub fn set_fullscreen(&mut self, b: bool) {
-        if let WindowContext::Normal(ref glwindow) = self.window {
-            if b {
-                glwindow.window().set_fullscreen(Some(Fullscreen::Exclusive(
-                    self.fullscreen_resolution.clone(),
-                )));
-            } else {
-                glwindow.window().set_fullscreen(None);
-            }
+        let WindowContext::Normal(ref glwindow) = self.window;
+        if b {
+            glwindow.window().set_fullscreen(Some(Fullscreen::Exclusive(
+                self.fullscreen_resolution.clone(),
+            )));
+        } else {
+            glwindow.window().set_fullscreen(None);
         }
     }
 
