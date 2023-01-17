@@ -14,6 +14,12 @@ fn main() {
             // print on stdout (native) or js console (web)
             // exit on key or mouse press
             match evt {
+                &AppEvent::Ready => {
+                    console("Ready");
+                    console(&format!("screen size   = {:?}", app.screen_resolution()));
+                    console(&format!("viewport size = {:?}", app.viewport_size()));
+                    console(&format!("hidpi         = {:?}", app.hidpi_factor()));
+                }
                 &AppEvent::KeyUp(_) => {
                     App::exit();
                 }

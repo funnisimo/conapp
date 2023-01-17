@@ -36,7 +36,7 @@ pub struct Runner {
 impl Runner {
     pub fn new(mut builder: AppBuilder) -> Self {
         let options = &mut builder.config;
-        options.headless = false;
+        // options.headless = false;
         let app = crate::app::App::new(options.clone());
 
         let real_screen_width = (options.size.0 as f32 * app.hidpi_factor()) as u32;
@@ -420,19 +420,19 @@ fn create_ctx(app: &App, options: &AppConfig) -> AppContext {
         uni_gl::BlendMode::OneMinusSrcAlpha,
     );
 
-    let input = if cfg!(target_arch = "wasm32") {
-        AppInput::new(
-            (options.size.0, options.size.1),
-            // (options.console_width, options.console_height),
-            (x_offset as u32, y_offset as u32),
-        )
-    } else {
-        AppInput::new(
-            (real_screen_width, real_screen_height),
-            // (options.console_width, options.console_height),
-            (x_offset as u32, y_offset as u32),
-        )
-    };
+    // let input = if cfg!(target_arch = "wasm32") {
+    let input = AppInput::new(
+        (options.size.0, options.size.1),
+        // (options.console_width, options.console_height),
+        (x_offset as u32, y_offset as u32),
+    );
+    // } else {
+    //     AppInput::new(
+    //         (real_screen_width, real_screen_height),
+    //         // (options.console_width, options.console_height),
+    //         (x_offset as u32, y_offset as u32),
+    //     )
+    // };
 
     AppContext::new(gl, options.size.clone(), input, options.fps)
 }

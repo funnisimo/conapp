@@ -46,11 +46,11 @@ impl AppBuilder {
         self
     }
 
-    /// Makes the application run headless
-    pub fn headless(mut self, val: bool) -> Self {
-        self.config.headless = val;
-        self
-    }
+    // /// Makes the application run headless
+    // pub fn headless(mut self, val: bool) -> Self {
+    //     self.config.headless = val;
+    //     self
+    // }
 
     /// Run fullscreen?
     pub fn fullscreen(mut self, val: bool) -> Self {

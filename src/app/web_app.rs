@@ -45,10 +45,6 @@ fn request_full_screen(canvas: &HtmlCanvasElement) {
 
 impl App {
     pub fn new(config: AppConfig) -> App {
-        if config.headless {
-            // Right now we did not support headless in web.
-            unimplemented!();
-        }
         let window = web_sys::window().expect("no global `window` exists");
         let document = window.document().expect("should have a document on window");
         let canvas_element = document.create_element("canvas").unwrap();

@@ -38,8 +38,8 @@ pub struct AppConfig {
     pub size: (u32, u32),
     /// sync frames with screen frequency (can only be disabled on native target)
     pub vsync: bool,
-    /// start the program without actually creating a window, for test purposes
-    pub headless: bool,
+    // /// start the program without actually creating a window, for test purposes
+    // pub headless: bool,
     /// start in full screen (native target only)
     pub fullscreen: bool,
     /// whether user can resize the window (native target only)
@@ -67,7 +67,7 @@ impl Default for AppConfig {
             size: (50, 30),
             fps: 60,
             vsync: true,
-            headless: false,
+            // headless: false,
             fullscreen: false,
             resizable: true,
             show_cursor: true,
