@@ -78,6 +78,12 @@ impl From<&str> for MsgData {
     }
 }
 
+impl From<String> for MsgData {
+    fn from(v: String) -> Self {
+        MsgData::Text(v)
+    }
+}
+
 impl From<bool> for MsgData {
     fn from(v: bool) -> Self {
         MsgData::Boolean(v)
@@ -161,12 +167,7 @@ pub trait Screen {
     fn resume(&mut self, app: &mut AppContext) {}
 
     /// called when a message is sent via app.send_message(...)
-    fn message(
-        &mut self,
-        app: &mut AppContext,
-        id: String,
-        value: Option<MsgData>,
-    ) -> ScreenResult {
+    fn message(&mut self, app: &mut AppContext, id: String, data: Option<MsgData>) -> ScreenResult {
         ScreenResult::Continue
     }
 

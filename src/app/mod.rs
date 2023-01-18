@@ -79,6 +79,7 @@ impl Default for AppConfig {
 /// keyboard and mouse events
 pub mod events {
     use std::fmt;
+    use std::hash::{Hash, Hasher};
 
     pub use winit::event::VirtualKeyCode;
 
@@ -90,7 +91,7 @@ pub mod events {
         pub pos: (f32, f32),
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Eq)]
     /// data associated with a key press or release event
     /// Possible values for the scancode/virtual key code can be found in unrust/uni-app's `translate_scan_code`
     /// [function](https://github.com/unrust/uni-app/blob/41246b070567e3267f128fff41ededf708149d60/src/native_keycode.rs#L160).
@@ -115,75 +116,86 @@ pub mod events {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(
                 f,
-                "{} {} {} {} {}",
-                if self.shift { "shift" } else { "" },
-                if self.ctrl { "ctrl" } else { "" },
-                if self.alt { "alt" } else { "" },
+                "{}{}{}{}({})",
+                if self.shift { "shift+" } else { "" },
+                if self.ctrl { "ctrl+" } else { "" },
+                if self.alt { "alt+" } else { "" },
                 self.code,
                 self.key,
             )
         }
     }
-}
 
-impl From<VirtualKeyCode> for KeyEvent {
-    fn from(vkc: VirtualKeyCode) -> Self {
-        KeyEvent {
-            code: translate_virtual_key(vkc).to_owned(),
-            key: translate_virtual_key(vkc).to_owned(),
-            key_code: vkc,
-            shift: false,
-            ctrl: false,
-            alt: false,
+    use super::translate_virtual_key;
+
+    impl From<VirtualKeyCode> for KeyEvent {
+        fn from(vkc: VirtualKeyCode) -> Self {
+            KeyEvent {
+                code: translate_virtual_key(vkc).to_owned(),
+                key: translate_virtual_key(vkc).to_owned(),
+                key_code: vkc,
+                shift: false,
+                ctrl: false,
+                alt: false,
+            }
         }
     }
-}
 
-impl From<(VirtualKeyCode, bool)> for KeyEvent {
-    fn from((vkc, shift): (VirtualKeyCode, bool)) -> Self {
-        KeyEvent {
-            code: translate_virtual_key(vkc).to_owned(),
-            key: translate_virtual_key(vkc).to_owned(),
-            key_code: vkc,
-            shift,
-            ctrl: false,
-            alt: false,
+    impl From<(VirtualKeyCode, bool)> for KeyEvent {
+        fn from((vkc, shift): (VirtualKeyCode, bool)) -> Self {
+            KeyEvent {
+                code: translate_virtual_key(vkc).to_owned(),
+                key: translate_virtual_key(vkc).to_owned(),
+                key_code: vkc,
+                shift,
+                ctrl: false,
+                alt: false,
+            }
         }
     }
-}
 
-impl From<(VirtualKeyCode, bool, bool)> for KeyEvent {
-    fn from((vkc, shift, ctrl): (VirtualKeyCode, bool, bool)) -> Self {
-        KeyEvent {
-            code: translate_virtual_key(vkc).to_owned(),
-            key: translate_virtual_key(vkc).to_owned(),
-            key_code: vkc,
-            shift,
-            ctrl,
-            alt: false,
+    impl From<(VirtualKeyCode, bool, bool)> for KeyEvent {
+        fn from((vkc, shift, ctrl): (VirtualKeyCode, bool, bool)) -> Self {
+            KeyEvent {
+                code: translate_virtual_key(vkc).to_owned(),
+                key: translate_virtual_key(vkc).to_owned(),
+                key_code: vkc,
+                shift,
+                ctrl,
+                alt: false,
+            }
         }
     }
-}
 
-impl From<(VirtualKeyCode, bool, bool, bool)> for KeyEvent {
-    fn from((vkc, shift, ctrl, alt): (VirtualKeyCode, bool, bool, bool)) -> Self {
-        KeyEvent {
-            code: translate_virtual_key(vkc).to_owned(),
-            key: translate_virtual_key(vkc).to_owned(),
-            key_code: vkc,
-            shift,
-            ctrl,
-            alt,
+    impl From<(VirtualKeyCode, bool, bool, bool)> for KeyEvent {
+        fn from((vkc, shift, ctrl, alt): (VirtualKeyCode, bool, bool, bool)) -> Self {
+            KeyEvent {
+                code: translate_virtual_key(vkc).to_owned(),
+                key: translate_virtual_key(vkc).to_owned(),
+                key_code: vkc,
+                shift,
+                ctrl,
+                alt,
+            }
         }
     }
-}
 
-impl PartialEq for KeyEvent {
-    fn eq(&self, other: &Self) -> bool {
-        self.key_code == other.key_code
-            && self.shift == other.shift
-            && self.ctrl == other.ctrl
-            && self.alt == other.alt
+    impl PartialEq for KeyEvent {
+        fn eq(&self, other: &Self) -> bool {
+            self.key_code == other.key_code
+                && self.shift == other.shift
+                && self.ctrl == other.ctrl
+                && self.alt == other.alt
+        }
+    }
+
+    impl Hash for KeyEvent {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.key_code.hash(state);
+            self.shift.hash(state);
+            self.ctrl.hash(state);
+            self.alt.hash(state);
+        }
     }
 }
 
