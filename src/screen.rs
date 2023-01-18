@@ -2,6 +2,88 @@ use super::AppContext;
 use crate::AppEvent;
 use std::fmt::Debug;
 
+/// The result of an evaluation.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MsgData {
+    Number(i32),
+    Float(f32),
+    Text(String),
+    Boolean(bool),
+    List(Vec<MsgData>),
+    Error,
+}
+
+impl MsgData {
+    pub fn as_float(&self) -> Result<f32, ()> {
+        match self {
+            MsgData::Number(v) => Ok(*v as f32),
+            MsgData::Float(v) => Ok(*v),
+            MsgData::Text(v) => match v.parse::<f32>() {
+                Err(_) => Err(()),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1.0),
+                false => Ok(0.0),
+            },
+            // Value::Blank => Ok(0.0),
+            _ => Err(()),
+        }
+    }
+
+    pub fn as_string(&self) -> Result<String, ()> {
+        match self {
+            MsgData::Number(v) => Ok(format!("{}", v)),
+            MsgData::Float(v) => Ok(format!("{}", v)),
+            MsgData::Text(v) => Ok(v.clone()),
+            MsgData::Boolean(v) => match v {
+                true => Ok("1.0".to_owned()),
+                false => Ok("0.0".to_owned()),
+            },
+            // Value::Blank => Ok("".to_owned()),
+            _ => Err(()),
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool, ()> {
+        match self {
+            MsgData::Number(v) => Ok(*v != 0),
+            MsgData::Float(v) => Ok(*v != 0.0),
+            MsgData::Text(v) => Ok(v.len() > 0),
+            MsgData::Boolean(v) => match v {
+                true => Ok(true),
+                false => Ok(false),
+            },
+            // Value::Blank => Ok(false),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<i32> for MsgData {
+    fn from(v: i32) -> Self {
+        MsgData::Number(v)
+    }
+}
+
+impl From<f32> for MsgData {
+    fn from(v: f32) -> Self {
+        MsgData::Float(v)
+    }
+}
+
+impl From<&str> for MsgData {
+    fn from(v: &str) -> Self {
+        MsgData::Text(v.to_owned())
+    }
+}
+
+impl From<bool> for MsgData {
+    fn from(v: bool) -> Self {
+        MsgData::Boolean(v)
+    }
+}
+
 /// The result from a call to one of the [`Screen`] event functions
 pub enum ScreenResult {
     /// Continue to process the frame
@@ -77,6 +159,16 @@ pub trait Screen {
 
     /// Called when this screen becomes the topmost screen
     fn resume(&mut self, app: &mut AppContext) {}
+
+    /// called when a message is sent via app.send_message(...)
+    fn message(
+        &mut self,
+        app: &mut AppContext,
+        id: String,
+        value: Option<MsgData>,
+    ) -> ScreenResult {
+        ScreenResult::Continue
+    }
 
     /// Called once for each input event that occurred in this frame
     fn input(&mut self, app: &mut AppContext, event: &AppEvent) -> ScreenResult {

@@ -14,8 +14,7 @@ mod screen;
 mod simple;
 
 pub use app::{
-    now, perf_now, App, AppConfig, AppEvent, KeyDownEvent, KeyUpEvent, MouseButtonEvent,
-    VirtualKeyCode,
+    now, perf_now, App, AppConfig, AppEvent, KeyEvent, MouseButtonEvent, VirtualKeyCode,
 };
 pub use builder::*;
 pub use context::*;

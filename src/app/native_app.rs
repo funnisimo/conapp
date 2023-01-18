@@ -1,7 +1,8 @@
 mod native_keycode;
 
-use self::native_keycode::{translate_scan_code, translate_virtual_key};
+use self::native_keycode::translate_scan_code;
 use super::events;
+use super::translate_virtual_key;
 use super::AppConfig;
 use super::AppEvent;
 use super::{File, FileSystem};
@@ -150,7 +151,7 @@ fn translate_event(e: Event<()>, input_state: &mut InputState) -> Option<AppEven
                 Some(AppEvent::MousePos(input_state.mouse_pos))
             }
             WindowEvent::KeyboardInput { input, .. } => match input.state {
-                ElementState::Pressed => Some(AppEvent::KeyDown(events::KeyDownEvent {
+                ElementState::Pressed => Some(AppEvent::KeyDown(events::KeyEvent {
                     key: get_virtual_key(input),
                     code: get_scan_code(input),
                     key_code: input.virtual_keycode.unwrap(),
@@ -158,7 +159,7 @@ fn translate_event(e: Event<()>, input_state: &mut InputState) -> Option<AppEven
                     alt: input_state.alt(),
                     ctrl: input_state.ctrl(),
                 })),
-                ElementState::Released => Some(AppEvent::KeyUp(events::KeyUpEvent {
+                ElementState::Released => Some(AppEvent::KeyUp(events::KeyEvent {
                     key: get_virtual_key(input),
                     code: get_scan_code(input),
                     key_code: input.virtual_keycode.unwrap(),

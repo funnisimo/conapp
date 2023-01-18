@@ -27,6 +27,21 @@ impl MyRoguelike {
 }
 
 impl Screen for MyRoguelike {
+    fn message(
+        &mut self,
+        _app: &mut AppContext,
+        _id: String,
+        value: Option<MsgData>,
+    ) -> ScreenResult {
+        match value {
+            Some(MsgData::Boolean(true)) => {
+                console("You chose to quit.");
+                ScreenResult::Quit
+            }
+            _ => ScreenResult::Continue,
+        }
+    }
+
     fn update(&mut self, app: &mut AppContext, _ms: f64) -> ScreenResult {
         if app.input().key(VirtualKeyCode::Escape) || app.input().close_requested() {
             ScreenResult::Push(Popup::new())
@@ -72,11 +87,17 @@ impl Screen for Popup {
         false
     }
 
-    fn input(&mut self, _ctx: &mut AppContext, ev: &AppEvent) -> ScreenResult {
+    fn input(&mut self, app: &mut AppContext, ev: &AppEvent) -> ScreenResult {
         match ev {
             AppEvent::KeyDown(key_down) => match key_down.key_code {
-                VirtualKeyCode::Y => ScreenResult::Quit,
-                VirtualKeyCode::N => ScreenResult::Pop,
+                VirtualKeyCode::Y => {
+                    app.send_message("QUIT", Some(true.into()));
+                    ScreenResult::Pop
+                }
+                VirtualKeyCode::N => {
+                    app.send_message("QUIT", Some(false.into()));
+                    ScreenResult::Pop
+                }
                 _ => ScreenResult::Continue,
             },
             AppEvent::CloseRequested => ScreenResult::Quit,

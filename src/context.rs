@@ -1,9 +1,9 @@
 use super::input::AppInput;
 use super::Font;
 use crate::app::File;
-use crate::console;
 use crate::font::parse_char_size;
 use crate::simple::Program;
+use crate::{console, MsgData};
 use crate::{Image, RGBA};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -58,6 +58,7 @@ pub struct AppContext {
     // pub resources: Resources,
     // #[cfg(feature = "ecs")]
     // pub world: World,
+    pub(crate) messages: Option<Vec<(String, Option<MsgData>)>>,
 }
 
 impl AppContext {
@@ -83,6 +84,7 @@ impl AppContext {
             // resources: Resources::default(),
             // #[cfg(feature = "ecs")]
             // world: World::default(),
+            messages: Some(Vec::new()),
         };
 
         let sub_cell_font = Rc::new(Font::new(&ctx.gl, SUBCELL_BYTES, (4, 4)));
@@ -256,6 +258,12 @@ impl AppContext {
         match self.images.get(name) {
             None => None,
             Some(image) => Some(image.clone()),
+        }
+    }
+
+    pub fn send_message(&mut self, id: &str, value: Option<MsgData>) {
+        if let Some(ref mut messages) = self.messages {
+            messages.push((id.to_owned(), value));
         }
     }
 }

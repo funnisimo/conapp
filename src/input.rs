@@ -1,4 +1,4 @@
-use crate::app::{AppEvent, KeyDownEvent, KeyUpEvent, VirtualKeyCode};
+use crate::app::{AppEvent, KeyEvent, VirtualKeyCode};
 use std::collections::HashMap;
 // use std::iter::Filter;
 
@@ -102,7 +102,7 @@ impl AppInput {
     }
 
     /// handle a key down event
-    fn on_key_down(&mut self, key: &KeyDownEvent) {
+    fn on_key_down(&mut self, key: &KeyEvent) {
         if !self.key(key.key_code) {
             self.kpressed.insert(key.key_code, true);
             self.kdown.insert(key.key_code, true);
@@ -110,7 +110,7 @@ impl AppInput {
     }
 
     /// handle a key up event
-    fn on_key_up(&mut self, key: &KeyUpEvent) {
+    fn on_key_up(&mut self, key: &KeyEvent) {
         self.kpressed.insert(key.key_code, false);
         self.kdown.insert(key.key_code, false);
         self.kreleased.insert(key.key_code, true);

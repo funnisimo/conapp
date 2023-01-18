@@ -33,7 +33,7 @@ impl Screen for MyRoguelike {
                     println!("Unprintable character - {} ({})", ch, *ch as u32);
                 }
             }
-            AppEvent::KeyDown(KeyDownEvent {
+            AppEvent::KeyDown(KeyEvent {
                 key_code: VirtualKeyCode::Back,
                 ..
             }) => {

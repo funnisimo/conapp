@@ -170,6 +170,48 @@ impl Runner {
         None
     }
 
+    fn handle_messages(&mut self, ctx: &mut AppContext) -> Option<RunnerEvent> {
+        let messages = ctx.messages.replace(Vec::new()).unwrap();
+        for (id, val) in messages {
+            if let Some(screen) = self.screens.last_mut() {
+                match screen.message(ctx, id, val) {
+                    ScreenResult::Capture(name) => return Some(RunnerEvent::Capture(name)),
+                    ScreenResult::Pop => {
+                        ctx.clear(None);
+                        screen.teardown(ctx);
+                        self.screens.pop();
+                        match self.screens.last_mut() {
+                            Some(m) => m.resume(ctx),
+                            _ => {}
+                        }
+                        // self.render(ctx);
+                        return Some(RunnerEvent::Next);
+                    }
+                    ScreenResult::Replace(next) => {
+                        ctx.clear(None);
+                        screen.teardown(ctx);
+                        self.screens.pop();
+                        self.push(ctx, next);
+                        // self.render(ctx);
+                        return Some(RunnerEvent::Next);
+                    }
+                    ScreenResult::Push(next) => {
+                        screen.pause(ctx);
+                        self.push(ctx, next);
+                        // self.render(ctx);
+                        return Some(RunnerEvent::Next);
+                    }
+                    ScreenResult::Quit => {
+                        console("Received Quit");
+                        return Some(RunnerEvent::Exit);
+                    }
+                    ScreenResult::Continue => {}
+                }
+            }
+        }
+        None
+    }
+
     fn handle_input(
         &mut self,
         ctx: &mut AppContext,
@@ -280,11 +322,33 @@ impl Runner {
                         self.real_screen_size.1,
                         // self.screen_resolution.1 * app.hidpi_factor() as u32,
                         &filepath,
-                    )
+                    );
+                    return;
                 }
                 RunnerEvent::Exit => {
                     console("App Exit");
-                    crate::app::App::exit();
+                    return crate::app::App::exit();
+                }
+                RunnerEvent::Next => {}
+            }
+        }
+
+        if let Some(event) = self.handle_messages(ctx) {
+            match event {
+                RunnerEvent::Capture(filepath) => {
+                    capture_screen(
+                        &ctx.gl,
+                        self.real_screen_size.0,
+                        // self.screen_resolution.0 * app.hidpi_factor() as u32,
+                        self.real_screen_size.1,
+                        // self.screen_resolution.1 * app.hidpi_factor() as u32,
+                        &filepath,
+                    );
+                    return;
+                }
+                RunnerEvent::Exit => {
+                    console("App Exit");
+                    return crate::app::App::exit();
                 }
                 RunnerEvent::Next => {}
             }
@@ -310,7 +374,7 @@ impl Runner {
                         // self.screen_resolution.1 * app.hidpi_factor() as u32,
                         &filepath,
                     ),
-                    RunnerEvent::Exit => crate::app::App::exit(),
+                    RunnerEvent::Exit => return crate::app::App::exit(),
                     RunnerEvent::Next => {}
                 }
             }
