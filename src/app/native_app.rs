@@ -1,5 +1,7 @@
 mod native_keycode;
 
+use crate::console;
+
 use self::native_keycode::translate_scan_code;
 use super::events;
 use super::translate_virtual_key;
@@ -16,6 +18,7 @@ use std::os::raw::c_void;
 use std::process;
 use std::rc::Rc;
 use std::time::Duration;
+use std::time::Instant;
 use std::time::{SystemTime, UNIX_EPOCH};
 use winit::dpi::LogicalSize;
 use winit::event::ElementState;
@@ -68,6 +71,7 @@ impl WindowContext {
 struct InputState {
     modifiers: ModifiersState,
     mouse_pos: (f32, f32),
+    had_mouse_move: bool,
 }
 
 impl InputState {
@@ -75,6 +79,7 @@ impl InputState {
         InputState {
             modifiers: ModifiersState::empty(),
             mouse_pos: (0.0, 0.0),
+            had_mouse_move: false,
         }
     }
 
@@ -105,6 +110,7 @@ pub struct App {
     pub events: Rc<RefCell<Vec<AppEvent>>>,
     dropped_files: Vec<File>,
     fullscreen_resolution: VideoMode,
+    fps: u32,
 }
 
 fn get_virtual_key(input: KeyboardInput) -> String {
@@ -148,7 +154,9 @@ fn translate_event(e: Event<()>, input_state: &mut InputState) -> Option<AppEven
             }
             WindowEvent::CursorMoved { position, .. } => {
                 input_state.mouse_pos = position.into();
-                Some(AppEvent::MousePos(input_state.mouse_pos))
+                // Some(AppEvent::MousePos(input_state.mouse_pos))
+                input_state.had_mouse_move = true;
+                None
             }
             WindowEvent::KeyboardInput { input, .. } => match input.state {
                 ElementState::Pressed => Some(AppEvent::KeyDown(events::KeyEvent {
@@ -238,6 +246,7 @@ impl App {
             dropped_files: Vec::new(),
             input_state: InputState::new(),
             fullscreen_resolution,
+            fps: config.fps,
         }
     }
 
@@ -375,18 +384,41 @@ impl App {
         F: 'static + FnMut(&mut Self) -> (),
     {
         self.events.borrow_mut().push(AppEvent::Ready);
+
+        let frame_ms = if self.fps > 0 {
+            console(format!("Running at {} fps", self.fps));
+            Duration::from_millis(1000 / self.fps as u64)
+        } else {
+            console(format!("Fps limit not set, using 1000"));
+            Duration::from_millis(1)
+        };
+        let mut next_frame_time = Instant::now() + frame_ms;
+
         let events_loop = self.events_loop.take().unwrap();
         events_loop.run(move |event, _, control_flow| {
-            control_flow.set_poll();
+            // control_flow.set_poll();
+
             let (running, next_frame) = self.handle_event(event);
             if !running {
                 control_flow.set_exit();
+                return;
             }
+
             if next_frame {
+                next_frame_time = next_frame_time + frame_ms;
+                //do mouse pos event
+                if self.input_state.had_mouse_move {
+                    self.events
+                        .borrow_mut()
+                        .push(AppEvent::MousePos(self.input_state.mouse_pos));
+                    self.input_state.had_mouse_move = false;
+                }
+
                 callback(&mut self);
                 self.events.borrow_mut().clear();
                 self.window.swap_buffers().unwrap();
             }
+            control_flow.set_wait_until(next_frame_time);
         });
     }
 }

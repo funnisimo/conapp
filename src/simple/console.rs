@@ -37,6 +37,10 @@ impl Console {
         self
     }
 
+    pub fn extents(&self) -> &(f32, f32, f32, f32) {
+        &self.extents
+    }
+
     pub fn is_full_screen(&self) -> bool {
         self.extents.0 == 0.0
             && self.extents.1 == 0.0
@@ -163,6 +167,18 @@ impl Console {
             (cell_pct.0) * self.buffer.width() as f32,
             (cell_pct.1) * self.buffer.height() as f32,
         ))
+    }
+}
+
+impl From<(u32, u32)> for Console {
+    fn from(size: (u32, u32)) -> Self {
+        Console::new(size.0, size.1, "DEFAULT")
+    }
+}
+
+impl From<(u32, u32, &str)> for Console {
+    fn from(config: (u32, u32, &str)) -> Self {
+        Console::new(config.0, config.1, config.2)
     }
 }
 

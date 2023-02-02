@@ -1,4 +1,5 @@
 use crate::simple::{Buffer, Glyph};
+use crate::text::{wrap_plain, RefLine};
 use crate::RGBA;
 use std::cmp::{max, min};
 
@@ -20,6 +21,7 @@ pub fn text<'a>(buffer: &'a mut Buffer) -> PlainPrinter {
 pub struct PlainPrinter<'a> {
     buffer: &'a mut Buffer,
     width: Option<i32>,
+    height: Option<i32>,
     align: TextAlign,
     fg: Option<RGBA>,
     bg: Option<RGBA>,
@@ -31,6 +33,7 @@ impl<'a> PlainPrinter<'a> {
         PlainPrinter {
             buffer,
             width: None,
+            height: None,
             align: TextAlign::Left,
             fg: Some(RGBA::rgb(255, 255, 255)),
             bg: None,
@@ -40,6 +43,11 @@ impl<'a> PlainPrinter<'a> {
 
     pub fn width(mut self, width: i32) -> Self {
         self.width = Some(width);
+        self
+    }
+
+    pub fn height(mut self, height: i32) -> Self {
+        self.height = Some(height);
         self
     }
 
@@ -85,7 +93,17 @@ impl<'a> PlainPrinter<'a> {
             width = self.buffer.width() as i32 - ix;
         }
 
-        self.print_part(ix, y, start as usize, width as usize, text)
+        let w = self.print_part(ix, y, start as usize, width as usize, text);
+
+        if let Some(height) = self.height {
+            for y1 in 1..height {
+                for x1 in 0..w {
+                    self.buffer
+                        .draw_opt(ix + x1, y + y1, Some(0), self.fg, self.bg);
+                }
+            }
+        }
+        w
     }
 
     fn print_part(&mut self, x: i32, y: i32, start: usize, count: usize, text: &str) -> i32 {
@@ -104,9 +122,13 @@ impl<'a> PlainPrinter<'a> {
     }
 
     pub fn print_lines(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
+        let max_height = self.height.unwrap_or(999) as usize;
         let mut width = 0;
         let mut height = 0;
-        for line in text.split('\n') {
+        for (i, line) in text.split('\n').enumerate() {
+            if i >= max_height {
+                break;
+            }
             let w = self.print(x, y + height, line);
             width = max(width, w);
             height += 1;
@@ -116,12 +138,16 @@ impl<'a> PlainPrinter<'a> {
 
     pub fn wrap(&mut self, x: i32, y: i32, text: &str) -> (i32, i32) {
         let width = self.width.unwrap_or(self.buffer.width() as i32 - x);
+        let max_height = self.height.unwrap_or(999) as usize;
 
         let mut widest = 0;
 
         let mut cy = y;
-        for line in wrap(width as usize, text) {
-            let w = line.print(self, x, cy);
+        for (i, line) in wrap_plain(width as usize, text).iter().enumerate() {
+            if i >= max_height {
+                break;
+            }
+            let w = self.print_line(x, cy, &line);
             widest = max(widest, w);
             cy += 1;
         }
@@ -282,66 +308,13 @@ impl<'a> PlainPrinter<'a> {
 
         // (widest, cy - y + 1)
     }
-}
 
-struct Line<'a>(&'a str, bool);
-
-impl<'a> Line<'a> {
-    pub fn new(t: &'a str) -> Self {
-        Line(t, false)
-    }
-
-    // pub fn len(&self) -> usize {
-    //     self.0.chars().count() + if self.1 { 1 } else { 0 }
-    // }
-
-    pub fn with_hyphen(mut self) -> Self {
-        self.1 = true;
-        self
-    }
-
-    pub fn char_len(&self) -> usize {
-        self.0.chars().count() + if self.1 { 1 } else { 0 }
-    }
-
-    pub fn last_break_before(&self, char_idx: usize) -> Option<usize> {
-        let idx = self.0.char_indices().nth(char_idx).map(|(i, _)| i).unwrap();
-        match self.0[..idx].rmatch_indices(' ').next() {
-            None => None,
-            Some((idx, _)) => Some(idx),
-        }
-    }
-
-    pub fn first_word(&self) -> Self {
-        match self.0.find(" ") {
-            None => Line::new(self.0),
-            Some(idx) => Line::new(&self.0[..idx]),
-        }
-    }
-
-    // pub fn left(&self, len: usize) -> Self {
-    //     Line::new(&self.0[..len])
-    // }
-
-    pub fn hyphenate_at_char(&self, char_idx: usize) -> (Self, Self) {
-        let idx = self.0.char_indices().nth(char_idx).map(|(i, _)| i).unwrap();
-        (
-            Line::new(&self.0[..idx]).with_hyphen(),
-            Line::new(&self.0[idx..]),
-        )
-    }
-
-    pub fn split_at_space(&self, char_idx: usize) -> (Self, Self) {
-        let idx = self.0.char_indices().nth(char_idx).map(|(i, _)| i).unwrap();
-        (Line::new(&self.0[..idx]), Line::new(&self.0[idx + 1..]))
-    }
-
-    pub fn print(&self, printer: &mut PlainPrinter, x: i32, y: i32) -> i32 {
-        let width = printer.width.unwrap_or(self.char_len() as i32);
-        let self_len = min(width, self.char_len() as i32);
+    fn print_line(&mut self, x: i32, y: i32, line: &RefLine) -> i32 {
+        let width = self.width.unwrap_or(line.char_len() as i32);
+        let self_len = min(width, line.char_len() as i32);
         let spaces = width.saturating_sub(self_len);
 
-        let (x, pre, post) = match printer.align {
+        let (x, pre, post) = match self.align {
             TextAlign::Left => (x, 0, spaces),
             TextAlign::Center => {
                 let half = spaces / 2;
@@ -351,29 +324,29 @@ impl<'a> Line<'a> {
         };
 
         let mut cx = x;
-        let fg = printer.fg;
-        let bg = printer.bg;
+        let fg = self.fg;
+        let bg = self.bg;
 
         // let mut output = "[".to_string();
         for _ in 0..pre {
-            printer.buffer.draw_opt(cx, y, Some(0), fg, bg);
+            self.buffer.draw_opt(cx, y, Some(0), fg, bg);
             cx += 1;
         }
 
         // output += self.0;
-        for char in self.0.chars() {
-            let glyph = (printer.to_glyph)(char);
-            printer.buffer.draw_opt(cx, y, Some(glyph), fg, bg);
+        for char in line.as_str().chars() {
+            let glyph = (self.to_glyph)(char);
+            self.buffer.draw_opt(cx, y, Some(glyph), fg, bg);
             cx += 1;
         }
 
-        if self.1 {
-            printer.buffer.draw_opt(cx, y, Some('-' as u32), fg, bg);
+        if line.has_hyphen() {
+            self.buffer.draw_opt(cx, y, Some('-' as u32), fg, bg);
             cx += 1;
         }
 
         for _ in 0..post {
-            printer.buffer.draw_opt(cx, y, Some(0), fg, bg);
+            self.buffer.draw_opt(cx, y, Some(0), fg, bg);
             cx += 1;
         }
 
@@ -382,68 +355,6 @@ impl<'a> Line<'a> {
         // println!("{} [{}]", output, output.len() - 2);
         width
     }
-}
-
-fn wrap<'a>(limit: usize, text: &'a str) -> Vec<Line<'a>> {
-    println!("--------------------------------------");
-    println!("WRAP - {}: '{}'", limit, text);
-
-    let mut output: Vec<Line<'a>> = Vec::new();
-
-    for line in text.split('\n') {
-        let mut current = Line::new(line);
-        let mut i = 0;
-
-        while current.char_len() > limit {
-            i += 1;
-            if i > 10 {
-                break;
-            }
-
-            match current.last_break_before(limit + 1) {
-                None => {
-                    let first_word = current.first_word();
-                    let first_word_len = first_word.char_len();
-
-                    println!("too long - {}", first_word.0);
-
-                    let keep_len = min(limit - 1, first_word_len - 2);
-                    let (left, right) = current.hyphenate_at_char(keep_len);
-                    output.push(left);
-                    current = right;
-                }
-                Some(break_index) => {
-                    let (mut left, mut right) = current.split_at_space(break_index);
-                    let left_len = left.char_len();
-                    let line_left = limit.saturating_sub(left_len).saturating_sub(1);
-
-                    println!(
-                        " - left={}, line_left={}, right={}",
-                        left.0, line_left, right.0
-                    );
-                    if line_left >= 4 {
-                        let next_word = right.first_word();
-                        let next_word_len = next_word.char_len();
-
-                        println!(" - : next_word={}, len={}", next_word.0, next_word_len);
-
-                        if next_word_len >= 6 {
-                            let keep_len = min(line_left, next_word_len - 2);
-                            println!(" - : hyphen! keep={}", keep_len);
-                            (left, right) = current.hyphenate_at_char(break_index + keep_len);
-                        }
-                    }
-                    output.push(left);
-                    current = right;
-                }
-            }
-        }
-
-        if current.char_len() > 0 {
-            output.push(current);
-        }
-    }
-    output
 }
 
 #[cfg(test)]
@@ -458,6 +369,18 @@ mod test {
             }
         }
         output
+    }
+
+    #[test]
+    fn trunc_basic() {
+        let mut buffer = Buffer::new(50, 50);
+        let mut printer = plain(&mut buffer).width(10);
+
+        assert_eq!(
+            printer.print(0, 0, "This is a longer text that will be truncated."),
+            10
+        );
+        assert_eq!(extract_line(&buffer, 0, 0, 11), "This is a \0");
     }
 
     #[test]

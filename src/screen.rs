@@ -5,6 +5,7 @@ use std::fmt::Debug;
 /// The result of an evaluation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MsgData {
+    Index(usize),
     Number(i32),
     Float(f32),
     Text(String),
@@ -14,8 +15,45 @@ pub enum MsgData {
 }
 
 impl MsgData {
+    pub fn as_index(&self) -> Result<usize, ()> {
+        match self {
+            MsgData::Index(v) => Ok(*v),
+            MsgData::Number(v) => Ok(*v as usize),
+            MsgData::Float(v) => Ok(v.floor() as usize),
+            MsgData::Text(v) => match v.parse::<usize>() {
+                Err(_) => Err(()),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            // Value::Blank => Ok(0.0),
+            _ => Err(()),
+        }
+    }
+
+    pub fn as_num(&self) -> Result<i32, ()> {
+        match self {
+            MsgData::Index(v) => Ok(*v as i32),
+            MsgData::Number(v) => Ok(*v),
+            MsgData::Float(v) => Ok(v.floor() as i32),
+            MsgData::Text(v) => match v.parse::<i32>() {
+                Err(_) => Err(()),
+                Ok(v) => Ok(v),
+            },
+            MsgData::Boolean(v) => match v {
+                true => Ok(1),
+                false => Ok(0),
+            },
+            // Value::Blank => Ok(0.0),
+            _ => Err(()),
+        }
+    }
+
     pub fn as_float(&self) -> Result<f32, ()> {
         match self {
+            MsgData::Index(v) => Ok(*v as f32),
             MsgData::Number(v) => Ok(*v as f32),
             MsgData::Float(v) => Ok(*v),
             MsgData::Text(v) => match v.parse::<f32>() {
@@ -33,6 +71,7 @@ impl MsgData {
 
     pub fn as_string(&self) -> Result<String, ()> {
         match self {
+            MsgData::Index(v) => Ok(format!("{}", v)),
             MsgData::Number(v) => Ok(format!("{}", v)),
             MsgData::Float(v) => Ok(format!("{}", v)),
             MsgData::Text(v) => Ok(v.clone()),
@@ -47,6 +86,7 @@ impl MsgData {
 
     pub fn as_bool(&self) -> Result<bool, ()> {
         match self {
+            MsgData::Index(v) => Ok(*v != 0),
             MsgData::Number(v) => Ok(*v != 0),
             MsgData::Float(v) => Ok(*v != 0.0),
             MsgData::Text(v) => Ok(v.len() > 0),

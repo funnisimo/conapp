@@ -12,6 +12,7 @@ mod rgba;
 mod runner;
 mod screen;
 mod simple;
+pub mod text;
 
 pub use app::{
     now, perf_now, App, AppConfig, AppEvent, KeyEvent, MouseButtonEvent, VirtualKeyCode,

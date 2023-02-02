@@ -143,6 +143,7 @@ fn main() {
     let app = AppBuilder::new(CONSOLE_WIDTH * 8, CONSOLE_HEIGHT * 8)
         .title("My Roguelike")
         .font(FONT)
+        .vsync(false)
         .build();
 
     app.run_screen(MyRoguelike::new());
