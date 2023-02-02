@@ -191,11 +191,9 @@ impl<'a> ColoredLine<'a> {
         // }
 
         let (mut left, right) = self.split_at_char(split_idx);
-        let color = match left.spans.last() {
-            None => Some("white"),
-            Some(span) => span.color,
+        if let Some(last_left) = left.spans.last() {
+            left.push(ColoredSpan::new(last_left.color, "-"));
         };
-        left.push(ColoredSpan::new(color, "-"));
 
         (left, right)
     }
