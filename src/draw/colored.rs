@@ -159,7 +159,7 @@ impl<'a> ColoredPrinter<'a> {
         let self_len = min(width, line.char_len() as i32);
         let spaces = width.saturating_sub(self_len);
 
-        let (x, pre, mut post) = match self.align {
+        let (x, pre, post) = match self.align {
             TextAlign::Left => (x, 0, spaces),
             TextAlign::Center => {
                 let half = spaces / 2;
@@ -185,7 +185,7 @@ impl<'a> ColoredPrinter<'a> {
             left = left.saturating_sub(w as u32);
             cx += w;
             if left == 0 {
-                post = 0;
+                // post = 0;
                 break;
             }
         }
